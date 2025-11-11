@@ -1,0 +1,44 @@
+# -------------------------------
+# SECRETOS Y CONFIGURACIÓN LOCAL
+# -------------------------------
+# Archivo de secretos locales (API Keys, IPs)
+.env
+.env*.local
+
+# Archivo de configuración de Google/Firebase (Contiene secretos)
+google-services.json
+GoogleService-Info.plist
+
+# -------------------------------
+# DEPENDENCIAS
+# -------------------------------
+# Carpeta de paquetes descargados
+node_modules/
+
+# -------------------------------
+# EXPO & GENERADOS
+# -------------------------------
+# Carpetas de caché de Expo y Metro
+.expo/
+.metro-health-check*
+
+# Carpetas nativas generadas (¡MUY IMPORTANTE!)
+/android
+/ios
+
+# Builds y Bundles
+dist/
+web-build/
+expo-env.d.ts
+
+# -------------------------------
+# OTROS
+# -------------------------------
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
