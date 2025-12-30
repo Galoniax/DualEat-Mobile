@@ -1,5 +1,9 @@
 import React, { useState, useEffect, createContext, useContext } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
+import { router } from "expo-router";
+
+import axiosInterceptor from "@/api/client";
+
 import {
   getMe,
   login as authLogin,
@@ -7,14 +11,18 @@ import {
   completeProfile as authCompleteProfile,
   logout as authLogout,
 } from "@/services/auth.api";
+
 import type { AuthResponse } from "@/services/auth.api";
 import type { User } from "@/interface/global";
-import { router } from "expo-router";
-//import { withMinimumDelay } from "@utils/timeUtils";
+import { useAppMode } from "@/context/app/AppModeContext";
+
+const TOKEN_KEY = "dualeat_session_token";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  // Función para Google / Deep Links
+  setToken: (token: string) => Promise<void>;
   login: (
     email: string,
     password: string,
@@ -33,129 +41,129 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
+  return context;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
+  //const [loading, setLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      setLoading(true);
+
+  // --- 1. CARGA DE SESIÓN (AL ABRIR LA APP) ---
+  /*useEffect(() => {
+    const loadSession = async () => {
       try {
-        const userData = await getMe();
-        setUser(userData);
+        setLoading(true);
+        const token = await SecureStore.getItemAsync(TOKEN_KEY);
+
+        if (token) {
+          const response = (axiosInterceptor.defaults.headers.common[
+            "Authorization"
+          ] = `Bearer ${token}`);
+
+          console.log("✅ Token encontrado en SecureStore:", response);
+
+          const userData = await getMe();
+          setUser(userData);
+        }
       } catch (error) {
-        console.log("No user session found.", error);
-        setUser(null);
-        await AsyncStorage.removeItem("rememberMe");
+        console.log("Token inválido o expirado. Limpiando...", error);
+        await handleLogoutCleanup();
+        router.replace("/(auth)/welcome");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUser();
-  }, []);
+    loadSession();
+  }, []);*/
 
+  // --- Limpieza al cerrar sesión ---
+  const handleLogoutCleanup = async () => {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    delete axiosInterceptor.defaults.headers.common["Authorization"];
+    setUser(null);
+  };
 
-  const login = async (
-    email: string,
-    password: string,
-    rememberMe: boolean,
-    recaptchaToken: string | null
-  ) => {
-    setLoading(true);
+  // --- 1. SET TOKEN (Para Google / Deep Link) ---
+  const setToken = async (token: string) => {
     try {
-      const response = await authLogin(
-        email,
-        password,
-        rememberMe,
-        recaptchaToken
-      );
-      if (response?.success && response.user) {
-        setUser(response.user);
-        if (rememberMe) {
-          // CAMBIO: Usamos AsyncStorage y es async
-          await AsyncStorage.setItem("rememberMe", "true");
-        }
+      console.log("Guardando token en SecureStore...");
+      // Guardamos el token
+      await SecureStore.setItemAsync(TOKEN_KEY, token);
+      const response = (axiosInterceptor.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${token}`);
+
+      console.log("Token guardado y Axios configurado:", response);
+    } catch (error) {
+      console.error("Error en setToken:", error);
+      throw error; 
+    }
+  };
+
+  // --- 2. LOGIN (Email/Pass/RememberMe, RecaptchaToken) ---
+  const login = async (e: string, p: string, r: boolean, t: string | null) => {
+    try {
+      const response = await authLogin(e, p, r, t);
+
+      console.log("Login response:", response);
+      if (response?.success && response?.user) {
+        // Usamos el helper para guardar todo
+        //await saveSession(response.token, response.user);
       }
       return response;
     } catch (error) {
-      setUser(null);
+      console.error("Login error:", error);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
-  const register = async (
-    email: string,
-    password: string
-  ): Promise<AuthResponse | null> => {
-    // ... (Tu lógica de register es igual)
-    setLoading(true);
-    try {
-      const response = await authRegister(email, password);
-      return response;
-    } catch (error) {
-      console.error("Error during registration:", error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
+  // --- 3. REGISTER ---
+  const register = async (email: string, password: string) => {
+    return authRegister(email, password);
   };
 
+  // --- 4. COMPLETE PROFILE ---
   const completeProfile = async (
-    name: string,
-    foodPreferences: number[],
-    communityPreferences: number[],
-    tempToken: string
-  ): Promise<AuthResponse | null> => {
-    // ... (Tu lógica de completeProfile es igual)
-    setLoading(true);
-    const minimumDelay = new Promise((resolve) => setTimeout(resolve, 1500));
-    try {
-      const [responseData] = await Promise.all([
-        authCompleteProfile(
-          name,
-          foodPreferences,
-          communityPreferences,
-          tempToken
-        ),
-        minimumDelay,
-      ]);
-      if (responseData?.success && responseData.user) {
-        setUser(responseData.user);
-      } else {
-        setUser(null);
-      }
-      return responseData;
-    } catch (error) {
-      setUser(null);
-      throw error;
-    } finally {
-      setLoading(false);
+    n: string,
+    f: number[],
+    c: number[],
+    t: string
+  ) => {
+    const response = await authCompleteProfile(n, f, c, t);
+    if (response?.success && response?.user) {
+      //await saveSession(response.token, response.user);
     }
+    return response;
   };
 
+  // --- 5. LOGOUT ---
   const logout = async () => {
-    const response = await authLogout();
-    if (response?.success) {
-      // CAMBIO: Usamos AsyncStorage y es async
-      await AsyncStorage.removeItem("rememberMe");
-      setUser(null);
-    }
+    await authLogout();
+    await handleLogoutCleanup();
+    router.replace("/(auth)/login");
   };
 
-  const value = { user, loading, login, logout, register, completeProfile };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        setToken,
+        login,
+        register,
+        completeProfile,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };

@@ -1,0 +1,16 @@
+import {
+  Text,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { useLocation } from "@/context/extension/LocationContext";
+import { useAuth } from "@/context/auth/AuthContext";
+
+export default function OrdersScreen() {
+
+  return (
+    <SafeAreaView className="flex-1 bg-bg-gray">
+      <Text>Orders Screen</Text>
+    </SafeAreaView>
+  );
+}

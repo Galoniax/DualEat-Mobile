@@ -1,68 +1,77 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { SplashScreen, Stack, useRouter, useSegments } from "expo-router";
+import { router, SplashScreen, Stack, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
-
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import Toast from "react-native-toast-message";
-
 import "@/app/global.css";
 import { useFonts } from "expo-font";
-
 import { useColorScheme } from "../hooks/use-color-scheme";
 import { AuthProvider, useAuth } from "@/context/auth/AuthContext";
-
-import {
-  LocationProvider,
-  useLocation,
-} from "@/context/extension/LocationContext";
-
+import { LocationProvider } from "@/context/extension/LocationContext";
 import { configureNotifications } from "@/utils/notifications";
 import * as Location from "expo-location";
 import "../tasks/locationTask";
+import { AppModeProvider, useAppMode } from "@/context/app/AppModeContext";
 
 export { ErrorBoundary } from "expo-router";
 
 function RootNavigation() {
   const { user, loading } = useAuth();
-  const { location, address } = useLocation();
+  const { mode } = useAppMode();
 
-  const router = useRouter();
   const segments = useSegments();
-
-  const [hasRedirected, setHasRedirected] = useState(false);
+  const [isNavigationReady, setIsNavigationReady] = useState(false);
 
   useEffect(() => {
-    if (loading) {
+    const timer = setTimeout(() => {
+      setIsNavigationReady(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+  if (loading || !isNavigationReady) return;
+
+  const inAuthGroup = segments[0] === "(auth)";
+  const inClientGroup = segments[0] === "(client)";
+
+  // 1. Si NO hay usuario, mandar al login
+  if (!user) {
+    // Solo redirigir si no está ya en el grupo correcto
+    if (!inClientGroup) {
+      router.replace("/(client)/(tabs)");
+    }
+    return;
+  }
+
+  // 2. Si HAY usuario
+  if (user) {
+    // Si está en Auth (login/register), sacarlo de ahí
+    if (inAuthGroup) {
+      router.replace("/(client)/(tabs)");
       return;
     }
 
-    if (hasRedirected) {
+    // Solo redirigir si NO está en cliente en absoluto
+    // NO redirigir si ya está dentro de las tabs navegando
+    if (!inClientGroup) {
+      router.replace("/(client)/(tabs)");
       return;
     }
+  }
 
-    const inAppGroup = segments[0] === "(tabs)";
-    const inAuthGroup = segments[0] === "pages";
+}, [user, loading, isNavigationReady, mode]); 
 
-    if (user && !inAppGroup) {
-      router.replace("/(tabs)");
-      setHasRedirected(true);
-    } else if (!user && !inAuthGroup) {
-      router.replace("/(tabs)");
-      setHasRedirected(true);
-    }
-  }, [user, loading, segments]);
-
-  useEffect(() => {
-    setHasRedirected(false);
-  }, [user]);
-
-  if (loading) {
+  if (loading || !isNavigationReady) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" />
@@ -71,20 +80,20 @@ function RootNavigation() {
   }
 
   return (
-    <Stack>
-      {/* 1. El "club" (tus pestañas) */}
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    <Stack screenOptions={{ headerShown: false }}>
+      {/* Grupo de autenticación */}
+      <Stack.Screen name="(auth)" />
 
-      {/* 2. La "puerta" (tu login/register en 'pages') */}
-      <Stack.Screen
-        name="pages/public/login"
-        options={{ title: "Login", headerShown: false }}
-      />
+      <Stack.Screen name="(client)/(tabs)" />
 
-      {/* 3. Tus otras pantallas (como el modal) */}
+      {/* Modal */}
       <Stack.Screen
         name="modal"
-        options={{ presentation: "modal", title: "Modal" }}
+        options={{
+          presentation: "modal",
+          title: "Modal",
+          headerShown: true,
+        }}
       />
     </Stack>
   );
@@ -104,36 +113,42 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    const startBackgroundTracking = async () => {
-      const { status } = await Location.requestBackgroundPermissionsAsync();
-      if (status !== "granted") {
-        console.log("Permiso de ubicación en segundo plano denegado");
-        return;
-      }
+    const setupBackgroundLocation = async () => {
+      try {
+        const { status } = await Location.requestBackgroundPermissionsAsync();
 
-      // Evitar iniciar la tarea si ya está activa (opcional, pero buena práctica)
-      const isTaskStarted = await Location.hasStartedLocationUpdatesAsync(
-        "background-location-task"
-      );
-      if (isTaskStarted) {
-        console.log("Location task already started.");
-        return;
-      }
+        if (status !== "granted") {
+          console.log("Permiso de ubicación en segundo plano denegado");
+          return;
+        }
 
-      await Location.startLocationUpdatesAsync("background-location-task", {
-        accuracy: Location.Accuracy.High,
-        distanceInterval: 50,
-        deferredUpdatesInterval: 1000 * 60,
-        showsBackgroundLocationIndicator: true,
-        foregroundService: {
-          notificationTitle: "Seguimiento de ubicación",
-          notificationBody: "Estamos detectando tu proximidad a locales",
-        },
-      });
-      console.log("Background location tracking started.");
+        const isTaskStarted = await Location.hasStartedLocationUpdatesAsync(
+          "background-location-task"
+        );
+
+        if (isTaskStarted) {
+          console.log("Location task already running");
+          return;
+        }
+
+        await Location.startLocationUpdatesAsync("background-location-task", {
+          accuracy: Location.Accuracy.High,
+          distanceInterval: 50,
+          deferredUpdatesInterval: 60000,
+          showsBackgroundLocationIndicator: true,
+          foregroundService: {
+            notificationTitle: "Seguimiento de ubicación",
+            notificationBody: "Detectando proximidad a locales",
+          },
+        });
+
+        console.log("Background location tracking started");
+      } catch (error) {
+        console.error("Error setting up background location:", error);
+      }
     };
 
-    startBackgroundTracking();
+    setupBackgroundLocation();
   }, []);
 
   useEffect(() => {
@@ -142,7 +157,6 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
-      // Oculta el splash screen
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
@@ -150,16 +164,23 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) {
     return null;
   }
-  return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <AuthProvider>
-        <LocationProvider>
-          <RootNavigation />
-        </LocationProvider>
-      </AuthProvider>
 
-      <StatusBar style="auto" />
-      <Toast />
-    </ThemeProvider>
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <AuthProvider>
+          <AppModeProvider>
+            <LocationProvider>
+              <BottomSheetModalProvider>
+                <RootNavigation />
+              </BottomSheetModalProvider>
+            </LocationProvider>
+          </AppModeProvider>
+        </AuthProvider>
+
+        <StatusBar style="auto" />
+        <Toast />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

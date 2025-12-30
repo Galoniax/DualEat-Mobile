@@ -1,15 +1,16 @@
 {
   "expo": {
-    "name": "client",
-    "slug": "client",
+    "name": "DualEat",
+    "slug": "dualeat",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "client",
+    "scheme": "dualeat",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.dualeat.mobile",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Necesitamos tu ubicación para mostrarte los locales más cercanos en el mapa.",
         "NSLocationAlwaysUsageDescription": "Permitir que la app use tu ubicación para mostrar locales cercanos.",
@@ -40,7 +41,25 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.dualeat.mobile",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCcRZNfqAanQdpc6I1gPEq4tMcSphsLy8I"
+        }
+      }, 
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "dualeat",
+              "host": "callback"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",

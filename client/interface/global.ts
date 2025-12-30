@@ -3,7 +3,6 @@ export interface Response<T = unknown> {
   message?: string;
   data?: T;
 }
-
 export interface User {
   id: string;
   name: string;

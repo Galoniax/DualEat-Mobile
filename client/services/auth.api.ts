@@ -15,9 +15,6 @@ export interface AuthResponse {
 
 
 
-
-
-
 export const login = async (
   email: string,
   password: string,
