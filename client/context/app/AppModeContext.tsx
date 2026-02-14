@@ -1,80 +1,73 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLoader } from "./LoadingContext";
 
-// 1. Definimos que el modo puede ser null inicialmente
-//type AppMode = "eatOut" | "eatIn" | "eatBoth";
-
-type AppMode = "eatOut" | "eatIn"
+type AppMode = "in" | "out" | null;
 
 const STORAGE_KEY = "@dualeat/app-mode";
 
 interface AppModeContextType {
-  mode: AppMode; 
+  mode: AppMode;
   switchMode: () => void;
   clearMode: () => void;
-  isLoading: boolean; 
 }
 
 const AppModeContext = createContext<AppModeContextType | null>(null);
 
+export const useAppMode = () => {
+  const context = useContext(AppModeContext);
+  if (!context)
+    throw new Error("useAppMode debe ser usado dentro de un AppModeProvider");
+  return context;
+};
+
 export const AppModeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [mode, setModeState] = useState<AppMode | null>(null);
+  const [mode, setMode] = useState<AppMode>(null);
 
+  const { setType } = useLoader();
 
   useEffect(() => {
     (async () => {
       try {
+        setType("global");
         const saved = await AsyncStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          setModeState(saved as AppMode);
+        if (saved && (saved === "in" || saved === "out")) {
+          setMode(saved as AppMode);
         } else {
-          setModeState("eatOut"); 
+          setMode("out");
         }
       } catch (e) {
-        console.error("Failed to load mode", e);
-        setModeState("eatOut"); 
+        console.log("Error al cargar el modo", e);
+      } finally {
+        setType(null);
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const switchMode = () => {
-    if (!mode) return; 
+  const switchMode = async () => {
+    try {
+      setType("global");
+      const Umode = await AsyncStorage.getItem(STORAGE_KEY);
+      const newMode = Umode === "out" ? "in" : "out";
 
-    let newMode: AppMode;
-    if (mode === "eatOut") newMode = "eatIn";
-    else if (mode === "eatIn") newMode = "eatOut";
-    else newMode = "eatOut";
-
-    setModeState(newMode);
-    AsyncStorage.setItem(STORAGE_KEY, newMode);
-    
+      await AsyncStorage.setItem(STORAGE_KEY, newMode);
+      setMode(newMode);
+    } finally {
+      setType(null);
+    }
   };
 
-  const clearMode = () => {
-    setModeState("eatOut");
-    AsyncStorage.removeItem(STORAGE_KEY);
+  const clearMode = async () => {
+    setMode(null);
+    await AsyncStorage.removeItem(STORAGE_KEY);
   };
-
- 
-  if (mode === null) {
-    return null; 
-  }
 
   return (
-    <AppModeContext.Provider 
-      value={{ mode: mode as AppMode, switchMode, clearMode, isLoading: false }}
-    >
+    <AppModeContext.Provider value={{ mode, switchMode, clearMode }}>
       {children}
     </AppModeContext.Provider>
   );
-};
-
-export const useAppMode = () => {
-  const context = useContext(AppModeContext);
-  if (!context) {
-    throw new Error("useMode must be used within AppModeProvider");
-  }
-  return context;
 };

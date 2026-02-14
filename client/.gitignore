@@ -5,7 +5,7 @@
 .env
 .env*.local
 
-# Archivo de configuración de Google/Firebase (Contiene secretos)
+# Archivo de configuración de Google/Firebase
 google-services.json
 GoogleService-Info.plist
 
@@ -22,7 +22,7 @@ node_modules/
 .expo/
 .metro-health-check*
 
-# Carpetas nativas generadas (¡MUY IMPORTANTE!)
+# Carpetas nativas generadas
 /android
 /ios
 

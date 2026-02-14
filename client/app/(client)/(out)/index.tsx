@@ -10,16 +10,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Octicons from "@expo/vector-icons/Octicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useLocation } from "@/context/extension/LocationContext";
-import { useAuth } from "@/context/auth/AuthContext";
+
 import { useAppMode } from "@/context/app/AppModeContext";
+import { useAuth } from "@/context/auth/AuthContext";
 
 export default function HomeScreen() {
   const { address } = useLocation();
-
  
   const { mode, switchMode } = useAppMode();
 
-  
+  const { user } = useAuth();
 
   return (
     <SafeAreaView className="flex-1 bg-bg-gray">
@@ -28,7 +28,6 @@ export default function HomeScreen() {
         className="absolute inset-0 z-[-1] opacity-20  min-h-full w-full"
         resizeMode="cover"
       />
-
       <View className="flex-1 px-4 pt-3 ">
         <View className="flex-row justify-between items-center">
           <TouchableOpacity
@@ -81,6 +80,17 @@ export default function HomeScreen() {
           <Text className="text-text-3 text-[24px] font-dosis-bold">
             Explorar
           </Text>
+
+          <TouchableOpacity
+            className="mt-4  text-text-3 p-4 rounded-lg"
+          >
+            <Text className="text-text-3 text-[16px] font-dosis-bold">
+            {mode === "in" ? "Estás en modo 'Adentro'" : "Estás en modo 'Afuera'"}
+            
+            </Text>
+          </TouchableOpacity>
+
+          
 
           
         </View>

@@ -1,21 +1,40 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, ImageBackground, Image } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ImageBackground,
+  Image,
+  useWindowDimensions,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 
 import { LightSensor } from "expo-sensors";
+import { useRouter } from "expo-router";
 
+import CustomBottomSheet from "@/components/ui/BottomSheetModal";
+import { useLocation } from "@/context/extension/LocationContext";
 
-
+import { getLocalByNearby } from "@/services/discovery.api";
+import { Local } from "@/interface/global";
 
 export default function QrScreen() {
+  const router = useRouter();
+  const { location } = useLocation();
+
   const [flashlight, setFlashlight] = useState(false);
   const [facing, setFacing] = useState<"front" | "back">("back");
   const [permission, requestPermission] = useCameraPermissions();
+
+  const [nearbyLocals, setNearbyLocals] = useState<Local[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { width } = useWindowDimensions(); 
+  const CARD_WIDTH = width * 0.75;
 
   const Logo = require("@/assets/images/icon/LogoDualEat.png");
 
@@ -33,6 +52,31 @@ export default function QrScreen() {
       subscription.remove();
     };
   }, []);
+
+ useEffect(() => {
+    if (location?.coords) {
+      const fetchLocals = async () => {
+        setIsLoading(true);
+
+        try {
+
+        const response = await getLocalByNearby(
+          location.coords.latitude,
+          location.coords.longitude,
+        );
+        
+        if (response?.success && response.data) {
+          setNearbyLocals(response.data as Local[]);
+        }
+      } catch (e) {
+        
+      }
+        setIsLoading(false);
+      };
+
+      fetchLocals();
+    }
+  }, [location]);
 
   const showFlashControls = illuminance < 20 || flashlight;
 
@@ -58,41 +102,39 @@ export default function QrScreen() {
           Escanea, explora y <Text className="text-[#ec3f2b]">disfruta</Text>
         </Text>
 
-
-        <View className="items-center px-5">
-          <Text className="text-text-2 text-start text-[16px] font-dosis-light">
-            Para que puedas descubrir los menús de tus locales favoritos en DualEat, necesitamos acceso a tu cámara.
+        <View className="items-center px-8">
+          <Text className="text-text-2 text-start text-[15px] font-dosis-light">
+            Para que puedas descubrir los menús de tus locales favoritos en
+            DualEat, necesitamos acceso a tu cámara.
           </Text>
 
           <View className="flex-row justify-start w-full gap-2 mt-4">
-          {steps.map((step) => (
-            <View
-              key={step}
-              className={`${step < (steps.length - 1)? "max-w-10" : "max-w-[6px]"}`}
-              style={{
-                height: 4,
-                flex: 1,
-                backgroundColor: step < (steps.length - 1) ? "#B53325" : "gray",
-                borderRadius: 99,
-              }}
-            />
-          ))}
-        </View>
+            {steps.map((step) => (
+              <View
+                key={step}
+                className={`${step < steps.length - 1 ? "max-w-10" : "max-w-[6px]"}`}
+                style={{
+                  height: 4,
+                  flex: 1,
+                  backgroundColor: step < steps.length - 1 ? "#B53325" : "gray",
+                  borderRadius: 99,
+                }}
+              />
+            ))}
+          </View>
           <TouchableOpacity
             onPress={requestPermission}
-            className="bg-bg-red px-6 py-4 w-full rounded-[15px] mt-10 items-center justify-center"
+            className="bg-bg-red py-3.5 w-full rounded-[10px] mt-[60px] items-center justify-center"
           >
-            <Text className="text-white text-md">
+            <Text className="text-white font-dosis-bold text-md">
               Conceder permiso
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={requestPermission}
-            className="mt-8 items-centerjustify-center"
+            onPress={() => router.back()}
+            className="mt-5 items-center py-3.5 w-full justify-center"
           >
-            <Text className="text-white text-md">
-              Cerrar
-            </Text>
+            <Text className="text-white font-dosis-bold text-md">Cerrar</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -105,7 +147,7 @@ export default function QrScreen() {
         <View className="flex-1 relative">
           <SafeAreaView className="absolute top-0 w-full z-10 px-4 pt-2 flex-row justify-between items-center">
             <TouchableOpacity
-              onPress={() => console.log("Cerrar")}
+              onPress={() => router.back()}
               className="w-10 h-10 items-center justify-center bg-black/20 rounded-full"
             >
               <Ionicons name="close" size={28} color="white" />
@@ -113,7 +155,7 @@ export default function QrScreen() {
           </SafeAreaView>
 
           {/* Centro: Escáner y Aviso */}
-          <View className="flex-1 absolute bottom-[28%] left-0 right-0 justify-center items-center">
+          <View className="flex-1 absolute bottom-[35%] left-0 right-0 justify-center items-center">
             {showFlashControls && (
               <>
                 {!flashlight && (
@@ -149,40 +191,16 @@ export default function QrScreen() {
           </View>
 
           {/* Panel Inferior */}
-          <View className="bg-white absolute bottom-0 w-full rounded-t-[32px] px-6 pt-4 pb-10 shadow-2xl">
-            <View className="items-center mb-6">
-              <View className="w-12 h-1.5 bg-gray-200 rounded-full" />
+          <CustomBottomSheet modal={false} type={1} block={true} dark={true}>
+            <View style={{ flex: 1 }}>
+              <View className="flex-row justify-center py-4 border-b border-dashed border-gray-50">
+                <Ionicons name="qr-code-sharp" size={30} color="#fff" />
+              </View>
+              <Text className="text-white font-dosis-regular text-[15px] text-center px-4 mt-4">
+                Locales cercanos a tu ubicación
+              </Text>
             </View>
-            <View className="flex-row justify-center gap-10 mb-6">
-              <TouchableOpacity className="items-center gap-2">
-                <View className="w-16 h-16 rounded-full border border-gray-100 items-center justify-center bg-white shadow-sm elevation-2">
-                  <MaterialCommunityIcons
-                    name="bus"
-                    size={30}
-                    color="#374151"
-                  />
-                </View>
-                <Text className="text-xs font-medium text-gray-500">
-                  Transporte
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity className="items-center gap-2">
-                <View className="w-16 h-16 rounded-full border border-gray-100 items-center justify-center bg-white shadow-sm elevation-2">
-                  <Ionicons
-                    name="bag-handle-outline"
-                    size={28}
-                    color="#374151"
-                  />
-                </View>
-                <Text className="text-xs font-medium text-gray-500">
-                  Compras
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <Text className="text-center text-gray-800 text-lg font-bold px-4 leading-6">
-              Usá tu QR para pagar viajes y compras
-            </Text>
-          </View>
+          </CustomBottomSheet>
         </View>
       </CameraView>
     </View>

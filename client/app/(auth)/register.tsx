@@ -18,17 +18,25 @@ import { useRouter } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { register } from "@/services/auth.api";
+import { ROUTES } from "@/constants/constants";
+import { getDeviceId } from "@/utils/device";
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 
 export default function Register() {
+  // --- ESTADOS LOCALES ---
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
 
+  // --- HOOKS ---
   const router = useRouter();
+  const { handleGoogleLogin } = useGoogleAuth();
 
   const Logo = require("@/assets/images/icon/LogoDualEat.png");
 
   const handleRegister = async () => {
+    const deviceId = await getDeviceId();
+
     if (!email || !password || !confirmPassword) {
       Toast.show({
         type: "error",
@@ -46,15 +54,7 @@ export default function Register() {
       return;
     }
 
-    await register(email, password);
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      window.location.href = "http://192.168.0.14:3000/api/auth/google";
-    } catch (error) {
-      console.error("Error al iniciar sesión con Google:", error);
-    }
+    await register(email.trim(), password.trim(), deviceId);
   };
 
   return (
@@ -68,7 +68,7 @@ export default function Register() {
 
         <View className="flex-row justify-between w-[90%] mx-auto items-center mt-[15%] mb-12">
           <View className="flex-1">
-            <Ionicons name="chevron-back" size={22} color="#fff" />
+            <Ionicons name="chevron-back" size={22} color="#fff" onPress={() => router.push(ROUTES.PUBLIC.HOME)} />
           </View>
 
           <View className="flex-row items-center flex-2 justify-center">
@@ -134,7 +134,7 @@ export default function Register() {
           <TouchableOpacity
             onPress={handleRegister}
             activeOpacity={0.7}
-            className="bg-bg-yellow w-[80%] p-3 rounded-full items-center mt-10"
+            className="bg-bg-yellow w-[80%] p-3 rounded-full items-center mt-10 border border-gray-300"
           >
             <Text className="text-text-1 font-dosis-bold text-[15px] tracking-tighter">
               Registrarse

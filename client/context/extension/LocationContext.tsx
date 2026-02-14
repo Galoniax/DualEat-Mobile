@@ -6,7 +6,6 @@ interface LocationContextType {
   setLocation: (location: Location.LocationObject | null) => void;
   clearLocation: () => void;
   updateLocation: () => void;
-  getUTCOffset: () => string;
   address: CustomAddress | null;
 }
 
@@ -32,12 +31,6 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({
     setAddress(null);
   };
 
-  const getUTCOffset = () => {
-    const offsetMinutes = new Date().getTimezoneOffset(); // en minutos
-    const offsetHours = -(offsetMinutes / 60); // convertir a horas y cambiar signo
-    return `UTC${offsetHours >= 0 ? "+" : ""}${offsetHours}`;
-  }
-
   async function getCurrentLocation() {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
@@ -54,9 +47,9 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({
         const { street, city, country, region } = addressResponse[0];
         setAddress({ street, city, country, region });
       }
-    } catch (error) {
+    } catch (e) {
       console.log("No se pudo traducir la ubicación");
-      console.error(error);
+      console.log(e);
     }
   }
 
@@ -68,7 +61,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <LocationContext.Provider
-      value={{ location, setLocation, clearLocation, address, updateLocation, getUTCOffset }}
+      value={{ location, setLocation, clearLocation, address, updateLocation }}
     >
       {children}
     </LocationContext.Provider>

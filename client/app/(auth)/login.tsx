@@ -16,20 +16,28 @@ import Recaptcha, { RecaptchaRef } from "react-native-recaptcha-that-works";
 import TextInputUI from "@/components/ui/TextInput";
 
 import { useRouter } from "expo-router";
-
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-import { login } from "@/services/auth.api";
+import { ROUTES } from "@/constants/constants";
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
+import { getDeviceId } from "@/utils/device";
+import { useAuth } from "@/context/auth/AuthContext";
 
 export default function Login() {
+  // --- ESTADOS LOCALES ---
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
 
+  // --- HOOKS ---
   const router = useRouter();
+
+  const { login } = useAuth();
+  const { handleGoogleLogin } = useGoogleAuth();
 
   const Logo = require("@/assets/images/icon/LogoDualEat.png");
 
+  // --- REFERENCIA AL RECAPTCHA ---
   const recaptchaRef = useRef<RecaptchaRef>(null);
 
   const handleLogin = async () => {
@@ -45,18 +53,12 @@ export default function Login() {
     recaptchaRef.current?.open();
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      window.location.href = "http://192.168.0.14:3000/api/auth/google";
-    } catch (error) {
-      console.error("Error al iniciar sesión con Google:", error);
-    }
-  };
-
   const onVerify = async (token: string) => {
     setRecaptchaToken(token);
 
-    await login(email, password, false, token);
+    const deviceId = await getDeviceId();
+
+    await login(email.trim(), password.trim(), true, recaptchaToken, deviceId);
   };
 
   const onExpire = () => {
@@ -80,7 +82,12 @@ export default function Login() {
 
         <View className="flex-row justify-between w-[90%] mx-auto items-center mt-[15%] mb-12">
           <View className="flex-1">
-            <Ionicons name="chevron-back" size={22} color="#fff" />
+            <Ionicons
+              name="chevron-back"
+              size={22}
+              color="#fff"
+              onPress={() => router.push(ROUTES.PUBLIC.HOME)}
+            />
           </View>
 
           <View className="flex-row items-center flex-2 justify-center">
@@ -89,7 +96,7 @@ export default function Login() {
             </Text>
             <TouchableOpacity
               className="p-2 rounded-lg "
-              onPress={() => router.push("/(auth)/register")}
+              onPress={() => router.push(ROUTES.AUTH.REGISTER)}
             >
               <Text className="text-text-1 text-[13px] font-dosis-bold text-center">
                 Registrate
@@ -157,7 +164,7 @@ export default function Login() {
           <TouchableOpacity
             onPress={handleLogin}
             activeOpacity={0.7}
-            className="bg-bg-red w-[80%] p-3 rounded-full items-center"
+            className="bg-bg-red w-[80%] p-3 rounded-full items-center border border-gray-300"
           >
             <Text className="text-text-1 font-dosis-bold text-[15px] tracking-tighter">
               Iniciar Sesión

@@ -1,14 +1,18 @@
 import { Stack } from "expo-router";
 
 export default function AuthLayout() {
+
+  const screens = [
+    "login",
+    "register",
+    "welcome",
+    "onboarding",
+  ];
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="login" options={{ headerShown: false }} />
-      <Stack.Screen name="register" options={{ headerShown: false }} />
-      <Stack.Screen 
-        name="welcome" 
-        options={{ headerShown: false }}
-      />
+      {screens.map((screen) => (
+        <Stack.Screen key={screen} name={screen} options={{ headerShown: false }} />
+      ))}
     </Stack>
   );
 }

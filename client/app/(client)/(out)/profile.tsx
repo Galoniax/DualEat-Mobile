@@ -3,16 +3,14 @@ import { Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import Octicons from "@expo/vector-icons/Octicons";
-
-import Entypo from "@expo/vector-icons/Entypo";
-import Feather from "@expo/vector-icons/Feather";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 import { WeatherWidget } from "@/components/ui/WeatherWidget";
+import { useAuth } from "@/context/auth/AuthContext";
 
 export default function ProfileScreen() {
-  const [user, setUser] = useState("John Doe");
+  const { user } = useAuth();
 
   if (!user) {
     return (
@@ -24,6 +22,8 @@ export default function ProfileScreen() {
           <TouchableOpacity className="bg-bg-red px-4 py-2 rounded-[5px]">
             <Text className="text-white text-[16px] font-dosis-bold">
               Iniciar Sesión
+             
+             
             </Text>
           </TouchableOpacity>
         </View>
@@ -31,11 +31,12 @@ export default function ProfileScreen() {
     );
   }
 
+
   return (
     <SafeAreaView className="flex-1 bg-bg-semi-white">
       <View className="relative p-5">
         <Text className="font-dosis-bold text-[16px] text-text-3 text-center">
-          ¡Hola, {user}!
+          ¡Hola, {user.name}!
         </Text>
 
         <TouchableOpacity className="absolute right-5 top-1/2 p-[9px] border bg-bg-red border-bg-red rounded-[5px]">

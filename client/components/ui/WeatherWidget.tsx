@@ -16,7 +16,7 @@ export function WeatherWidget() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const { location, address, getUTCOffset } = useLocation();
+  const { location, address } = useLocation();
 
   const latitude = location?.coords.latitude;
   const longitude = location?.coords.longitude;
@@ -159,15 +159,12 @@ export function WeatherWidget() {
       <View className="px-4 z-10">
         <View className="justify-between flex-row items-center">
           <Text className="text-[15px] font-dosis-bold text-white mb-1">
-            {icon} {""} {label}
+            {icon}{" "}{label}
           </Text>
 
           <View className="flex-row items-center gap-2">
             <Text className="text-[14px] font-dosis-semibold text-text-2">
               {address?.city ? `${address.city}` : ""}
-            </Text>
-            <Text className="text-[11px] font-dosis-regular text-text-2">
-              {getUTCOffset()}
             </Text>
           </View>
         </View>

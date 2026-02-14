@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import { Text, View, TextInput as RNTextInput, TouchableOpacity } from "react-native";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -14,6 +14,8 @@ interface TextInputProps {
     | "phone-pad"
     | "visible-password";
   isPassword?: boolean;
+  icon?: ReactNode;
+
 }
 
 export default function TextInput({
@@ -22,6 +24,7 @@ export default function TextInput({
   title,
   type,
   isPassword,
+  icon,
 }: TextInputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [valueLocal, setValueLocal] = useState(value);
@@ -29,7 +32,6 @@ export default function TextInput({
   const [showPassword, setShowPassword] = useState(false);
 
   
-
   return (
     <View className="w-[80%] relative mt-4">
       <View className="absolute -top-2.5 left-10 z-10 px-1">
@@ -49,6 +51,8 @@ export default function TextInput({
           <Ionicons name="mail-outline" size={18} color="#fff" />
         ) : isPassword ? (
           <Ionicons name="lock-closed-outline" size={18} color="#fff" />
+        ) : icon ? (
+          icon 
         ) : null}
 
         {/* Input Real (Sin bordes, llena el espacio restante) */}

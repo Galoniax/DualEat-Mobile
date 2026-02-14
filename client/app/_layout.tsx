@@ -1,14 +1,13 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { router, SplashScreen, Stack, useSegments } from "expo-router";
+import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { useEffect } from "react";
+import { StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import Toast from "react-native-toast-message";
@@ -21,81 +20,39 @@ import { configureNotifications } from "@/utils/notifications";
 import * as Location from "expo-location";
 import "../tasks/locationTask";
 import { AppModeProvider, useAppMode } from "@/context/app/AppModeContext";
+import { useRedirect } from "@/hooks/useRedirect";
+import LoadingScreen from "@/components/ui/LoadingScreen";
+import { LoaderProvider, useLoader } from "@/context/app/LoadingContext";
 
 export { ErrorBoundary } from "expo-router";
 
 function RootNavigation() {
-  const { user, loading } = useAuth();
+  const { loading, type } = useLoader();
+
   const { mode } = useAppMode();
 
-  const segments = useSegments();
-  const [isNavigationReady, setIsNavigationReady] = useState(false);
+  const { authReady } = useAuth();
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsNavigationReady(true);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
+  useRedirect();
 
-  useEffect(() => {
-  if (loading || !isNavigationReady) return;
-
-  const inAuthGroup = segments[0] === "(auth)";
-  const inClientGroup = segments[0] === "(client)";
-
-  // 1. Si NO hay usuario, mandar al login
-  if (!user) {
-    // Solo redirigir si no está ya en el grupo correcto
-    if (!inClientGroup) {
-      router.replace("/(client)/(tabs)");
-    }
-    return;
-  }
-
-  // 2. Si HAY usuario
-  if (user) {
-    // Si está en Auth (login/register), sacarlo de ahí
-    if (inAuthGroup) {
-      router.replace("/(client)/(tabs)");
-      return;
-    }
-
-    // Solo redirigir si NO está en cliente en absoluto
-    // NO redirigir si ya está dentro de las tabs navegando
-    if (!inClientGroup) {
-      router.replace("/(client)/(tabs)");
-      return;
-    }
-  }
-
-}, [user, loading, isNavigationReady, mode]); 
-
-  if (loading || !isNavigationReady) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
+  if (!authReady || mode === null) {
+    return <LoadingScreen type="global" />;
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      {/* Grupo de autenticación */}
-      <Stack.Screen name="(auth)" />
+    <View style={styles.root}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(client)" />
+        <Stack.Screen name="(local)" />
+      </Stack>
 
-      <Stack.Screen name="(client)/(tabs)" />
-
-      {/* Modal */}
-      <Stack.Screen
-        name="modal"
-        options={{
-          presentation: "modal",
-          title: "Modal",
-          headerShown: true,
-        }}
-      />
-    </Stack>
+      {loading && (
+        <View style={styles.loadingOverlay} pointerEvents="auto">
+          <LoadingScreen type={type} />
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -116,21 +73,11 @@ export default function RootLayout() {
     const setupBackgroundLocation = async () => {
       try {
         const { status } = await Location.requestBackgroundPermissionsAsync();
-
-        if (status !== "granted") {
-          console.log("Permiso de ubicación en segundo plano denegado");
-          return;
-        }
-
+        if (status !== "granted") return;
         const isTaskStarted = await Location.hasStartedLocationUpdatesAsync(
-          "background-location-task"
+          "background-location-task",
         );
-
-        if (isTaskStarted) {
-          console.log("Location task already running");
-          return;
-        }
-
+        if (isTaskStarted) return;
         await Location.startLocationUpdatesAsync("background-location-task", {
           accuracy: Location.Accuracy.High,
           distanceInterval: 50,
@@ -141,17 +88,11 @@ export default function RootLayout() {
             notificationBody: "Detectando proximidad a locales",
           },
         });
-
-        console.log("Background location tracking started");
-      } catch (error) {
-        console.error("Error setting up background location:", error);
+      } catch (e) {
+        console.log("Error al configurar la ubicación en segundo plano", e);
       }
     };
-
     setupBackgroundLocation();
-  }, []);
-
-  useEffect(() => {
     configureNotifications();
   }, []);
 
@@ -168,15 +109,17 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <AuthProvider>
-          <AppModeProvider>
-            <LocationProvider>
-              <BottomSheetModalProvider>
-                <RootNavigation />
-              </BottomSheetModalProvider>
-            </LocationProvider>
-          </AppModeProvider>
-        </AuthProvider>
+        <LoaderProvider>
+          <AuthProvider>
+            <AppModeProvider>
+              <LocationProvider>
+                <BottomSheetModalProvider>
+                  <RootNavigation />
+                </BottomSheetModalProvider>
+              </LocationProvider>
+            </AppModeProvider>
+          </AuthProvider>
+        </LoaderProvider>
 
         <StatusBar style="auto" />
         <Toast />
@@ -184,3 +127,12 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+});

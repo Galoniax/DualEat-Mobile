@@ -12,8 +12,6 @@ export function HapticTab(props: BottomTabBarButtonProps) {
   };
 
   const handlePress = (ev?: any) => {
-    console.log('HapticTab onPress', ev);
-    // console.log('HapticTab onPress', ev);
     props.onPress?.(ev);
   };
 

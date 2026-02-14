@@ -3,11 +3,8 @@ import * as Notifications from 'expo-notifications';
 
 const LOCATION_TASK_NAME = 'background-location-task';
 
-
-
-
-TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error } : any) => {
-  if (error) return console.error(error);
+TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, e } : any) => {
+  if (e) return console.log("Error en la tarea de ubicación:", e);
   if (data) {
     const { locations } = data;
     const { latitude, longitude } = locations[0].coords;
@@ -17,7 +14,7 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error } : any) => {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "¡Estás cerca!",
-          body: "Pasás cerca de nuestro local, vení a visitarnos 🎉",
+          body: "Pasás cerca de nuestro local, vení a visitarnos",
         },
         trigger: null,
       });
@@ -25,6 +22,7 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error } : any) => {
   }
 });
 
+// Testeo de tasks
 function checkProximity(lat: number, lng: number): boolean {
   const storeLat = -34.7001;
   const storeLng = -58.3089;

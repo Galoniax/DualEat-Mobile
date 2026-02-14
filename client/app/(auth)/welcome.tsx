@@ -6,105 +6,25 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as WebBrowser from "expo-web-browser";
-import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
-import { useEffect } from "react";
 
-import { useAuth } from "@/context/auth/AuthContext";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useAppMode } from "@/context/app/AppModeContext";
+import { ROUTES } from "@/constants/constants";
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
+import { useAuth } from "@/context/auth/AuthContext";
 
-// Completa el ciclo de autenticación
-WebBrowser.maybeCompleteAuthSession();
 
 export default function Welcome() {
   const router = useRouter();
-  const { user, setToken } = useAuth();
 
-  const { mode, clearMode } = useAppMode();
-
-  // --- A. PROCESAR DEEP LINK ---
-  const handleDeepLink = async (url: string) => {
-    try {
-      const { queryParams } = Linking.parse(url);
-
-      // Usuario Existente
-      if (queryParams?.token) {
-        console.log("🎟️ Token recibido:", queryParams.token);
-        setToken(queryParams.token as string);
-
-        if (user?.isBusiness === false) {
-          router.replace("/(client)/(eatOut)/(tabs)");
-        }
-       
-        return;
-      }
-
-      // Usuario Nuevo
-      if (queryParams?.tempToken) {
-        console.log("🆕 Usuario nuevo. Yendo a onboarding...");
-        router.replace(`/(auth)/onboarding?tempToken=${queryParams.tempToken}`);
-        return;
-      }
-    } catch (error) {
-      console.error("Error procesando deep link:", error);
-    }
-  };
-
-  // --- B. ESCUCHAR DEEP LINKS ---
-  useEffect(() => {
-    // Capturar URL inicial
-    const getInitialURL = async () => {
-      const url = await Linking.getInitialURL();
-      if (url) {
-        await handleDeepLink(url);
-      }
-    };
-
-    getInitialURL();
-
-    // Listener para URLs mientras la app está abierta
-    const subscription = Linking.addEventListener("url", (event) => {
-      handleDeepLink(event.url);
-    });
-
-    return () => subscription.remove();
-  }, []);
-
-  // --- C. LOGIN CON GOOGLE ---
-  const handleGoogleLogin = async () => {
-    try {
-      const backendUrl =
-        "https://475002fa43ba.ngrok-free.app/api/auth/google?platform=mobile";
-      const redirectUrl = Linking.createURL("callback"); // 🔥 Usa createURL
-
-      const result = await WebBrowser.openAuthSessionAsync(
-        backendUrl,
-        redirectUrl
-      );
-
-      
-
-      // ✅ Procesar resultado directo
-      if (result.type === "success" && result.url) {
-        //console.log("✅ WebBrowser retornó URL:", result.url);
-        await handleDeepLink(result.url);
-      } else if (result.type === "cancel") {
-        console.log("❌ Login cancelado por el usuario");
-      } else if (result.type === "dismiss") {
-        //console.log("⚠️ WebBrowser cerrado sin completar");
-      }
-    } catch (error) {
-      console.error("❌ Error en login:", error);
-    }
-  };
+  const { handleGoogleLogin } = useGoogleAuth();
+  const { user } = useAuth();
 
   return (
     <SafeAreaView className="flex-1 bg-bg-gray">
       <ImageBackground
         source={require("@/assets/images/WelcomeBG.png")}
-        className="absolute inset-0 z-[-1]  min-h-full w-full"
+        className="absolute inset-0 z-[-1] min-h-full w-full"
         resizeMode="cover"
       />
 
@@ -118,9 +38,7 @@ export default function Welcome() {
         </Text>
 
         <TouchableOpacity
-          onPress={() => {
-            handleGoogleLogin();
-          }}
+          onPress={handleGoogleLogin}
           className="mt-8 bg-[#212121] w-full py-4 rounded-[40px] items-center flex-row justify-center gap-2"
         >
           <Image
@@ -137,7 +55,7 @@ export default function Welcome() {
 
         <TouchableOpacity
           onPress={() => {
-            router.push("/(auth)/login");
+            router.push(ROUTES.AUTH.LOGIN);
           }}
           className="mt-5 bg-bg-red w-full py-4 rounded-[40px] items-center flex-row justify-center gap-2"
         >
@@ -151,7 +69,7 @@ export default function Welcome() {
           <Text
             className="text-text-1 font-dosis-bold"
             onPress={() => {
-              /* Navegar a la pantalla de registro */
+              router.push(ROUTES.AUTH.REGISTER);
             }}
           >
             Regístrate

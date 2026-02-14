@@ -1,222 +1,161 @@
 import { isAxiosError } from "axios";
+import axiosInterceptor from "@/api/client";
+import { showToast } from "@/utils/toast";
+import { AuthResponse } from "@/interface/global";
 
-import type { User } from "../interface/global";
-
-import axiosInterceptor from "../api/client";
-import Toast from 'react-native-toast-message';
-
-export interface AuthResponse {
-  success: boolean;
-  message: string;
-  temp_token?: string;
-  next_step?: string;
-  user?: User;
-}
-
-
-
+// --- 1. INICIO DE SESIÓN ---
+// ===================================
 export const login = async (
-  email: string,
-  password: string,
-  rememberMe: boolean,
-  recaptchaToken: string | null
+  e: string, // email
+  p: string, // password
+  r: boolean, // rememberMe
+  rt: string | null, // recaptchaToken
+  d: string, // deviceId
 ): Promise<AuthResponse | null> => {
   try {
     const response = await axiosInterceptor.post(
       "/auth/login",
       {
-        email,
-        password,
-        rememberMe,
-        recaptchaToken,
+        email: e,
+        password: p,
+        remember: r,
+        recaptcha: rt,
+        deviceId: d,
       },
-      { withCredentials: true }
+      { withCredentials: true },
     );
 
     if (response.data?.success === false) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: response.data.message,
-        position: 'top',
-      });
+      showToast("error", response.data.message, "Error");
+
       return null;
     } else {
-      Toast.show({
-        type: 'success',
-        text1: 'Éxito',
-        text2: response.data.message,
-        position: 'top',
-      });
+      showToast("success", response.data.message, "Éxito");
       return response.data as AuthResponse;
     }
   } catch (err: unknown) {
     if (isAxiosError(err)) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: err.response?.data?.message || "Error al iniciar sesión",
-        position: 'top',
-      });
+      showToast(
+        "error",
+        err.response?.data?.message || "Error al iniciar sesión",
+        "Error",
+      );
     } else {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: "Error desconocido",
-        position: 'top',
-      });
+      showToast("error", "Error desconocido", "Error");
     }
     return null;
   }
 };
 
+// --- 2. REGISTRO ---
+// ===================================
 export const register = async (
-  email: string,
-  password: string
+  e: string, // email
+  p: string, // password
+  d: string, // deviceId
 ): Promise<AuthResponse | null> => {
   try {
     const response = await axiosInterceptor.post("/auth/register", {
-      email,
-      password,
+      email: e,
+      password: p,
+      deviceId: d,
     });
 
     if (response.data?.success === false) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: response.data.message,
-        position: 'top',
-      });
+      showToast("error", response.data.message, "Error");
       return null;
     } else {
-      Toast.show({
-        type: 'success',
-        text1: 'Éxito',
-        text2: response.data.message,
-        position: 'top',
-      });
+      showToast("success", response.data.message, "Éxito");
       return response.data as AuthResponse;
     }
   } catch (err: unknown) {
     if (isAxiosError(err)) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: err.response?.data?.message || "Error al registrar",
-        position: 'top',
-      });
+      showToast(
+        "error",
+        err.response?.data?.message || "Error al registrar",
+        "Error",
+      );
     } else {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: "Error desconocido",
-        position: 'top',
-      });
+      showToast("error", "Error desconocido", "Error");
     }
     return null;
   }
 };
 
+// --- 3. COMPLETAR PERFIL ---
+// ===================================
 export const completeProfile = async (
-  name: string,
-  foodPreferences: number[],
-  communityPreferences: number[],
-  tempToken: string
-) => {
+  n: string, // name
+  fPreferences: number[], // foodPreferences
+  cPreferences: number[], // communityPreferences
+  tt: string, // tempToken
+): Promise<AuthResponse | null> => {
   try {
-    const response = await axiosInterceptor.post(
+    const response: AuthResponse = await axiosInterceptor.post(
       "/auth/complete-profile",
       {
-        name,
-        foodPreferences,
-        communityPreferences,
-        tempToken,
+        name: n,
+        foodPreferences: fPreferences,
+        communityPreferences: cPreferences,
+        tempToken: tt,
       },
-      { withCredentials: true }
+      { withCredentials: true },
     );
-    
-    if (response.data?.success === false) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: response.data.message,
-        position: 'top',
-      });
-      return null;
+
+    if (response.success) {
+      showToast("success", response.message, "Éxito");
+      return response;
     } else {
-      Toast.show({
-        type: 'success',
-        text1: 'Éxito',
-        text2: response.data.message,
-        position: 'top',
-      });
-      return response.data as AuthResponse;
+      showToast("error", response.message, "Error");
+      return null;
     }
   } catch (err: unknown) {
     if (isAxiosError(err)) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: err.response?.data?.message || "Error al completar perfil",
-        position: 'top',
-      });
+      showToast(
+        "error",
+        err.response?.data?.message || "Error al completar el perfil",
+        "Error",
+      );
     } else {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: "Error desconocido",
-        position: 'top',
-      });
+      showToast("error", "Error desconocido", "Error");
     }
     return null;
   }
 };
 
+// --- 4. CERRAR SESIÓN ---
+// ===================================
 export const logout = async () => {
   try {
     const response = await axiosInterceptor.post(
       "/auth/logout",
       {},
-      { withCredentials: true }
+      { withCredentials: true },
     );
 
     if (response.data?.success === false) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: response.data.message,
-        position: 'top',
-      });
+      showToast("error", response.data.message, "Error");
       return null;
     } else {
-      Toast.show({
-        type: 'success',
-        text1: 'Éxito',
-        text2: response.data.message,
-        position: 'top',
-      });
+      showToast("success", response.data.message, "Éxito");
       return response.data as AuthResponse;
     }
   } catch (err: unknown) {
     if (isAxiosError(err)) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: err.response?.data?.message || "Error al cerrar sesión",
-        position: 'top',
-      });
+      showToast(
+        "error",
+        err.response?.data?.message || "Error al cerrar sesión",
+        "Error",
+      );
     } else {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: "Error desconocido",
-        position: 'top',
-      });
+      showToast("error", "Error desconocido", "Error");
     }
     return null;
   }
 };
 
+// --- 5. OBTENER DATOS DEL USUARIO ---
+// ===================================
 export const getMe = async () => {
   try {
     const response = await axiosInterceptor.get("/auth/me", {
@@ -225,10 +164,9 @@ export const getMe = async () => {
     return response.data;
   } catch (err: unknown) {
     if (isAxiosError(err)) {
-      console.error(err.response?.data?.message);
+      console.log(err.response?.data?.message);
     } else {
-      console.error("Error desconocido");
-    
+      console.log("Error desconocido");
     }
     throw err;
   }

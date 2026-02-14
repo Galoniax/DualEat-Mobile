@@ -12,29 +12,35 @@ import {
   logout as authLogout,
 } from "@/services/auth.api";
 
-import type { AuthResponse } from "@/services/auth.api";
-import type { User } from "@/interface/global";
-import { useAppMode } from "@/context/app/AppModeContext";
+import type { AuthResponse, User } from "@/interface/global";
 
-const TOKEN_KEY = "dualeat_session_token";
+import { useLoader } from "../app/LoadingContext";
+import { ROUTES } from "@/constants/constants";
 
+const TOKEN_KEY = process.env.TOKEN_KEY || "dualeat_session_token";
+
+// INTERFAZ
 interface AuthContextType {
   user: User | null;
-  loading: boolean;
-  // Función para Google / Deep Links
-  setToken: (token: string) => Promise<void>;
+  authReady: boolean;
+  setToken: (token: string) => Promise<AuthResponse | null>;
   login: (
-    email: string,
-    password: string,
-    rememberMe: boolean,
-    recaptchaToken: string | null
+    e: string,
+    p: string,
+    r: boolean,
+    rt: string | null,
+    d: string,
   ) => Promise<AuthResponse | null>;
-  register: (email: string, password: string) => Promise<AuthResponse | null>;
+  register: (
+    e: string, 
+    p: string,
+    d: string,
+  ) => Promise<AuthResponse | null>;
   completeProfile: (
-    name: string,
-    foodPreferences: number[],
-    communityPreferences: number[],
-    tempToken: string
+    n: string,
+    fPreferences: number[],
+    cPreferences: number[],
+    tt: string,
   ) => Promise<AuthResponse | null>;
   logout: () => Promise<void>;
 }
@@ -43,7 +49,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within an AuthProvider");
+  if (!context)
+    throw new Error("useAuth debe ser usado dentro de un AuthProvider");
   return context;
 };
 
@@ -51,111 +58,158 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  //const [loading, setLoading] = useState<boolean>(true);
+  const [authReady, setAuthReady] = useState(false);
 
+  const { setType } = useLoader();
 
-  // --- 1. CARGA DE SESIÓN (AL ABRIR LA APP) ---
-  /*useEffect(() => {
-    const loadSession = async () => {
+  // --- 1. CARGA DE SESIÓN ---
+  // ===========================================
+  useEffect(() => {
+    const init = async () => {
       try {
-        setLoading(true);
+        setType("global");
+
         const token = await SecureStore.getItemAsync(TOKEN_KEY);
 
+        console.log("Token encontrado en SecureStore:", token);
         if (token) {
-          const response = (axiosInterceptor.defaults.headers.common[
-            "Authorization"
-          ] = `Bearer ${token}`);
-
-          console.log("✅ Token encontrado en SecureStore:", response);
-
+          axiosInterceptor.defaults.headers.Authorization = `Bearer ${token}`;
           const userData = await getMe();
           setUser(userData);
         }
-      } catch (error) {
-        console.log("Token inválido o expirado. Limpiando...", error);
+      } catch {
         await handleLogoutCleanup();
-        router.replace("/(auth)/welcome");
       } finally {
-        setLoading(false);
+        setAuthReady(true);
+        setType(null);
       }
     };
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    loadSession();
-  }, []);*/
+  // --- 2. FUNCIONES DE AUTENTICACIÓN ---
+  // ===========================================
+  const setToken = async (isToken?: string) => {
+    try {
+      setType("global");
 
-  // --- Limpieza al cerrar sesión ---
+      let token = isToken || (await SecureStore.getItemAsync(TOKEN_KEY));
+
+      if (isToken) {
+        await SecureStore.setItemAsync(TOKEN_KEY, isToken);
+      }
+
+      axiosInterceptor.defaults.headers.common["Authorization"] =
+        `Bearer ${token}`;
+
+      const userData = await getMe();
+      setUser(userData);
+
+      console.log("Usuario cargado:", userData);
+
+      return { success: true, message: "Token establecido correctamente" };
+    } catch (e) {
+      console.log("Error al establecer el token:", e);
+      await handleLogoutCleanup();
+      return { success: false, message: "Error al establecer el token" };
+    } finally {
+      setType(null);
+    }
+  };
+
+  // --- 3. LOGIN (Email/Pass/RememberMe, RecaptchaToken, DeviceId) ---
+  // ===========================================
+  const login = async (
+    e: string,
+    p: string,
+    r: boolean,
+    t: string | null,
+    d: string,
+  ) => {
+    try {
+      setType("minimal");
+      const response = await authLogin(e, p, r, t, d);
+
+      if (response?.success && response.token) {
+        await setToken(response?.token);
+      }
+      return response;
+    } catch (e) {
+      console.log("Error al iniciar sesión:", e);
+      throw e;
+    } finally {
+      setType(null);
+    }
+  };
+
+  // --- 4. REGISTER (Email, Password, DeviceId) ---
+  // ===========================================
+  const register = async (e: string, p: string, d: string) => {
+    try {
+      setType("minimal");
+      return await authRegister(e, p, d);
+    } catch (e) {
+      console.log("Error al registrarse:", e);
+      throw e;
+    } finally {
+      setType(null);
+    }
+  };
+
+  // --- 5. COMPLETE PROFILE (Name, FoodPreferences, CommunityPreferences, TempToken) ---
+  // ===========================================
+  const completeProfile = async (
+    n: string,
+    f: number[],
+    c: number[],
+    t: string,
+  ) => {
+    try {
+      setType("minimal");
+      const response = await authCompleteProfile(n, f, c, t);
+      if (response?.success && response.token) {
+        await setToken(response.token);
+      }
+
+      return response;
+    } catch (e) {
+      console.log("Error al completar el perfil:", e);
+      throw e;
+    } finally {
+      setType(null);
+    }
+  };
+
+  // --- 6. LOGOUT ---
+  // ===========================================
+  const logout = async () => {
+    try {
+      setType("global");
+      await authLogout();
+      await handleLogoutCleanup();
+      router.replace(ROUTES.PUBLIC.HOME);
+    } catch (e) {
+      console.log("Error al cerrar sesión:", e);
+      throw e;
+    } finally {
+      setType(null);
+    }
+  };
+
+  // --- Helper: Limpieza al cerrar sesión ---
+  // ===========================================
   const handleLogoutCleanup = async () => {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     delete axiosInterceptor.defaults.headers.common["Authorization"];
     setUser(null);
   };
 
-  // --- 1. SET TOKEN (Para Google / Deep Link) ---
-  const setToken = async (token: string) => {
-    try {
-      console.log("Guardando token en SecureStore...");
-      // Guardamos el token
-      await SecureStore.setItemAsync(TOKEN_KEY, token);
-      const response = (axiosInterceptor.defaults.headers.common[
-        "Authorization"
-      ] = `Bearer ${token}`);
-
-      console.log("Token guardado y Axios configurado:", response);
-    } catch (error) {
-      console.error("Error en setToken:", error);
-      throw error; 
-    }
-  };
-
-  // --- 2. LOGIN (Email/Pass/RememberMe, RecaptchaToken) ---
-  const login = async (e: string, p: string, r: boolean, t: string | null) => {
-    try {
-      const response = await authLogin(e, p, r, t);
-
-      console.log("Login response:", response);
-      if (response?.success && response?.user) {
-        // Usamos el helper para guardar todo
-        //await saveSession(response.token, response.user);
-      }
-      return response;
-    } catch (error) {
-      console.error("Login error:", error);
-      throw error;
-    }
-  };
-
-  // --- 3. REGISTER ---
-  const register = async (email: string, password: string) => {
-    return authRegister(email, password);
-  };
-
-  // --- 4. COMPLETE PROFILE ---
-  const completeProfile = async (
-    n: string,
-    f: number[],
-    c: number[],
-    t: string
-  ) => {
-    const response = await authCompleteProfile(n, f, c, t);
-    if (response?.success && response?.user) {
-      //await saveSession(response.token, response.user);
-    }
-    return response;
-  };
-
-  // --- 5. LOGOUT ---
-  const logout = async () => {
-    await authLogout();
-    await handleLogoutCleanup();
-    router.replace("/(auth)/login");
-  };
-
   return (
     <AuthContext.Provider
       value={{
         user,
-        loading,
+        authReady,
         setToken,
         login,
         register,

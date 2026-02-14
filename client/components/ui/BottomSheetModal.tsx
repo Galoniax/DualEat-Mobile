@@ -1,25 +1,35 @@
-import React, { forwardRef, useMemo, useCallback } from 'react';
-import { StyleSheet } from 'react-native';
-import {
+import React, { forwardRef, useCallback, useMemo } from "react";
+import { View } from "react-native";
+import BottomSheet, {
+  BottomSheetBackdrop,
   BottomSheetModal,
   BottomSheetView,
-  BottomSheetBackdrop,
   BottomSheetBackdropProps,
-} from '@gorhom/bottom-sheet';
+} from "@gorhom/bottom-sheet";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface Props {
   children: React.ReactNode;
-  snapPoints?: string[];
   onDismiss?: () => void;
-  type?: "small" | "large";
+  type?: 1 | 2;
+  block?: boolean;
+  scrollable?: boolean;
+  modal?: boolean;
+  dark?: boolean;
 }
 
-export type CustomBottomSheetRef = BottomSheetModal;
-const CustomBottomSheet = forwardRef<BottomSheetModal, Props>(
-  ({ children, onDismiss, type }, ref) => {
 
-    const points = useMemo(() => (type === "small" ? ['30%'] : ['85%']), [type]);
+const CustomBottomSheet = forwardRef<BottomSheetModal | BottomSheet, Props>(
+  ({ children, onDismiss, type = 2, block = false, scrollable = false, modal = false, dark = false }, ref) => {
+    const insets = useSafeAreaInsets();
 
+    // 1. Configuración de SnapPoints
+    const snapPoints = useMemo(() => {
+      if (type === 1) return ["30%"];
+      return ["85%"];
+    }, [type]);
+
+    // 2. Renderizado del fondo oscuro
     const renderBackdrop = useCallback(
       (props: BottomSheetBackdropProps) => (
         <BottomSheetBackdrop
@@ -27,36 +37,66 @@ const CustomBottomSheet = forwardRef<BottomSheetModal, Props>(
           disappearsOnIndex={-1}
           appearsOnIndex={0}
           opacity={0.5}
+          pressBehavior={"close"}
         />
       ),
       []
     );
 
+    // 3. Estilos y Contenido común
+    const commonContent = (
+      <>
+        {!scrollable ? (
+          <BottomSheetView style={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 20 }}>
+            {children}
+          </BottomSheetView>
+        ) : (
+          <View style={{ flex: 1, paddingHorizontal: 16, paddingBottom: insets.bottom + 20 }}>
+            {children}
+          </View>
+        )}
+      </>
+    );
+
+    const commonProps = {
+      ref: ref as any,
+      index: 0,
+      snapPoints: snapPoints,
+      enablePanDownToClose: !block,
+      enableDynamicSizing: false,
+      backgroundStyle: { 
+        borderRadius: 30, 
+        backgroundColor: dark ? "#1a1a1a" : "#fff"
+      },
+      handleIndicatorStyle: { backgroundColor: "#aaa", width: 40, height: 5, borderRadius: 99, marginBottom: 2 },
+    };
+
+    // --- RENDERIZADO CONDICIONAL ---
+    // A. MODO MODAL
+    if (modal) {
+      return (
+        <BottomSheetModal
+          {...commonProps}
+          onDismiss={onDismiss}
+          backdropComponent={renderBackdrop}
+        >
+          {commonContent}
+        </BottomSheetModal>
+      );
+    }
+
+    // B. MODO STANDARD
     return (
-      <BottomSheetModal
-        ref={ref}
-        index={1} 
-        snapPoints={points}
-        enablePanDownToClose={true}
-        backdropComponent={renderBackdrop}
-        onDismiss={onDismiss}
-        backgroundStyle={{ borderRadius: 24 }}
+      <BottomSheet
+        {...commonProps}
+        onClose={onDismiss}
       >
-        <BottomSheetView style={styles.contentContainer}>
-          {children}
-        </BottomSheetView>
-      </BottomSheetModal>
+        {commonContent}
+      </BottomSheet>
     );
   }
 );
 
-CustomBottomSheet.displayName = 'CustomBottomSheet';
-
-const styles = StyleSheet.create({
-  contentContainer: {
-    flex: 1,
-    padding: 16,
-  },
-});
+CustomBottomSheet.displayName = "CustomBottomSheet";
 
 export default CustomBottomSheet;
