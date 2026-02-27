@@ -15,7 +15,6 @@ import TextInputUI from "@/components/ui/TextInput";
 
 import { ROUTES } from "@/constants/constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { completeProfile } from "@/services/auth.api";
 
 import Feather from "@expo/vector-icons/Feather";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -27,7 +26,7 @@ import { FoodCategory, CommunityTag } from "@/interface/global";
 
 export default function Onboarding() {
   const router = useRouter();
-  const { setToken } = useAuth();
+  const { completeProfile } = useAuth();
 
   // --- ESTADOS LOCALES ---
   const [name, setName] = useState<string>("");
@@ -128,18 +127,13 @@ export default function Onboarding() {
       .filter((id) => id !== undefined) as number[];
 
     try {
-      const response = await completeProfile(
+      await completeProfile(
         name.trim(),
         foodPreferenceIds,
         communityPreferenceIds,
         tempToken,
       );
-      if (response?.success && response.token) {
-        await setToken(response.token);
-        router.replace(ROUTES.USER.DASHBOARD_IN);
-      } else {
-        router.replace(ROUTES.PUBLIC.HOME);
-      }
+      
     } catch (e) {
       console.log("Error al enviar datos de completado de perfil:", e);
       showToast(

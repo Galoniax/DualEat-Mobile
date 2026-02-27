@@ -1,5 +1,5 @@
-import { useColorScheme } from "@/hooks/use-color-scheme.web";
-import { Tabs } from "expo-router";
+import React from "react";
+import { router, Tabs } from "expo-router";
 import { HapticTab } from "@/components/haptic-tab";
 
 import { Colors } from "@/constants/theme";
@@ -7,15 +7,16 @@ import { DataItem } from "@/interface/global";
 
 interface TabProps {
   data: DataItem[];
+  children?: React.ReactNode;
 }
 
-export default function Tab({ data }: TabProps) {
-  const colorScheme = useColorScheme();
+export default function Tab({ data, children }: TabProps) {
+  //const colorScheme = useColorScheme();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+        tabBarActiveTintColor: Colors["light"].tint,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: { height: 120, paddingTop: 5 },
@@ -27,26 +28,32 @@ export default function Tab({ data }: TabProps) {
         },
       }}
     >
-      {data.map((item: DataItem) => {
-        return (
-          <Tabs.Screen
-            key={item.name}
-            name={item.name}
-            options={{
-              title: item.title,
-              tabBarIcon: ({ color, size, focused }) => {
-                const iconSize = item.isLg ? 32 : 22;
-
-                if (focused && item.icons.focused) {
-                  return item.icons.focused(color, iconSize);
-                }
-
-                return item.icons.default(color, iconSize);
-              },
-            }}
-          />
-        );
-      })}
+      {data.map((item) => (
+        <Tabs.Screen
+          key={item.name}
+          name={item.name}
+          options={{
+            title: item.title,
+            tabBarIcon: ({ color, focused }) => {
+              const iconSize = item.isLg ? 32 : 22;
+              return focused && item.icons.focused
+                ? item.icons.focused(color, iconSize)
+                : item.icons.default(color, iconSize);
+            },
+            tabBarStyle: item.isTab
+              ? { height: 120, paddingTop: 5 }
+              : { display: "none" },
+          }}
+          listeners={{
+            tabPress: (e) => {
+              if (item.redirect) {
+                e.preventDefault();
+                router.push(item.redirect as any);
+              }
+            },
+          }}
+        />
+      ))}
     </Tabs>
   );
 }

@@ -14,6 +14,8 @@ GoogleService-Info.plist
 # -------------------------------
 # Carpeta de paquetes descargados
 node_modules/
+package-lock.json
+yarn.lock
 
 # -------------------------------
 # EXPO & GENERADOS

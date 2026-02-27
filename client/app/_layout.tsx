@@ -1,5 +1,4 @@
 import {
-  DarkTheme,
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
@@ -19,19 +18,20 @@ import { LocationProvider } from "@/context/extension/LocationContext";
 import { configureNotifications } from "@/utils/notifications";
 import * as Location from "expo-location";
 import "../tasks/locationTask";
-import { AppModeProvider, useAppMode } from "@/context/app/AppModeContext";
-import { useRedirect } from "@/hooks/useRedirect";
+import { useRedirect } from "@/hooks/router/useRedirect";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import { LoaderProvider, useLoader } from "@/context/app/LoadingContext";
+import { OrderingProvider } from "@/context/cart/OrderingContext";
+import { AppModeProvider, useAppMode } from "@/context/app/AppModeContext";
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 export { ErrorBoundary } from "expo-router";
 
 function RootNavigation() {
   const { loading, type } = useLoader();
-
-  const { mode } = useAppMode();
-
   const { authReady } = useAuth();
+  const { mode } = useAppMode();
 
   useRedirect();
 
@@ -41,11 +41,7 @@ function RootNavigation() {
 
   return (
     <View style={styles.root}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(client)" />
-        <Stack.Screen name="(local)" />
-      </Stack>
+      <Stack screenOptions={{ headerShown: false }} />
 
       {loading && (
         <View style={styles.loadingOverlay} pointerEvents="auto">
@@ -59,8 +55,6 @@ function RootNavigation() {
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   const [fontsLoaded, fontError] = useFonts({
     "Dosis-Bold": require("@/assets/fonts/Dosis-Bold.ttf"),
     "Dosis-Regular": require("@/assets/fonts/Dosis-Regular.ttf"),
@@ -106,24 +100,42 @@ export default function RootLayout() {
     return null;
   }
 
+  const client = new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 5 * 60 * 1000,
+        gcTime: 10 * 60 * 1000,
+        retry: 1,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+      },
+    },
+  });
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <LoaderProvider>
-          <AuthProvider>
-            <AppModeProvider>
-              <LocationProvider>
-                <BottomSheetModalProvider>
-                  <RootNavigation />
-                </BottomSheetModalProvider>
-              </LocationProvider>
-            </AppModeProvider>
-          </AuthProvider>
-        </LoaderProvider>
+      <QueryClientProvider client={client}>
+        <ThemeProvider
+          value={DefaultTheme}
+        >
+          <LoaderProvider>
+            <AuthProvider>
+              <AppModeProvider>
+                <LocationProvider>
+                  <OrderingProvider>
+                    <BottomSheetModalProvider>
+                      <RootNavigation />
+                    </BottomSheetModalProvider>
+                  </OrderingProvider>
+                </LocationProvider>
+              </AppModeProvider>
+            </AuthProvider>
+          </LoaderProvider>
 
-        <StatusBar style="auto" />
-        <Toast />
-      </ThemeProvider>
+          <StatusBar style="dark" />
+          <Toast />
+        </ThemeProvider>
+      </QueryClientProvider>
     </GestureHandlerRootView>
   );
 }

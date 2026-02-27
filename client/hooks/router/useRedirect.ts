@@ -1,21 +1,38 @@
 import { useEffect } from "react";
-import { router, useSegments } from "expo-router";
+import { useRouter, useSegments } from "expo-router";
 
 import { ROUTES } from "@/constants/constants";
 
 import { useAuth } from "@/context/auth/AuthContext";
-import { useAppMode } from "@/context/app/AppModeContext";
 import { useLoader } from "@/context/app/LoadingContext";
+import { useAppMode } from "@/context/app/AppModeContext";
 
 export function useRedirect() {
   const segments = useSegments();
+  const router = useRouter();
 
-  const { mode } = useAppMode();
   const { user } = useAuth();
   const { loading } = useLoader();
+  const { mode } = useAppMode();
+
+  const redirect = () => {
+    if (user) {
+      const isLocal = user.isBusiness;
+
+      if (isLocal) {
+        //router.replace(ROUTES.LOCAL.DASHBOARD);
+        return;
+      } else {
+        return mode === "in"
+          ? router.replace(ROUTES.USER.DASHBOARD_IN)
+          : router.replace(ROUTES.USER.DASHBOARD_OUT);
+      }
+    }
+    return router.replace(ROUTES.PUBLIC.HOME);
+  };
 
   useEffect(() => {
-    if (loading || mode === null) return;
+    if (loading || mode === null || !segments) return;
 
     const inAuthGroup = segments[0] === "(auth)";
     const inLocalGroup = segments[0] === "(local)";
@@ -32,9 +49,7 @@ export function useRedirect() {
 
       if (inAuthGroup || inLocalGroup) {
         router.replace(
-          mode === "in"
-            ? ROUTES.USER.DASHBOARD_IN
-            : ROUTES.USER.DASHBOARD_OUT
+          mode === "in" ? ROUTES.USER.DASHBOARD_IN : ROUTES.USER.DASHBOARD_OUT,
         );
         return;
       }
@@ -56,5 +71,8 @@ export function useRedirect() {
       router.replace(ROUTES.PUBLIC.HOME);
     }
 
-  }, [user, mode, segments, loading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, mode, loading]);
+
+  return { redirect };
 }

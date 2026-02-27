@@ -1,6 +1,6 @@
 export interface preferencesDTO {
     filter: "distancia" | "descuento";
-    categorias: string[];
+    categorias: number[];
     horario: boolean;
     bestSellers: boolean;
 }

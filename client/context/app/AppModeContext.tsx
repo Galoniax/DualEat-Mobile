@@ -4,7 +4,7 @@ import { useLoader } from "./LoadingContext";
 
 type AppMode = "in" | "out" | null;
 
-const STORAGE_KEY = "@dualeat/app-mode";
+const STORAGE_KEY = process.env.STORAGE_KEY || "dualeat_app-mode";
 
 interface AppModeContextType {
   mode: AppMode;

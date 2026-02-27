@@ -11,13 +11,14 @@ import Octicons from "@expo/vector-icons/Octicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useLocation } from "@/context/extension/LocationContext";
 
-import { useAppMode } from "@/context/app/AppModeContext";
+
 import { useAuth } from "@/context/auth/AuthContext";
+import { router } from "expo-router";
 
 export default function HomeScreen() {
   const { address } = useLocation();
 
-  const { switchMode } = useAppMode();
+
 
   const { user } = useAuth();
 
@@ -32,7 +33,7 @@ export default function HomeScreen() {
       <View className="flex-1 px-4 pt-3 ">
         <View className="flex-row justify-between items-center">
           <TouchableOpacity
-            onPress={() => switchMode()}
+            onPress={() => router.push("/(client)/(out)")} 
             className="p-[9px] border bg-bg-yellow border-bg-yellow rounded-[5px]"
           >
             <MaterialCommunityIcons

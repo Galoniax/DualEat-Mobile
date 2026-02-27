@@ -25,14 +25,7 @@ export const login = async (
       { withCredentials: true },
     );
 
-    if (response.data?.success === false) {
-      showToast("error", response.data.message, "Error");
-
-      return null;
-    } else {
-      showToast("success", response.data.message, "Éxito");
-      return response.data as AuthResponse;
-    }
+    return response.data as AuthResponse;
   } catch (err: unknown) {
     if (isAxiosError(err)) {
       showToast(
@@ -40,8 +33,6 @@ export const login = async (
         err.response?.data?.message || "Error al iniciar sesión",
         "Error",
       );
-    } else {
-      showToast("error", "Error desconocido", "Error");
     }
     return null;
   }
@@ -61,13 +52,7 @@ export const register = async (
       deviceId: d,
     });
 
-    if (response.data?.success === false) {
-      showToast("error", response.data.message, "Error");
-      return null;
-    } else {
-      showToast("success", response.data.message, "Éxito");
-      return response.data as AuthResponse;
-    }
+    return response.data as AuthResponse;
   } catch (err: unknown) {
     if (isAxiosError(err)) {
       showToast(
@@ -75,8 +60,6 @@ export const register = async (
         err.response?.data?.message || "Error al registrar",
         "Error",
       );
-    } else {
-      showToast("error", "Error desconocido", "Error");
     }
     return null;
   }
@@ -91,7 +74,7 @@ export const completeProfile = async (
   tt: string, // tempToken
 ): Promise<AuthResponse | null> => {
   try {
-    const response: AuthResponse = await axiosInterceptor.post(
+    const response = await axiosInterceptor.post(
       "/auth/complete-profile",
       {
         name: n,
@@ -102,13 +85,7 @@ export const completeProfile = async (
       { withCredentials: true },
     );
 
-    if (response.success) {
-      showToast("success", response.message, "Éxito");
-      return response;
-    } else {
-      showToast("error", response.message, "Error");
-      return null;
-    }
+    return response.data as AuthResponse;
   } catch (err: unknown) {
     if (isAxiosError(err)) {
       showToast(
@@ -116,8 +93,6 @@ export const completeProfile = async (
         err.response?.data?.message || "Error al completar el perfil",
         "Error",
       );
-    } else {
-      showToast("error", "Error desconocido", "Error");
     }
     return null;
   }
@@ -133,13 +108,7 @@ export const logout = async () => {
       { withCredentials: true },
     );
 
-    if (response.data?.success === false) {
-      showToast("error", response.data.message, "Error");
-      return null;
-    } else {
-      showToast("success", response.data.message, "Éxito");
-      return response.data as AuthResponse;
-    }
+    return response.data as AuthResponse;
   } catch (err: unknown) {
     if (isAxiosError(err)) {
       showToast(
@@ -147,9 +116,7 @@ export const logout = async () => {
         err.response?.data?.message || "Error al cerrar sesión",
         "Error",
       );
-    } else {
-      showToast("error", "Error desconocido", "Error");
-    }
+    } 
     return null;
   }
 };
@@ -165,8 +132,6 @@ export const getMe = async () => {
   } catch (err: unknown) {
     if (isAxiosError(err)) {
       console.log(err.response?.data?.message);
-    } else {
-      console.log("Error desconocido");
     }
     throw err;
   }

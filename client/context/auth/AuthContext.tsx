@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from "react";
 import * as SecureStore from "expo-secure-store";
-import { router } from "expo-router";
+import { Route, useRouter } from "expo-router";
 
 import axiosInterceptor from "@/api/client";
 
@@ -16,6 +16,7 @@ import type { AuthResponse, User } from "@/interface/global";
 
 import { useLoader } from "../app/LoadingContext";
 import { ROUTES } from "@/constants/constants";
+import { showToast } from "@/utils/toast";
 
 const TOKEN_KEY = process.env.TOKEN_KEY || "dualeat_session_token";
 
@@ -31,11 +32,7 @@ interface AuthContextType {
     rt: string | null,
     d: string,
   ) => Promise<AuthResponse | null>;
-  register: (
-    e: string, 
-    p: string,
-    d: string,
-  ) => Promise<AuthResponse | null>;
+  register: (e: string, p: string, d: string) => Promise<AuthResponse | null>;
   completeProfile: (
     n: string,
     fPreferences: number[],
@@ -60,6 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
 
+  const router = useRouter();
   const { setType } = useLoader();
 
   // --- 1. CARGA DE SESIÓN ---
@@ -77,9 +75,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           const userData = await getMe();
           setUser(userData);
         }
-      } catch {
+      } catch (error: any) {
+      console.log("Error en init auth:", error?.response?.status || error.message);
+      
+      if (error?.response?.status === 401) {
         await handleLogoutCleanup();
-      } finally {
+      } else {
+        console.log("Error de red o servidor");
+      }
+    } finally {
         setAuthReady(true);
         setType(null);
       }
@@ -132,11 +136,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const response = await authLogin(e, p, r, t, d);
 
       if (response?.success && response.token) {
+        showToast("success", response.message || "Inicio de sesión exitoso", "Éxito");
         await setToken(response?.token);
       }
       return response;
     } catch (e) {
-      console.log("Error al iniciar sesión:", e);
+      showToast("error", "Error al iniciar sesión", "Error");
       throw e;
     } finally {
       setType(null);
@@ -148,10 +153,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const register = async (e: string, p: string, d: string) => {
     try {
       setType("minimal");
-      return await authRegister(e, p, d);
+      const response = await authRegister(e, p, d);
+
+      if (response?.success && response.next_step) {
+        showToast("success", response.message || "Registro exitoso", "Éxito");
+        const url = `${ROUTES.AUTH.ONBOARDING}${response.next_step}`;
+        router.push(url as Route);
+        return response;
+      }
+      return null;
     } catch (e) {
-      console.log("Error al registrarse:", e);
-      throw e;
+      console.log(e);
+      showToast("error", "Error al registrarse", "Error");
+      return null;
     } finally {
       setType(null);
     }
@@ -169,12 +183,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setType("minimal");
       const response = await authCompleteProfile(n, f, c, t);
       if (response?.success && response.token) {
+        showToast("success", response.message || "Perfil completado", "Éxito");
         await setToken(response.token);
       }
 
       return response;
     } catch (e) {
-      console.log("Error al completar el perfil:", e);
+      showToast("error", "Error al completar el perfil", "Error");
       throw e;
     } finally {
       setType(null);
@@ -190,7 +205,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       await handleLogoutCleanup();
       router.replace(ROUTES.PUBLIC.HOME);
     } catch (e) {
-      console.log("Error al cerrar sesión:", e);
+      showToast("error", "Error al cerrar sesión", "Error");
       throw e;
     } finally {
       setType(null);

@@ -8,7 +8,7 @@ import {
 
 import Toast from "react-native-toast-message";
 
-import { GoogleIcon } from "@/components/icon/google";
+import { GoogleIcon } from "@/assets/icon/google";
 import { useState } from "react";
 
 import TextInputUI from "@/components/ui/TextInput";
@@ -17,10 +17,10 @@ import { useRouter } from "expo-router";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-import { register } from "@/services/auth.api";
 import { ROUTES } from "@/constants/constants";
 import { getDeviceId } from "@/utils/device";
-import { useGoogleAuth } from "@/hooks/useGoogleAuth";
+import { useGoogleAuth } from "@/hooks/auth/useGoogleAuth";
+import { useAuth } from "@/context/auth/AuthContext";
 
 export default function Register() {
   // --- ESTADOS LOCALES ---
@@ -30,6 +30,7 @@ export default function Register() {
 
   // --- HOOKS ---
   const router = useRouter();
+  const { register } = useAuth();
   const { handleGoogleLogin } = useGoogleAuth();
 
   const Logo = require("@/assets/images/icon/LogoDualEat.png");

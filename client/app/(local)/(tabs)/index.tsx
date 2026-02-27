@@ -11,15 +11,8 @@ import Octicons from "@expo/vector-icons/Octicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useLocation } from "@/context/extension/LocationContext";
 
-import { useAppMode } from "@/context/app/AppModeContext";
-
 export default function HomeScreen() {
   const { address } = useLocation();
-
- 
-  const {  switchMode } = useAppMode();
-
-  
 
   return (
     <SafeAreaView className="flex-1 bg-bg-gray">
@@ -32,7 +25,7 @@ export default function HomeScreen() {
       <View className="flex-1 px-4 pt-3 ">
         <View className="flex-row justify-between items-center">
           <TouchableOpacity
-            onPress={() => switchMode()}
+            onPress={() => console.log("Toggle mode")}
             className="p-[9px] border bg-bg-yellow border-bg-yellow rounded-[5px]"
           >
             <MaterialCommunityIcons
@@ -71,24 +64,10 @@ export default function HomeScreen() {
           placeholderTextColor="#6B7280"
         />
 
-        {/* <View className="mt-12">
-          <Text className="text-text-5 text-[24px] font-dosis-bold">
-            Recomendaciones
-          </Text>
-        </View> */}
-
         <View className="mt-12">
           <Text className="text-text-3 text-[24px] font-dosis-bold">
             Explorar adentro
           </Text>
-
-          <TouchableOpacity
-            className="mt-4  text-text-3 p-4 rounded-lg"
-          >
-            Hola
-          </TouchableOpacity>
-
-          
         </View>
       </View>
     </SafeAreaView>

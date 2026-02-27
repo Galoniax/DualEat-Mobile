@@ -10,15 +10,12 @@ import { useRouter } from "expo-router";
 
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ROUTES } from "@/constants/constants";
-import { useGoogleAuth } from "@/hooks/useGoogleAuth";
-import { useAuth } from "@/context/auth/AuthContext";
-
+import { useGoogleAuth } from "@/hooks/auth/useGoogleAuth";
 
 export default function Welcome() {
   const router = useRouter();
 
   const { handleGoogleLogin } = useGoogleAuth();
-  const { user } = useAuth();
 
   return (
     <SafeAreaView className="flex-1 bg-bg-gray">

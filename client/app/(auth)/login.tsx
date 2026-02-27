@@ -8,7 +8,7 @@ import {
 
 import Toast from "react-native-toast-message";
 
-import { GoogleIcon } from "@/components/icon/google";
+import { GoogleIcon } from "@/assets/icon/google";
 import { useRef, useState } from "react";
 
 import Recaptcha, { RecaptchaRef } from "react-native-recaptcha-that-works";
@@ -19,7 +19,7 @@ import { useRouter } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { ROUTES } from "@/constants/constants";
-import { useGoogleAuth } from "@/hooks/useGoogleAuth";
+import { useGoogleAuth } from "@/hooks/auth/useGoogleAuth";
 import { getDeviceId } from "@/utils/device";
 import { useAuth } from "@/context/auth/AuthContext";
 
@@ -27,7 +27,6 @@ export default function Login() {
   // --- ESTADOS LOCALES ---
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
 
   // --- HOOKS ---
   const router = useRouter();
@@ -54,15 +53,13 @@ export default function Login() {
   };
 
   const onVerify = async (token: string) => {
-    setRecaptchaToken(token);
-
     const deviceId = await getDeviceId();
 
-    await login(email.trim(), password.trim(), true, recaptchaToken, deviceId);
+    await login(email.trim(), password.trim(), true, token, deviceId);
   };
 
   const onExpire = () => {
-    setRecaptchaToken(null);
+    recaptchaRef.current?.close();
 
     Toast.show({
       type: "error",

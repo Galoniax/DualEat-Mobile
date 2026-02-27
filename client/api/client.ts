@@ -34,9 +34,8 @@ axiosInterceptor.interceptors.response.use(
   (response) => response,
   async (error) => {
     // Si el error es 401 (No autorizado) o 403 (Prohibido)
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 || error.response?.status === 403) {
       console.log("Sesión expirada. Cerrando sesión...");
-
       await SecureStore.deleteItemAsync(TOKEN_KEY);
 
       router.replace(ROUTES.PUBLIC.HOME);

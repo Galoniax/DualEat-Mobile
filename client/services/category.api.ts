@@ -7,7 +7,7 @@ import { Response } from "@/interface/global";
 export const getFoodCategories = async (): Promise<Response | null> => {
   try {
     const response = (await axiosInterceptor.get(
-      "/food-menu-categories/categories",
+      "/food-categories/categories",
     ));
     return response.data as Response;
   } catch (err: unknown) {
@@ -23,8 +23,9 @@ export const getFoodCategories = async (): Promise<Response | null> => {
 export const getTagCategories = async (): Promise<Response | null> => {
   try {
     const response = (await axiosInterceptor.get(
-      "/community-tags/",
+      "/community-tags/tags",
     ));
+
     return response.data as Response;
   } catch (err: unknown) {
     if (isAxiosError(err)) {

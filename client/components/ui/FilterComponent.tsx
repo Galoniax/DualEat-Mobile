@@ -100,29 +100,29 @@ export default function FilterComponent({
           <>
             <BottomSheetFlatList
               data={open ? categories : categories.slice(0, 15)}
-              keyExtractor={(item: FoodCategory) => item.id.toString()}
+              keyExtractor={(item: FoodCategory) => item.id}
               numColumns={3}
-              scrollEnabled={false} // Desactivamos para que mande el ScrollView principal
+              scrollEnabled={false}
               columnWrapperStyle={{ justifyContent: "space-between" }}
               renderItem={({ item }: { item: FoodCategory }) => (
                 <TouchableOpacity
                   className={`flex-1 py-2 h-[50px] m-1 items-center justify-center border rounded-md ${
-                    filters.categorias.includes(String(item.id))
+                    filters.categorias.includes(item.id)
                       ? "bg-bg-semi-black border-transparent"
                       : "bg-bg-gray border-gray-300"
                   }`}
                   onPress={() => {
                     setPending((prev) => {
                       const isSelected = prev.categorias.includes(
-                        String(item.id),
+                        item.id,
                       );
                       return {
                         ...prev,
                         categorias: isSelected
                           ? prev.categorias.filter(
-                              (id) => id !== String(item.id),
+                              (id) => id !== item.id,
                             )
-                          : [...prev.categorias, String(item.id)],
+                          : [...prev.categorias, item.id],
                       };
                     });
                   }}
@@ -131,7 +131,7 @@ export default function FilterComponent({
                     numberOfLines={1}
                     ellipsizeMode="tail"
                     className={
-                      filters.categorias.includes(String(item.id))
+                      filters.categorias.includes(item.id)
                         ? "text-white font-dosis-bold text-center px-1"
                         : "text-gray-700 font-dosis-medium text-center px-1"
                     }
