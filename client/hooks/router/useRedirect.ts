@@ -15,64 +15,49 @@ export function useRedirect() {
   const { loading } = useLoader();
   const { mode } = useAppMode();
 
-  const redirect = () => {
-    if (user) {
-      const isLocal = user.isBusiness;
-
-      if (isLocal) {
-        //router.replace(ROUTES.LOCAL.DASHBOARD);
-        return;
-      } else {
-        return mode === "in"
-          ? router.replace(ROUTES.USER.DASHBOARD_IN)
-          : router.replace(ROUTES.USER.DASHBOARD_OUT);
-      }
-    }
-    return router.replace(ROUTES.PUBLIC.HOME);
-  };
-
   useEffect(() => {
     if (loading || mode === null || !segments) return;
 
-    const inAuthGroup = segments[0] === "(auth)";
-    const inLocalGroup = segments[0] === "(local)";
+    const rootSegment = segments[0];
+    const inAuthGroup = rootSegment === "(auth)";
+    const inLocalGroup = rootSegment === "(local)";
+    const currentModeSegment = segments[1];
 
-    if (user) {
-      const isLocal = user.isBusiness;
-
-      if (isLocal) {
-        if (!inLocalGroup) {
-          //router.replace(ROUTES.LOCAL.DASHBOARD);
-        }
-        return;
+    // --- ESCENARIO 1: NO LOGUEADO ---
+    if (!user) {
+      if (!inAuthGroup) {
+        router.replace(ROUTES.PUBLIC.HOME);
       }
-
-      if (inAuthGroup || inLocalGroup) {
-        router.replace(
-          mode === "in" ? ROUTES.USER.DASHBOARD_IN : ROUTES.USER.DASHBOARD_OUT,
-        );
-        return;
-      }
-
-      const currentModeSegment = segments[1];
-
-      if (mode === "in" && currentModeSegment !== "(in)") {
-        router.replace(ROUTES.USER.DASHBOARD_IN);
-      }
-
-      if (mode === "out" && currentModeSegment !== "(out)") {
-        router.replace(ROUTES.USER.DASHBOARD_OUT);
-      }
-
       return;
     }
 
-    if (!inAuthGroup) {
-      router.replace(ROUTES.PUBLIC.HOME);
+    // --- ESCENARIO 2: USUARIO BUSINESS ---
+    if (user.isBusiness) {
+      if (!inLocalGroup) {
+        // Solo reemplaza si no estás ya en la sección local
+        // router.replace(ROUTES.LOCAL.DASHBOARD);
+      }
+      return;
+    }
+
+    // --- ESCENARIO 3: CAMBIO DE MODO (El corazón del switchMode) ---
+
+    // Si estamos en una ruta de auth o local pero somos usuario normal,
+    // o si el segmento de modo no coincide con el estado actual:
+
+    const needsRedirectIn =
+      mode === "in" &&
+      (inAuthGroup || inLocalGroup || currentModeSegment !== "(in)");
+    const needsRedirectOut =
+      mode === "out" &&
+      (inAuthGroup || inLocalGroup || currentModeSegment !== "(out)");
+
+    if (needsRedirectIn) {
+      router.replace(ROUTES.USER.DASHBOARD_IN);
+    } else if (needsRedirectOut) {
+      router.replace(ROUTES.USER.DASHBOARD_OUT);
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, mode, loading]);
-
-  return { redirect };
+  }, [user, mode, loading, segments]);
 }

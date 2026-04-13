@@ -69,7 +69,11 @@ export const useGoogleAuth = () => {
       if (result.type === "success" && result.url) {
         await handleDeepLink(result.url);
       } else if (result.type === "cancel") {
-        showToast("info", "Inicio de sesión OAuth cancelado por el usuario", "Info");
+        showToast(
+          "info",
+          "Inicio de sesión OAuth cancelado por el usuario",
+          "Info",
+        );
       } else if (result.type === "dismiss") {
         showToast("info", "Inicio de sesión OAuth no completado", "Info");
       }

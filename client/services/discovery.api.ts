@@ -13,32 +13,51 @@ export const getLocalInBounds = async (
   lNX: number, // longitudeMax
   preferencesDTO: preferencesDTO,
   q: string,
-): Promise<Response | null> => {
+): Promise<Response> => {
   try {
-
-    preferencesDTO.categorias = preferencesDTO.categorias.map((cat) => Number(cat));
-    const response: Response = await axiosInterceptor.post(
-      "/local/discovery/bounds",
-      {
-        minLat: lM,
-        maxLat: lMX,
-        minLng: lN,
-        maxLng: lNX,
-        preferencesDTO: preferencesDTO,
-        query: q,
-      },
+    preferencesDTO.categorias = preferencesDTO.categorias.map((cat) =>
+      Number(cat),
     );
+    const response = await axiosInterceptor.post("/local/discovery/bounds", {
+      minLat: lM,
+      maxLat: lMX,
+      minLng: lN,
+      maxLng: lNX,
+      preferencesDTO: preferencesDTO,
+      query: q,
+    });
 
-    if (response.success === false) {
-      return null;
-    } else {
-      return response.data as Response;
-    }
-  } catch (err: unknown) {
+    return {
+      success: response.data.success ?? true,
+      status: response.status,
+      data: response.data.data,
+    };
+  } catch (err: any) {
     if (isAxiosError(err)) {
       console.log("Axios error:", err.response?.data || err.message);
+
+      if (err.code === "ECONNABORTED") {
+        return {
+          success: false,
+          status: 408,
+          message: "La solicitud tardó demasiado en responder.",
+        };
+      }
+
+      if (err.response) {
+        return {
+          success: err.response.data.success ?? false,
+          status: err.response.status,
+          message:
+            err.response.data.message || "Error procesando la solicitud.",
+        };
+      }
     }
-    return null;
+    return {
+      success: false,
+      status: 500,
+      message: "Error inesperado procesando la solicitud.",
+    };
   }
 };
 
@@ -49,19 +68,13 @@ export const getLocalByNearby = async (
   lng: number, // longitud
 ): Promise<Response | null> => {
   try {
-    const response: Response = await axiosInterceptor.post(
-      "/local/discovery/nearby",
-      {
-        lat,
-        lng,
-      },
-    );
+    const response = await axiosInterceptor.post("/local/discovery/nearby", {
+      lat,
+      lng,
+    });
 
-    if (response.success === false) {
-      return null;
-    } else {
-      return response.data as Response;
-    }
+    if (response.data.success === false) return null;
+    else return response.data as Response;
   } catch (err: unknown) {
     if (isAxiosError(err)) {
       console.log("Axios error:", err.response?.data || err.message);
@@ -76,15 +89,12 @@ export const getLocalBySlug = async (
   slug: string,
 ): Promise<Response | null> => {
   try {
-    const response: Response = await axiosInterceptor.get(
+    const response = await axiosInterceptor.get(
       `/local/discovery/local/${slug}`,
     );
 
-    if (response.success === false) {
-      return null;
-    } else {
-      return response.data as Response;
-    }
+    if (response.data.success === false) return null;
+    else return response.data as Response;
   } catch (err: unknown) {
     if (isAxiosError(err)) {
       showToast("error", "No se pudo obtener el local");
@@ -99,14 +109,11 @@ export const getLocalReviews = async (
   slug: string,
 ): Promise<Response | null> => {
   try {
-    const response: Response = await axiosInterceptor.get(
+    const response = await axiosInterceptor.get(
       `/local/discovery/${slug}/reviews`,
     );
-    if (response.success === false) {
-      return null;
-    } else {
-      return response.data as Response;
-    }
+    if (response.data.success === false) return null;
+    else return response.data as Response;
   } catch (err: unknown) {
     if (isAxiosError(err)) {
       showToast("error", "No se pudo obtener las reseñas del local");

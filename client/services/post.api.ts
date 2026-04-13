@@ -1,35 +1,24 @@
+import axiosInterceptor from "@/api/client";
+import { Post, Response, ResponseWithPagination } from "@/interface/global";
 import { isAxiosError } from "axios";
 
-import axiosInterceptor from "@/api/client";
-import {
-  Local,
-  Order,
-  Response,
-  ResponseWithPagination,
-} from "@/interface/global";
-import { MenuFood } from "@/components/features/menu/MenuScreen";
-
-interface CartPayload {
-  items: MenuFood[];
-  local: Local;
-}
-
-// --- 1. OBTENER INFO DE CARRITO ---
+// --- 1. OBTENER POSTS ---
 // ===================================
-export const getCartInfo = async (
-  iIds: string[], // itemIds
-  lId: string, // localId
-): Promise<Response<CartPayload>> => {
+export const getAll = async (
+  page: number,
+): Promise<ResponseWithPagination<Post> | null> => {
   try {
-    const response = await axiosInterceptor.post("/order/cart/validate", {
-      food_ids: iIds,
-      local_id: lId,
+    const response = await axiosInterceptor.get("/post/", {
+      params: {
+        page,
+      },
     });
 
     return {
-      success: response.data.success ?? true,
+      success: response.data.success,
       status: response.status,
-      data: response.data.data as CartPayload,
+      data: response.data.data,
+      pagination: response.data.pagination,
     };
   } catch (err: any) {
     if (isAxiosError(err)) {
@@ -60,33 +49,12 @@ export const getCartInfo = async (
   }
 };
 
-// --- 2. OBTENER ÓRDENES DEL USUARIO ---
-// ===================================
-export const getUserOrders = async (
-  page: number,
-): Promise<ResponseWithPagination<Order> | null> => {
-  try {
-    const response = await axiosInterceptor.get("/order/user/orders", {
-      params: {
-        page,
-      },
-    });
 
-    if (!response.data.success) return null;
-    else return response.data as ResponseWithPagination<Order>;
-  } catch (err: unknown) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-    }
-    return null;
-  }
-};
-
-// --- 3. OBTENER ORDEN POR ID ---
+// --- 2. OBTENER POST POR ID ---
 // ===================================
-export const getOrderById = async (id: string): Promise<Response> => {
+export const getPostById = async (postId: string): Promise<Response> => {
   try {
-    const response = await axiosInterceptor.get(`/order/user/orders/${id}`);
+    const response = await axiosInterceptor.get(`/post/${postId}`);
 
     return {
       success: response.data.success ?? true,

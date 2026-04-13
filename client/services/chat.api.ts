@@ -1,12 +1,24 @@
-import { isAxiosError } from "axios";
 import axiosInterceptor from "@/api/client";
-import { Response } from "@/interface/global";
+import {
+  ChatSessionData,
+  ChatSessionResponse,
+  Response,
+} from "@/interface/global";
+import { isAxiosError } from "axios";
 
-// --- 1. OBTENER CATEGORIAS (FOOD)---
+// --- 1. CONSULTAS AL CHAT ---
 // ===================================
-export const getFoodCategories = async (): Promise<Response> => {
+export const ask = async (
+  question: string,
+  chat_id: string | null,
+  conversation: ChatSessionData[],
+): Promise<Response<ChatSessionResponse>> => {
   try {
-    const response = await axiosInterceptor.get("/food-categories/categories");
+    const response = await axiosInterceptor.post(`/chat/ask`, {
+      question,
+      chat_id,
+      conversation,
+    });
 
     return {
       success: response.data.success ?? true,
@@ -42,11 +54,13 @@ export const getFoodCategories = async (): Promise<Response> => {
   }
 };
 
-// --- 2. OBTENER CATEGORIAS DE TAGS (TAG-CATEGORY)---
+// --- 2. OBTENER CHAT POR ID ---
 // ===================================
-export const getTagCategories = async (): Promise<Response> => {
+export const getById = async (chat_id: string): Promise<Response> => {
   try {
-    const response = await axiosInterceptor.get(`/community-tags/categories`);
+    const response = await axiosInterceptor.get(`/chat/${chat_id}`);
+
+    console.log("Chat Data", response.data);
 
     return {
       success: response.data.success ?? true,
@@ -82,11 +96,13 @@ export const getTagCategories = async (): Promise<Response> => {
   }
 };
 
-// --- 3. OBTENER TAGS (TAGS)---
+// --- 3. OBTENER HISTORIAL DEL USUARIO ---
 // ===================================
-export const getTags = async (): Promise<Response> => {
+export const getHistory = async (search?: string): Promise<Response> => {
   try {
-    const response = await axiosInterceptor.get("/community-tags/tags");
+    const response = await axiosInterceptor.get(`/chat/`, {
+      params: { search },
+    });
 
     return {
       success: response.data.success ?? true,
@@ -122,11 +138,54 @@ export const getTags = async (): Promise<Response> => {
   }
 };
 
-// --- 4. OBTENER TAGS POR CATEGORIA (TAGS) ---
+// --- 4. ELIMINAR CHAT ---
 // ===================================
-export const getTagsByCategoryId = async (category_id: number): Promise<Response> => {
+export const deleteChat = async (chat_id: string): Promise<Response> => {
   try {
-    const response = await axiosInterceptor.get(`/community-tags/tags/category/${category_id}`);
+    const response = await axiosInterceptor.delete(`/chat/${chat_id}`);
+
+    return {
+      success: response.data.success ?? true,
+      status: response.status,
+      data: response.data.data,
+    };
+  } catch (err: any) {
+    if (isAxiosError(err)) {
+      console.log("Axios error:", err.response?.data || err.message);
+
+      if (err.code === "ECONNABORTED") {
+        return {
+          success: false,
+          status: 408,
+          message: "La solicitud tardó demasiado en responder.",
+        };
+      }
+
+      if (err.response) {
+        return {
+          success: err.response.data.success ?? false,
+          status: err.response.status,
+          message:
+            err.response.data.message || "Error procesando la solicitud.",
+        };
+      }
+    }
+    return {
+      success: false,
+      status: 500,
+      message: "Error inesperado procesando la solicitud.",
+    };
+  }
+};
+
+
+// --- 4. EDITAR TÍTULO DEL CHAT ---
+// ===================================
+export const editTitle = async (chat_id: string, title: string): Promise<Response> => {
+  try {
+    const normalize = title.trim();
+
+    const response = await axiosInterceptor.put(`/chat/${chat_id}/title`, { title: normalize });
 
     return {
       success: response.data.success ?? true,
