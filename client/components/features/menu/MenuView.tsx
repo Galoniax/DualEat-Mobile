@@ -14,7 +14,7 @@ import { useOrdering } from "@/context/cart/OrderingContext";
 import { useMemo, useState } from "react";
 import FontAwesome from "@expo/vector-icons/build/FontAwesome";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
-import AddButton from "../ui/AddButton";
+import AddButton from "../../ui/buttons/AddButton";
 
 interface MenuViewProps {
   local: MenuLocal;
@@ -49,7 +49,7 @@ function MenuView({ local, insets }: MenuViewProps) {
   };
 
   const { processedCategories, topSellingIds, topDiscounts } = useMemo(() => {
-    if (!local?.categories) {
+    if (!local || !local.categories) {
       return {
         processedCategories: [],
         topSellingIds: new Set(),
@@ -107,7 +107,7 @@ function MenuView({ local, insets }: MenuViewProps) {
       topSellingIds: topSelling,
       topDiscounts: discounts,
     };
-  }, [local?.categories, filters]);
+  }, [local.categories, filters]);
 
   if (!local) return null;
 
@@ -254,17 +254,12 @@ function MenuView({ local, insets }: MenuViewProps) {
                   onAdd={() =>
                     addItem({
                       food_id: item.id,
-
                       local: {
                         id: item.local_id,
-
                         name: local.name,
                       },
-
                       name: item.name,
-
                       unit_price: item.price,
-
                       quantity: 1,
                     })
                   }
@@ -319,7 +314,7 @@ function MenuView({ local, insets }: MenuViewProps) {
             </View>
           );
         }}
-        stickySectionHeadersEnabled={false} 
+        stickySectionHeadersEnabled={false}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
       />

@@ -36,7 +36,7 @@ const PinMarker = ({ loc, onCaptured }: Props) => {
       Pizzería: [{ icon: "local_pizza", color: "#FFA500" }],
       Italiano: [{ icon: "dinner_dining", color: "#DC143C" }],
       Vegano: [{ icon: "avocado_bean", color: "#93C572" }],
-      Sushi: [{ icon: "ramen_dining", color: "#F88379" }],
+      Sushi: [{ icon: "takeout_dining", color: "#F88379" }],
       Restaurante: [{ icon: "restaurant", color: "#848884" }],
       Cafetería: [{ icon: "coffee", color: "#A95C68" }],
       Heladería: [{ icon: "icecream", color: "#4169E1" }],
@@ -48,7 +48,10 @@ const PinMarker = ({ loc, onCaptured }: Props) => {
     MaterialIconsMap[loc.type_local as LocalType]?.[0] ||
     MaterialIconsMap.Restaurante[0];
 
-  const rating = loc.average_rating.toFixed(1) !== "0.0" ? loc.average_rating.toFixed(1) : null;
+  const rating =
+    loc.average_rating.toFixed(1) !== "0.0"
+      ? loc.average_rating.toFixed(1)
+      : null;
 
   console.log(`Icono para tipo "${loc.type_local}":`, icon);
 
@@ -69,13 +72,17 @@ const PinMarker = ({ loc, onCaptured }: Props) => {
           )}
 
         {/** ICON/RATING */}
-        <View className={`flex-row min-w-[100px] bg-bg-gray py-[2px] rounded-full justify-between items-center z-20 border-2 border-gray-300 gap-1
-        ${!rating ? 'px-[12px]' : 'px-[6px]'}
-          `}>
+        <View
+        style={{ minWidth: 40, borderWidth: 1, borderColor: "#707070" }}
+          className={`flex-row bg-bg-gray py-[4px] rounded-full items-center z-20 gap-1 px-[12px]
+          ${rating ? "justify-between" : "justify-center"}
+        `}
+        >
           <View
             style={{
               backgroundColor: `${icon.color}1A`,
-              padding: 2,
+              paddingVertical: 2,
+              paddingHorizontal: 8,
               borderRadius: 9999,
             }}
           >
@@ -87,13 +94,20 @@ const PinMarker = ({ loc, onCaptured }: Props) => {
           </View>
           {rating ? (
             <Text className="text-[14px] font-dosis-bold text-text-3">
-            {rating}
-          </Text>
+              {rating}
+            </Text>
           ) : null}
         </View>
 
         {/** NOMBRE DEL LOCAL */}
-        <Text style={{ maxWidth: 100 }} className="text-[13px] text-center font-dosis-bold text-text-3 mt-1" numberOfLines={2} ellipsizeMode="tail" > {loc.name} </Text>
+        <Text
+          style={{ maxWidth: 100 }}
+          className="text-[13px] text-center font-dosis-bold text-text-3 mt-1"
+          numberOfLines={2}
+          ellipsizeMode="tail"
+        >
+          {loc.name}
+        </Text>
       </View>
     </ViewShot>
   );

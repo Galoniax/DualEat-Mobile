@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { TouchableOpacity, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { CartItem, useOrdering } from "@/context/cart/OrderingContext";
@@ -12,32 +12,16 @@ const AddButton = ({
 }) => {
   const { items, removeItem } = useOrdering();
 
-  const [localQuantity, setLocalQuantity] = useState(
-    items.find((item: CartItem) => item.food_id === item_id)?.quantity || 0,
-  );
-
-  useEffect(() => {
-    const currentItem = items.find(
-      (item: CartItem) => item.food_id === item_id,
-    );
-    setLocalQuantity(currentItem?.quantity || 0);
-  }, [items, item_id]);
+  const localQuantity =
+    items.find((item: CartItem) => item.food_id === item_id)?.quantity ?? 0;
 
   const handlePressAdd = () => {
     onAdd();
-    setLocalQuantity((prevQuantity: number) => prevQuantity + 1);
   };
 
   const handlePressTrash = () => {
-    const item = removeItem(item_id as string);
-
-    if (!item) {
-      setLocalQuantity(0);
-    } else {
-      setLocalQuantity(item.quantity);
-    }
+    removeItem(item_id as string);
   };
-
 
   return (
     <View
@@ -54,10 +38,6 @@ const AddButton = ({
         alignItems: "center",
         justifyContent: "space-between",
         paddingHorizontal: 10,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 3,
         elevation: 3,
         width: 80,
       }}

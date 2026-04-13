@@ -1,30 +1,40 @@
 import React from "react";
 import { router, Tabs } from "expo-router";
-import { HapticTab } from "@/components/haptic-tab";
+import { HapticTab } from "@/components/layout/haptic-tab";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/theme";
 import { DataItem } from "@/interface/global";
+import { TopSearchBar } from "@/components/layout/TopSearchBar";
 
 interface TabProps {
   data: DataItem[];
-  children?: React.ReactNode;
 }
 
-export default function Tab({ data, children }: TabProps) {
-  //const colorScheme = useColorScheme();
+export default function Tab({ data }: TabProps) {
+  const insets = useSafeAreaInsets();
+
+  const TabStyle = {
+    height: 65 + insets.bottom,
+    paddingBottom: insets.bottom + 4,
+    elevation: 0,
+    shadowOpacity: 0,
+    borderTopWidth: 1,
+    borderTopColor: "#dbdbdb",
+    backgroundColor: "#fefefe",
+  };
 
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors["light"].tint,
-        headerShown: false,
+        tabBarInactiveTintColor: "#8e8e93",
         tabBarButton: HapticTab,
-        tabBarStyle: { height: 120, paddingTop: 5 },
-        tabBarIconStyle: { marginTop: 5 },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontFamily: "Dosis-Bold",
-          marginBottom: 8,
+        tabBarIconStyle: {
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          marginTop: 0,
         },
       }}
     >
@@ -33,16 +43,18 @@ export default function Tab({ data, children }: TabProps) {
           key={item.name}
           name={item.name}
           options={{
+            headerShown: item.showHeader,
+            headerTransparent: true,
+            header: () => <TopSearchBar />,
             title: item.title,
+            tabBarShowLabel: true,
             tabBarIcon: ({ color, focused }) => {
-              const iconSize = item.isLg ? 32 : 22;
+              const iconSize = 26;
               return focused && item.icons.focused
                 ? item.icons.focused(color, iconSize)
                 : item.icons.default(color, iconSize);
             },
-            tabBarStyle: item.isTab
-              ? { height: 120, paddingTop: 5 }
-              : { display: "none" },
+            tabBarStyle: item.isTab ? TabStyle : { display: "none" },
           }}
           listeners={{
             tabPress: (e) => {

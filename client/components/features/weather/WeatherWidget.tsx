@@ -12,6 +12,20 @@ interface WeatherData {
   weatherCode: number;
 }
 
+async function loadWeather(
+  lat: number,
+  lng: number,
+): Promise<{ temperature: number; weatherCode: number }> {
+  const res = await fetch(
+    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`,
+  );
+  const json = await res.json();
+  return {
+    temperature: json.current_weather.temperature,
+    weatherCode: json.current_weather.weathercode,
+  };
+}
+
 export function WeatherWidget() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,7 +109,7 @@ export function WeatherWidget() {
     const isNight = hour < 6 || hour >= 20;
 
     const config = weatherConfig.find((c) => c.condition(code));
-    
+
     if (!config) {
       return {
         label: "Clima desconocido",
@@ -112,21 +126,14 @@ export function WeatherWidget() {
 
   useEffect(() => {
     const fetchWeather = async () => {
+      if (latitude == null || longitude == null) return;
       try {
-        const res = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`
-        );
-        const json = await res.json();
-
-        setWeather({
-          temperature: json.current_weather.temperature,
-          weatherCode: json.current_weather.weathercode,
-        });
+        const data = await loadWeather(latitude, longitude);
+        setWeather(data);
       } catch (e) {
         console.log("Error clima", e);
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     };
 
     fetchWeather();
@@ -159,7 +166,7 @@ export function WeatherWidget() {
       <View className="px-4 z-10">
         <View className="justify-between flex-row items-center">
           <Text className="text-[15px] font-dosis-bold text-white mb-1">
-            {icon}{" "}{label}
+            {icon} {label}
           </Text>
 
           <View className="flex-row items-center gap-2">

@@ -1,11 +1,10 @@
-import { Food, FoodCategory, Local, User } from "@/interface/global";
+import { Food, FoodCategory, Local } from "@/interface/global";
 import { getLocalBySlug } from "@/services/discovery.api";
 
 import Entypo from "@expo/vector-icons/Entypo";
-import EvilIcons from "@expo/vector-icons/EvilIcons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ImageBackground,
   ScrollView,
@@ -20,16 +19,12 @@ import { useOrdering } from "@/context/cart/OrderingContext";
 import { formatPrice } from "@/utils/distance";
 import { isLocalOpen } from "@/utils/isLocalOpen";
 import { useLoader } from "@/context/app/LoadingContext";
-import { router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { router, useFocusEffect } from "expo-router";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import CustomBottomSheet from "../../ui/modals/BottomSheetModal";
+import { useQuery } from "@tanstack/react-query";
 import MenuInfo from "./MenuInfo";
-
-interface MenuScreenProps {
-  user: User | null;
-  slug: string;
-}
-
-type Tab = "Menu" | "Info" | "Reviews";
 
 export interface MenuFood extends Food {
   original_price: number;
@@ -46,41 +41,99 @@ export interface MenuLocal extends Omit<Local, "categories"> {
   categories?: MenuCategory[];
 }
 
-function MenuScreen({ user, slug }: MenuScreenProps) {
+type Tab = "Menu" | "Info" | "Reviews";
+
+function MenuScreen({ slug }: { slug: string }) {
   const { items, open } = useOrdering();
-  const [state, setState] = useState<Tab>("Menu");
   const { setType } = useLoader();
 
-  const tabOptions: Tab[] = ["Info", "Reviews"];
+  const [state, setState] = useState<Tab>("Menu");
 
-  const [local, setLocal] = useState<MenuLocal | null>(null);
+  const refModal = useRef<BottomSheetModal>(null);
+
   const insets = useSafeAreaInsets();
 
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        setType("global");
-        const response = await getLocalBySlug(slug);
-        if (response) {
-          setLocal(response.data as MenuLocal);
-        }
-      } catch (e) {
-        console.log("Error consultando el local:", e);
-        router.back();
-      } finally {
-        setType(null);
+  const {
+    data: local,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["local", "by-slug", slug],
+    enabled: !!slug,
+
+    queryFn: async () => {
+      const response = await getLocalBySlug(slug);
+      if (response) {
+        return response.data as MenuLocal;
       }
+    },
+    refetchOnReconnect: true,
+  });
+
+  useEffect(() => {
+    if (isLoading) {
+      setType("minimal");
+    } else {
+      setType(null);
+    }
+    return () => {
+      setType(null);
     };
-    fetch();
-  }, [slug, setType]);
+  }, [isLoading, setType]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch]),
+  );
 
   const isOpen = isLocalOpen(local?.schedules || []);
+
+  const MENU_BUTTONS = [
+    {
+      id: "Menu",
+      label: "Menú del local",
+      iconName: "list-outline",
+    },
+    {
+      id: "Info",
+      label: "Información del local",
+      iconName: "information-circle-outline",
+    },
+    {
+      id: "Reviews",
+      label: "Leer opiniones",
+      iconName: "star-outline",
+    },
+    {
+      id: "Share",
+      label: "Compartir",
+      iconName: "share-outline",
+    },
+  ] as const;
+
+  const handleButtonPress = (id: "Menu" | "Info" | "Reviews" | "Share") => {
+    switch (id) {
+      case "Menu":
+        setState("Menu");
+        break;
+      case "Info":
+        setState("Info");
+        break;
+      case "Reviews":
+        setState("Reviews");
+        break;
+      case "Share":
+        console.log("Share");
+        break;
+    }
+  };
 
   return (
     <View className="flex-1">
       <ScrollView className="flex-1 bg-white">
         {/* HEADER */}
-        <View className="relative h-[300px]">
+        <View className="relative h-[250px]">
           <ImageBackground
             className="absolute top-0 left-0 right-0 w-full h-[100%]"
             resizeMode="cover"
@@ -98,28 +151,26 @@ function MenuScreen({ user, slug }: MenuScreenProps) {
             }}
           >
             <TouchableOpacity
+              style={{
+                width: 36,
+                height: 36,
+              }}
               onPress={() => router.back()}
-              className="w-[38px] h-[38px] justify-center items-center bg-bg-gray rounded-full"
+              className="justify-center items-center rounded-full"
             >
-              <Entypo name="chevron-thin-left" size={18} color="#333333" />
+              <Entypo name="chevron-thin-left" size={18} color="#fff" />
             </TouchableOpacity>
 
-            <View className="flex-row bg-bg-gray rounded-full justify-center items-center gap-x-1">
-              <TouchableOpacity
-                onPress={() => setState("Info")}
-                className="w-[38px] h-[38px] justify-center items-center"
-              >
-                <Ionicons
-                  name="information-circle-outline"
-                  size={24}
-                  color="#333333"
-                />
-              </TouchableOpacity>
-
-              <TouchableOpacity className="w-[38px] h-[38px] justify-center items-center">
-                <EvilIcons name="heart" size={26} color="#333333" />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={{
+                width: 36,
+                height: 36,
+              }}
+              onPress={() => refModal.current?.present()}
+              className="rounded-full justify-center items-center"
+            >
+              <Entypo name="dots-three-vertical" size={18} color="#fff" />
+            </TouchableOpacity>
           </View>
 
           {/* INFO & SECTIONS*/}
@@ -134,7 +185,7 @@ function MenuScreen({ user, slug }: MenuScreenProps) {
                   paddingVertical: 2,
                   paddingHorizontal: 10,
                 }}
-                className={`mb-4`}
+                className={`mb-2`}
               >
                 <Text
                   className={`text-[12px] text-text-1 font-dosis-bold ${isOpen ? "text-green-700" : "text-red-700"}`}
@@ -157,46 +208,13 @@ function MenuScreen({ user, slug }: MenuScreenProps) {
           </View>
         </View>
 
-        <View className="flex-row w-full">
-          {state !== "Menu" &&
-            tabOptions.map((tab) => {
-              const isActive = state === tab;
-
-              return (
-                <TouchableOpacity
-                  key={tab}
-                  onPress={() => setState(tab)}
-                  className={`flex-1 items-center py-[14px] border-[#4A4947] ${
-                    isActive && "border-b-2"
-                  }`}
-                >
-                  <Text
-                    className={`font-dosis-bold text-[15px] ${
-                      isActive ? "text-text-5" : "text-text-6"
-                    }`}
-                  >
-                    {tab}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-        </View>
-
-        {/* TOCHANGE !isOpen && isOpen */}
-        {isOpen ? (
-          <View className="px-4 mt-6">
-            <Text className="text-text-3 text-[18px] font-dosis-bold mb-2">
-              Lo sentimos, este local está cerrado.
-            </Text>
-            <Text className="text-text-5 text-[14px] font-dosis-regular">
-              Por favor, volvé más tarde o explorá otros locales disponibles.
-            </Text>
-          </View>
-        ) : state === "Menu" && local ? (
+        {state === "Menu" && (
           <MenuView local={local as MenuLocal} insets={insets} />
-        ) : state === "Info" && local ? (
+        )}
+
+        {state === "Info" && (
           <MenuInfo local={local as MenuLocal} insets={insets} />
-        ) : null}
+        )}
       </ScrollView>
 
       {/* CARRITO */}
@@ -240,6 +258,52 @@ function MenuScreen({ user, slug }: MenuScreenProps) {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* MODAL */}
+      <CustomBottomSheet
+        ref={refModal}
+        type={1}
+        block={true}
+        onDismiss={() => refModal.current?.dismiss()}
+      >
+        <View className="flex-col gap-4">
+          <View className="flex-row items-center relative justify-center mb-1">
+            <Text
+              style={{ fontSize: 20 }}
+              className="text-text-3 font-dosis-bold"
+            >
+              {local?.name}
+            </Text>
+            <TouchableOpacity
+              onPress={() => refModal.current?.dismiss()}
+              className="absolute right-0"
+            >
+              <Ionicons name="close" size={22} color="#333333" />
+            </TouchableOpacity>
+          </View>
+
+          {MENU_BUTTONS.map((button) => (
+            <TouchableOpacity
+              key={button.id}
+              className="flex-row items-center justify-between"
+              onPress={() => {
+                handleButtonPress(button.id);
+                refModal.current?.dismiss();
+              }}
+            >
+              <View className="flex-row gap-4 items-center">
+                <Ionicons name={button.iconName} size={14} color="#707070" />
+
+                <Text className="text-text-3 text-[14px] font-dosis-medium">
+                  {button.label}
+                </Text>
+              </View>
+
+              <Feather name="chevron-right" size={18} color="#333333" />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </CustomBottomSheet>
     </View>
   );
 }

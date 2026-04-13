@@ -20,7 +20,7 @@ interface PermissionViewProps {
 
 const PermissionView = ({ type, permission, requestPermission }: PermissionViewProps) => {
   const steps = [1, 2, 3];
-  const Logo = require("@/assets/images/icon/LogoDualEat.png");
+  const Logo = require("@/assets/icon/LogoDualEat.png");
 
   const router = useRouter();
 

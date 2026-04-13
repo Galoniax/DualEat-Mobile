@@ -9,9 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LightSensor } from "expo-sensors";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 
-import PermissionView from "@/components/error/permission";
-
-import { useIsFocused } from "@react-navigation/native";
+import PermissionView from "@/components/shared/permission";
 
 interface ScannerViewProps {
   onScan: (data: string) => void;
@@ -29,8 +27,6 @@ function ScannerView({
   // =========================================================
   // 1. ESTADOS LOCALES
   // =========================================================
-  const isFocused = useIsFocused();
-
   const [permission, requestPermission] = useCameraPermissions();
   const [flashlight, setFlashlight] = useState(false);
   const [facing, setFacing] = useState<"front" | "back">("back");
@@ -62,8 +58,6 @@ function ScannerView({
     );
   }
 
-  if (!isFocused) return null;
-
   return (
     <View style={{ flex: 1, position: "relative" }}>
       <CameraView
@@ -81,7 +75,9 @@ function ScannerView({
         className="absolute top-0 w-full z-10 px-4 flex-row justify-between items-center"
       >
         <TouchableOpacity
-          onPress={onClose}
+          onPress={() => {
+            onClose();
+          }}
           className="p-1.5 bg-black/30 rounded-full"
         >
           <Ionicons name="close" size={28} color="white" />

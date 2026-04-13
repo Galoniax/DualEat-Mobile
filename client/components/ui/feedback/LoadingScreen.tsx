@@ -16,7 +16,7 @@ interface LoadingType {
 }
 
 const LoadingScreen = ({ type }: LoadingType) => {
-  const Logo = require("@/assets/images/icon/LogoDualEat.png");
+  const Logo = require("@/assets/icon/LogoDualEat.png");
 
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -42,7 +42,7 @@ const LoadingScreen = ({ type }: LoadingType) => {
   if (type === "minimal") {
     return (
       <SafeAreaView className="flex-1 justify-center items-center">
-        <ImageBackground className="absolute inset-0 z-[-1] bg-black opacity-80 min-h-full w-full" />
+        <ImageBackground style={{ opacity: 0.98 }} className="absolute inset-0 z-[-1] bg-black min-h-full w-full" />
         <Image
           source={Logo}
           className="w-[40px] h-[40px] object-contain mb-8"
