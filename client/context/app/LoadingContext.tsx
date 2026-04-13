@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 
 type LoaderType = "global" | "minimal" | null;
 
@@ -23,18 +23,28 @@ export const LoaderProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [type, setType] = useState<LoaderType>("minimal");
 
-  const setTypeAndLoading = (t: LoaderType) => {
+  const setTypeAndLoading = useCallback((t: LoaderType) => {
     if (t === null) {
       setLoading(false);
     } else {
       setLoading(true);
       setType(t);
     }
-  };
+  }, []); 
+
+  
+  const contextValue = useMemo(
+    () => ({
+      loading,
+      type,
+      setType: setTypeAndLoading,
+    }),
+    [loading, type, setTypeAndLoading] 
+  );
 
   return (
     <LoaderContext.Provider
-      value={{ loading, type, setType: setTypeAndLoading }}
+      value={contextValue}
     >
       {children}
     </LoaderContext.Provider>

@@ -13,10 +13,26 @@ export const ROUTES = {
   },
   USER: {
     DASHBOARD_OUT: "/(client)/(out)/(tabs)",
-    DASHBOARD_IN: "/(client)/(in)",
+    DASHBOARD_IN: "/(client)/(in)/(tabs)",
     LOCAL: "/(client)/(out)/local",
     CART: "/(client)/(out)/cart",
     QR: "/(client)/(out)/(tabs)/qr",
+
+    COMMUNITY: "/(client)/(in)/c/[community_slug]",
+    POST: "/(client)/(in)/c/[community_slug]/p/[post_id]/[post_slug]",
+    RECIPE: "/(client)/(in)/c/[community_slug]/r/[recipe_id]/[recipe_slug]",
+    CREATE: "/(client)/(in)/(tabs)/create",
+    
+    CHAT_HISTORY: "/(client)/(in)/(tabs)/chat/history",
+    CHAT: "/(client)/(in)/(tabs)/chat/[chat_id]",
+
+    EXPLORE: "/(client)/(in)/(tabs)/index",
+    EXPLORE_TAG: "/(client)/(in)/(tabs)/explore/[tag_id]",
+    EXPLORE_CATEGORY: "/(client)/(in)/(tabs)/explore/[category_id]/[category_slug]",
+  },
+
+  SHARED: {
+    ORDER_INFO: "/(shared)/order_info/[order_id]",
   },
 } as const;
 
@@ -29,13 +45,29 @@ export const LOCAL_TYPES = [
   "Pizzería",
   "Restaurante italiano",
   "Vegano",
-  "Sushi bar",
+  "Sushi",
   "Restaurante",
   "Cafetería",
   "Heladería",
   "Parrilla",
   "Bar",
 ];
+
+export const ORDER_STATUS_DICT: Record<string, string> = {
+  PENDING: "Pendiente",
+  READY: "Listo para pagar",
+  PAID: "Pagado",
+  COMPLETED: "Completado",
+  CANCELED: "Cancelado",
+};
+
+export const STATUS_COLORS = {
+  COMPLETED: "text-green-800",
+  PAID: "text-[#3578e4]",
+  READY: "text-purple-600",
+  CANCELED: "text-[#B53325]",
+  PENDING: "text-[#e5a657]",
+};
 
 export type LocalType = (typeof LOCAL_TYPES)[number];
 
@@ -117,6 +149,16 @@ export const mapStyle = [
     featureType: "transit",
     elementType: "all",
     stylers: [{ visibility: "off" }],
+  },
+  {
+    featureType: "transit.station",
+    elementType: "all",
+    stylers: [{ visibility: "on" }],
+  },
+  {
+    featureType: "transit.station.bus",
+    elementType: "all",
+    stylers: [{ visibility: "on" }],
   },
   {
     featureType: "water",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext } from "react";
+import React, { useState, useEffect, createContext, useContext, useMemo } from "react";
 import * as SecureStore from "expo-secure-store";
 import { Route, useRouter } from "expo-router";
 
@@ -60,34 +60,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const router = useRouter();
   const { setType } = useLoader();
 
-  // --- 1. CARGA DE SESIÓN ---
-  // ===========================================
-  useEffect(() => {
-    const init = async () => {
-      try {
-        setType("global");
+  const init = async () => {
+    try {
+      setType("global");
 
-        const token = await SecureStore.getItemAsync(TOKEN_KEY);
+      const token = await SecureStore.getItemAsync(TOKEN_KEY);
 
-        console.log("Token encontrado en SecureStore:", token);
-        if (token) {
-          axiosInterceptor.defaults.headers.Authorization = `Bearer ${token}`;
-          const userData = await getMe();
-          setUser(userData);
-        }
-      } catch (error: any) {
-      console.log("Error en init auth:", error?.response?.status || error.message);
-      
-      if (error?.response?.status === 401) {
+      console.log("Token encontrado en SecureStore:", token);
+      if (token) {
+        axiosInterceptor.defaults.headers.Authorization = `Bearer ${token}`;
+        const userData = await getMe();
+        setUser(userData);
+      }
+    } catch (error: any) {
+      let status: number | undefined;
+      if (error && error.response) {
+        status = error.response.status;
+      }
+      let errMsg: string = error.message;
+      let logValue: number | string = errMsg;
+      if (status !== undefined) {
+        logValue = status;
+      }
+      console.log("Error en init auth:", logValue);
+      await handleLogoutCleanup();
+      if (status === 401) {
         await handleLogoutCleanup();
       } else {
         console.log("Error de red o servidor");
       }
-    } finally {
-        setAuthReady(true);
-        setType(null);
-      }
-    };
+    }
+    setAuthReady(true);
+    setType(null);
+  };
+
+  // --- 1. CARGA DE SESIÓN ---
+  // ===========================================
+  useEffect(() => {
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -98,10 +107,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       setType("global");
 
-      let token = isToken || (await SecureStore.getItemAsync(TOKEN_KEY));
-
+      let token: string | null;
       if (isToken) {
+        token = isToken;
         await SecureStore.setItemAsync(TOKEN_KEY, isToken);
+      } else {
+        token = await SecureStore.getItemAsync(TOKEN_KEY);
       }
 
       axiosInterceptor.defaults.headers.common["Authorization"] =
@@ -112,17 +123,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       console.log("Usuario cargado:", userData);
 
+      setType(null);
+
       return { success: true, message: "Token establecido correctamente" };
     } catch (e) {
       console.log("Error al establecer el token:", e);
       await handleLogoutCleanup();
-      return { success: false, message: "Error al establecer el token" };
-    } finally {
       setType(null);
+      return { success: false, message: "Error al establecer el token" };
     }
   };
 
-  // --- 3. LOGIN (Email/Pass/RememberMe, RecaptchaToken, DeviceId) ---
+  // --- 3. LOGIN (Email, Password, RememberMe, RecaptchaToken, DeviceId) ---
   // ===========================================
   const login = async (
     e: string,
@@ -134,17 +146,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       setType("minimal");
       const response = await authLogin(e, p, r, t, d);
+      console.log(e, p, r, t, d);
 
-      if (response?.success && response.token) {
-        showToast("success", response.message || "Inicio de sesión exitoso", "Éxito");
-        await setToken(response?.token);
+      if (response && response.success && response.token) {
+        let msg = response.message;
+        if (!msg) {
+          msg = "Inicio de sesión exitoso";
+        }
+        showToast("success", msg, "Éxito");
+        await setToken(response.token);
       }
+
+      setType(null);
       return response;
     } catch (e) {
+      setType(null);
       showToast("error", "Error al iniciar sesión", "Error");
       throw e;
-    } finally {
-      setType(null);
     }
   };
 
@@ -155,19 +173,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setType("minimal");
       const response = await authRegister(e, p, d);
 
-      if (response?.success && response.next_step) {
-        showToast("success", response.message || "Registro exitoso", "Éxito");
+      if (response && response.success && response.next_step) {
+        let msg = response.message;
+        if (!msg) {
+          msg = "Registro exitoso";
+        }
+        showToast("success", msg, "Éxito");
         const url = `${ROUTES.AUTH.ONBOARDING}${response.next_step}`;
         router.push(url as Route);
+
+        setType(null);
         return response;
       }
+
+      setType(null);
       return null;
     } catch (e) {
       console.log(e);
+      setType(null);
       showToast("error", "Error al registrarse", "Error");
       return null;
-    } finally {
-      setType(null);
     }
   };
 
@@ -182,17 +207,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       setType("minimal");
       const response = await authCompleteProfile(n, f, c, t);
-      if (response?.success && response.token) {
-        showToast("success", response.message || "Perfil completado", "Éxito");
+      if (response && response.success && response.token) {
+        let msg = response.message;
+        if (!msg) {
+          msg = "Perfil completado";
+        }
+        showToast("success", msg, "Éxito");
         await setToken(response.token);
       }
 
+      setType(null);
       return response;
     } catch (e) {
+      setType(null);
       showToast("error", "Error al completar el perfil", "Error");
       throw e;
-    } finally {
-      setType(null);
     }
   };
 
@@ -204,11 +233,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       await authLogout();
       await handleLogoutCleanup();
       router.replace(ROUTES.PUBLIC.HOME);
+
+      setType(null);
     } catch (e) {
+      setType(null);
       showToast("error", "Error al cerrar sesión", "Error");
       throw e;
-    } finally {
-      setType(null);
     }
   };
 
@@ -220,17 +250,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setUser(null);
   };
 
+  const contextValue = useMemo(() => ({
+    user,
+    authReady,
+    setToken,
+    login,
+    register,
+    completeProfile,
+    logout,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [user, authReady]);
+
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        authReady,
-        setToken,
-        login,
-        register,
-        completeProfile,
-        logout,
-      }}
+      value={contextValue}
     >
       {children}
     </AuthContext.Provider>

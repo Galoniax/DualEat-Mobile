@@ -6,14 +6,24 @@ type SuscriptionStatus = "active" | "inactive" | "trial" | "canceled";
 
 export interface Response<T = unknown> {
   success: boolean;
+  status: number;
   message?: string;
   data?: T;
 }
 
 export interface ResponseWithPagination<T = unknown> {
   success: boolean;
-  pagination: PaginationInfo;
+  status: number;
+  message?: string;
   data?: T;
+  pagination?: PaginationInfo;
+}
+
+export interface ChatSessionResponse {
+  chat_id: string;
+  messages: ChatSessionData[];
+  title: string;
+  recipes: Recipe[] | null;
 }
 
 interface PaginationInfo {
@@ -33,7 +43,9 @@ export interface User {
   slug: string;
   name: string;
   email: string;
-  avatar_url: string | null;
+  avatar_url:
+    | string
+    | "https://ohhvldagwoycuifwhgtc.supabase.co/storage/v1/object/public/assets/DefaultProfile.png";
   role: Role;
   active: boolean;
   verified: boolean;
@@ -68,6 +80,8 @@ export interface Local {
   promotions?: Promotion[];
   schedules?: Schedules[];
   categories?: FoodCategory[];
+
+  _count?: { reviews?: number; orders?: number; foods?: number };
 }
 
 export interface LocalReview {
@@ -112,6 +126,13 @@ export interface Promotion {
   active: boolean;
 }
 
+export type OrderStatus =
+  | "PENDING"
+  | "PAID"
+  | "COMPLETED"
+  | "CANCELED"
+  | "READY";
+
 export interface Order {
   id: string;
   user: User;
@@ -119,7 +140,7 @@ export interface Order {
   local: Local;
   local_id: string;
   total: number;
-  status: "pending" | "paid" | "completed" | "canceled";
+  status: OrderStatus;
   payment_method?: string;
   created_at: Date;
   updated_at: Date;
@@ -129,6 +150,8 @@ export interface Order {
 
   order_items: OrderItem[];
   review?: LocalReview;
+
+  _count?: { order_items?: number };
 }
 
 export interface OrderItem {
@@ -162,14 +185,247 @@ export interface FoodCategory {
 export interface CommunityTag {
   id: number;
   name: string;
-  icon_url: string | null;
-  category?: {
-    id: number;
-    name: string;
-    category_id: number | null;
-    active: boolean;
-  };
+  active: boolean;
+  
+  category: TagCategory;
+  communities: Community[];
+
+  //user_preferences: UserPreference[];
 }
+
+export interface TagCategory {
+  id: number;
+  slug: string;
+  name: string;
+  description?: string;
+  icon_url?: string;
+
+  communityTags: CommunityTag[];
+}
+
+export interface Community {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  image_url: string | "https://placehold.co/100x100";
+  visibility: "PUBLIC" | "PRIVATE";
+  total_members: number;
+
+  creator: User;
+  creator_id: string;
+
+  created_at: Date;
+  updated_at: Date;
+  active: boolean;
+
+  posts: Post[];
+  members: CommunityMember[];
+
+  tags: CommunityTag[];
+}
+
+export interface CommunityMember {
+  id: string;
+  user: User;
+  user_id: string;
+  community: Community;
+  community_id: string;
+
+  receives_notifications: NotificationFrequency;
+  is_moderator: boolean;
+
+  joined_at: Date;
+  updated_at: Date;
+}
+
+export type NotificationFrequency = "ALWAYS" | "NONE";
+
+export interface Post {
+  id: string;
+  slug: string;
+
+  user: User;
+  user_id: string;
+
+  community: Community;
+  community_id: string;
+
+  title: string;
+  content: string;
+  image_urls: string[];
+
+  votes_up: number;
+  votes_down: number;
+  total_comments: number;
+
+  created_at: Date;
+  updated_at: Date;
+  edited: boolean;
+  active: boolean;
+
+  comments: PostComment[];
+  recipe: Recipe | null;
+  recipe_id: string | null;
+
+  userVote?: "UP" | "DOWN" | null;
+  hasVoted?: boolean;
+}
+
+export interface PostComment {
+  id: string;
+
+  user: User;
+  user_id: string;
+
+  post: Post;
+  post_id: string;
+  parent_comment: PostComment | null;
+  parent_comment_id: string | null;
+
+  content: string;
+
+  votes_up: number;
+  votes_down: number;
+  total_comments: number;
+
+  created_at: Date;
+  updated_at: Date;
+  edited: boolean;
+  active: boolean;
+
+  replies: PostComment[];
+}
+
+export interface Recipe {
+  id: string;
+  slug: string;
+  user: User;
+  user_id: string;
+
+  name: string;
+  description: string;
+  total_time: number | null;
+  main_image: string | "https://placehold.co/400x400";
+
+  created_at: Date;
+  updated_at: Date;
+
+  ingredients: RecipeIngredient[];
+  steps: RecipeStep[];
+  posts: Post[];
+
+  votes_up?: number;
+  votes_down?: number;
+}
+
+export interface RecipeStep {
+  id: string;
+  recipe: Recipe;
+  recipe_id: string;
+  step_number: number;
+  description: string;
+  image_url: string | null;
+  estimated_time: number | null;
+}
+
+export interface RecipeIngredient {
+  id: string;
+  recipe: Recipe;
+  recipe_id: string;
+
+  ingredient: Ingredient;
+  ingredient_id: string;
+
+  quantity: number;
+  unit: Unit;
+  notes: string | null;
+}
+
+export interface Ingredient {
+  id: string;
+  name: string;
+  description: string | null;
+  recipe_ingredients: RecipeIngredient[];
+}
+
+export enum Unit {
+  GRAMOS = "GRAMOS",
+  KILOGRAMOS = "KILOGRAMOS",
+  MILILITROS = "MILILITROS",
+  LITROS = "LITROS",
+  CUCHARADITA = "CUCHARADITA",
+  CUCHARADA = "CUCHARADA",
+  TAZA = "TAZA",
+  UNIDAD = "UNIDAD",
+  PIZCA = "PIZCA",
+  PAQUETE = "PAQUETE",
+  OPCIONAL = "OPCIONAL",
+}
+
+export const UnitNames: Record<Unit, { abbreviation: string; name: string }> = {
+  [Unit.GRAMOS]: {
+    abbreviation: "gr",
+    name: "gramos",
+  },
+  [Unit.KILOGRAMOS]: {
+    abbreviation: "kg",
+    name: "kilogramos",
+  },
+  [Unit.MILILITROS]: {
+    abbreviation: "ml",
+    name: "mililitros",
+  },
+  [Unit.LITROS]: {
+    abbreviation: "l",
+    name: "litros",
+  },
+  [Unit.CUCHARADITA]: {
+    abbreviation: "cdta",
+    name: "cucharaditas",
+  },
+  [Unit.CUCHARADA]: {
+    abbreviation: "cda",
+    name: "cucharadas",
+  },
+  [Unit.TAZA]: {
+    abbreviation: "tza",
+    name: "tazas",
+  },
+  [Unit.UNIDAD]: {
+    abbreviation: "ud",
+    name: "unidades",
+  },
+  [Unit.PIZCA]: {
+    abbreviation: "pizca",
+    name: "pizcas",
+  },
+  [Unit.PAQUETE]: {
+    abbreviation: "paq",
+    name: "paquetes",
+  },
+  [Unit.OPCIONAL]: {
+    abbreviation: "opc",
+    name: "opcional",
+  },
+};
+
+export type NutritionData = {
+  total_ingredients: number;
+  avg_calories: number;
+  avg_proteins: number;
+  avg_carbs: number;
+  avg_fat: number;
+  details: {
+    ingredient: string;
+    found: boolean;
+    energy_kcal?: undefined;
+    proteins?: undefined;
+    carbohydrates?: undefined;
+    fat?: undefined;
+  }[];
+  total: number;
+};
 
 // ================================================
 // INTERFAZ PARA ITEMS DE NAVEGACIÓN EN TABS
@@ -181,7 +437,7 @@ export interface DataItem {
     default: (color: string, size: number) => JSX.Element;
     focused?: (color: string, size: number) => JSX.Element;
   };
-  isLg?: boolean;
+  showHeader?: boolean;
   isTab?: boolean;
   redirect?: string;
 }
@@ -197,7 +453,7 @@ export type DayOfWeek =
 export type QRTypes = {
   LOCAL: "local";
   ORDER: "order";
-  PROMOTION: "promotion";
+  PROMOTION: "promotion"; // Coupon
   USER: "user";
 };
 
@@ -208,6 +464,7 @@ export type QROrderItem = {
 
 export type QROrderPayload = {
   t: "order";
+  oi: string | "create"; // order_id
   l: string; // local_id
   u: string; // user_id
   i: QROrderItem[]; // items del carrito
@@ -225,3 +482,18 @@ export type QRLocalPayload = {
 };
 
 export type QRData = QROrderPayload | QRUserPayload | QRLocalPayload;
+
+
+export interface ChatSession {
+  chat_id: string;
+  title: string;
+  createdAt: string;
+  lastActivity: string;
+  messages: ChatSessionData[];
+  recipe_id?: string;
+}
+
+export interface ChatSessionData {
+  text: string;
+  role: "USER" | "IA";
+}

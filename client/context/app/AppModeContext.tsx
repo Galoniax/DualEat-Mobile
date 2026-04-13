@@ -1,8 +1,15 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLoader } from "./LoadingContext";
 
-type AppMode = "in" | "out" | null;
+export type AppMode = "in" | "out" | null;
 
 const STORAGE_KEY = process.env.STORAGE_KEY || "dualeat_app-mode";
 
@@ -21,6 +28,11 @@ export const useAppMode = () => {
   return context;
 };
 
+function parseMode(saved: string | null): AppMode {
+  if (saved === "in" || saved === "out") return saved;
+  return "out";
+}
+
 export const AppModeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -33,40 +45,48 @@ export const AppModeProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         setType("global");
         const saved = await AsyncStorage.getItem(STORAGE_KEY);
-        if (saved && (saved === "in" || saved === "out")) {
-          setMode(saved as AppMode);
-        } else {
-          setMode("out");
-        }
-      } catch (e) {
-        console.log("Error al cargar el modo", e);
-      } finally {
+
+        setMode(parseMode(saved));
         setType(null);
+      } catch (e) {
+        setType(null);
+        console.log("Error al cargar el modo", e);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const switchMode = async () => {
+  const switchMode = useCallback(async () => {
     try {
       setType("global");
       const Umode = await AsyncStorage.getItem(STORAGE_KEY);
-      const newMode = Umode === "out" ? "in" : "out";
+      let newMode: AppMode = Umode === "out" ? "in" : "out";
 
       await AsyncStorage.setItem(STORAGE_KEY, newMode);
       setMode(newMode);
-    } finally {
-      setType(null);
-    }
-  };
 
-  const clearMode = async () => {
+      setType(null);
+    } catch (e) {
+      setType(null);
+      console.log("Error al cambiar el modo", e);
+    }
+  }, [setType]);
+
+  const clearMode = useCallback(async () => {
     setMode(null);
     await AsyncStorage.removeItem(STORAGE_KEY);
-  };
+  }, []);
 
+  const contextValue = useMemo(
+    () => ({
+      mode,
+      switchMode,
+      clearMode,
+    }),
+    [mode, switchMode, clearMode],
+  );
   return (
-    <AppModeContext.Provider value={{ mode, switchMode, clearMode }}>
+    <AppModeContext.Provider value={contextValue}>
       {children}
     </AppModeContext.Provider>
   );

@@ -1,11 +1,21 @@
 import { useAuth } from "@/context/auth/AuthContext";
 import { QRData } from "@/interface/global";
 
+import LZString from "lz-string";
+
 export function useQRParser() {
   const { user } = useAuth();
 
   const parseQR = (qrValue: string) => {
     try {
+      // TODO:
+      // qrValue: string
+      //const decompressed = LZString.decompressFromEncodedURIComponent(qrValue);
+
+      //const parsedData = JSON.parse(decompressed) as QRData;
+
+      console.log("qrValue", qrValue);
+
       const parsedData = JSON.parse(qrValue) as QRData;
 
       const userWorkplaceIds = user?.workplaces.map((w) => w.id) || [];
@@ -15,6 +25,7 @@ export function useQRParser() {
         // CASO 1: ORDEN (Restringido para usuarios regulares)
         // ==========================================
         case "order":
+          console.log("ENTRO");
           if (!user?.isBusiness) {
             return {
               success: false,
@@ -74,5 +85,12 @@ export function useQRParser() {
     }
   };
 
-  return { parseQR };
+  const generateQR = (data: QRData) => {
+    const compressed = LZString.compressToEncodedURIComponent(
+      JSON.stringify(data),
+    );
+    return compressed;
+  };
+
+  return { parseQR, generateQR };
 }

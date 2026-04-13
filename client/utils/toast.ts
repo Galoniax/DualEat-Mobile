@@ -7,7 +7,13 @@ export const showToast = (
 ) => {
   Toast.show({
     type,
-    text1: title ?? (type === "success" ? "Éxito" : type === "error" ? "Error" : "Información"),
+    text1:
+      title ??
+      (type === "success"
+        ? "Éxito"
+        : type === "error"
+          ? "Error"
+          : "Información"),
     text2: message,
     position: "top",
     autoHide: true,
