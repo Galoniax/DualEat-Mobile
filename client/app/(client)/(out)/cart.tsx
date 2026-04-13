@@ -1,4 +1,5 @@
 import { useOrdering } from "@/context/cart/OrderingContext";
+import { useOrderStore } from "@/context/store/useOrderStore";
 import { Entypo, Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
@@ -9,27 +10,29 @@ import {
 } from "react-native-safe-area-context";
 
 import { getCartInfo } from "@/services/order.api";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Local, QROrderPayload } from "@/interface/global";
-import { MenuFood } from "@/components/menu/MenuScreen";
-import { useRouter } from "expo-router";
+import { MenuFood } from "@/components/features/menu/MenuScreen";
+import { useFocusEffect, useRouter } from "expo-router";
 import { ROUTES } from "@/constants/constants";
 import { formatPrice } from "@/utils/distance";
 import { ScrollView } from "react-native-gesture-handler";
 import { isLocalOpen } from "@/utils/isLocalOpen";
 import { useLoader } from "@/context/app/LoadingContext";
 import { useAuth } from "@/context/auth/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { useQRParser } from "@/utils/qr";
 
 export default function CartScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const { clear, items } = useOrdering();
-  const { setType } = useLoader();
   const { user } = useAuth();
 
-  const [local, setLocal] = useState<Local | null>(null);
-  const [foods, setFoods] = useState<MenuFood[]>([]);
+  const { clear, items } = useOrdering();
+  const { setType } = useLoader();
+
+  const { generateQR } = useQRParser();
 
   const itemsIDs = useMemo(() => {
     return items.map((item) => item.food_id);
@@ -37,61 +40,49 @@ export default function CartScreen() {
 
   const localId = items.length > 0 ? items[0].local.id : "";
 
-  // ** OBTENER INFO **/
-  useEffect(() => {
-    if (itemsIDs.length === 0 || !localId) return;
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["cart", localId, itemsIDs],
 
-    const fetchCartData = async () => {
-      try {
-        setType("minimal");
-        const cartData = await getCartInfo(itemsIDs, localId);
-
-        if (cartData && cartData.success && cartData.data) {
-          setLocal(cartData.data.local);
-          setFoods(cartData.data.items);
-        }
-      } catch (e) {
-        console.log("Error al obtener datos del carrito", e);
-      } finally {
-        setType(null);
+    queryFn: async () => {
+      const response = await getCartInfo(itemsIDs, localId);
+      if (!response?.success || !response?.data) {
+        throw new Error("Error en la respuesta del carrito");
       }
-    };
+      return response.data;
+    },
 
-    fetchCartData();
-  }, [itemsIDs, localId, setType]);
+    enabled: itemsIDs.length > 0 && !!localId,
 
-  // ** RECARGA **/
+    refetchInterval: 2 * 60 * 1000,
+  });
+
+  const local: Local | null = (data?.local as Local) || null;
+  const foods: MenuFood[] = (data?.items as MenuFood[]) || [];
+
   useEffect(() => {
-    if (itemsIDs.length === 0 || !localId) return;
-
-    const intervalo = 2 * 60 * 1000;
-
-    const fetch = async () => {
-      try {
-        const cartData = await getCartInfo(itemsIDs, localId);
-
-        if (cartData && cartData.success && cartData.data) {
-          setLocal(cartData.data.local);
-          setFoods(cartData.data.items);
-        }
-      } catch (e) {
-        console.log("Error en la recarga", e);
-      }
+    if (isLoading) {
+      setType("minimal");
+    } else {
+      setType(null);
+    }
+    return () => {
+      setType(null);
     };
+  }, [isLoading, setType]);
 
-    const intervalId: ReturnType<typeof setInterval> = setInterval(() => {
-      fetch();
-    }, intervalo);
-
-    return () => clearInterval(intervalId);
-  }, [itemsIDs, localId]);
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch]),
+  );
 
   const handleOpenQR = () => {
-    if (items.length === 0 || !localId) return;
+    if (items.length === 0 || !localId || !user || user.isBusiness) return;
 
     if (user && user.isBusiness === false) {
       const payload: QROrderPayload = {
         t: "order",
+        oi: "create",
         l: localId,
         u: user.id,
         i: items.map((item) => ({
@@ -100,14 +91,11 @@ export default function CartScreen() {
         })),
       };
 
-      if (payload.i.length === 0) return;
+      //const qrValue = generateQR(payload);
 
-      router.push({
-        pathname: ROUTES.USER.QR,
-        params: {
-          qrValue: JSON.stringify(payload),
-        },
-      });
+      useOrderStore.getState().setTempOrder(payload);
+
+      router.push(ROUTES.USER.QR);
     }
   };
 
@@ -125,7 +113,7 @@ export default function CartScreen() {
     if (items.length === 0) {
       router.back();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items]);
 
   return (
@@ -145,8 +133,6 @@ export default function CartScreen() {
           className="w-[40px] h-[40px] justify-center items-center "
           onPress={() => {
             clear();
-            setFoods([]);
-            setLocal(null);
           }}
         >
           <Text className="text-[13px] font-dosis-bold">Vaciar</Text>
@@ -193,7 +179,6 @@ export default function CartScreen() {
             </View>
             <Entypo name="chevron-thin-right" size={16} color="#2F2F2F" />
           </TouchableOpacity>
-          
         )}
 
         <View style={{ paddingHorizontal: insets.left + insets.right + 18 }}>

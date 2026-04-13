@@ -6,7 +6,7 @@ import Octicons from "@expo/vector-icons/Octicons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
-import { WeatherWidget } from "@/components/ui/WeatherWidget";
+import { WeatherWidget } from "@/components/features/weather/WeatherWidget";
 import { useAuth } from "@/context/auth/AuthContext";
 
 export default function ProfileScreen() {

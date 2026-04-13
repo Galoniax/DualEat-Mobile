@@ -2,7 +2,7 @@ import React from "react";
 import { Image } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
-import Tab from "@/components/tab";
+import Tab from "@/components/layout/tab";
 
 const tabs = [
   {

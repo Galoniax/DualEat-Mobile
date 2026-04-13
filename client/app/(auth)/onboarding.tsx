@@ -1,6 +1,6 @@
 import { showToast } from "@/utils/toast";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Text,
   View,
@@ -11,7 +11,7 @@ import {
   FlatList,
 } from "react-native";
 
-import TextInputUI from "@/components/ui/TextInput";
+import TextInputUI from "@/components/ui/inputs/TextInput";
 
 import { ROUTES } from "@/constants/constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -20,9 +20,10 @@ import Feather from "@expo/vector-icons/Feather";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useAuth } from "@/context/auth/AuthContext";
 
-import { getFoodCategories, getTagCategories } from "@/services/category.api";
+import { getFoodCategories, getTags } from "@/services/category.api";
 
 import { FoodCategory, CommunityTag } from "@/interface/global";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Onboarding() {
   const router = useRouter();
@@ -32,10 +33,7 @@ export default function Onboarding() {
   const [name, setName] = useState<string>("");
 
   const [preferences, setPreferences] = useState<string[]>([]);
-  const [foodC, setFoodC] = useState<FoodCategory[]>([]);
-  const [communityC, setCommunityC] = useState<CommunityTag[]>([]);
-
-  const Logo = require("@/assets/images/icon/LogoDualEat.png");
+  const Logo = require("@/assets/icon/LogoDualEat.png");
 
   // --- ESTADO DE CONTROL ---
   const [open, setOpen] = useState<"food" | "community" | null>(null);
@@ -43,39 +41,28 @@ export default function Onboarding() {
   // --- PARAMETROS ---
   const { tempToken } = useLocalSearchParams<{ tempToken?: string }>();
 
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        const [food, tags] = await Promise.all([
-          getFoodCategories(),
-          getTagCategories(),
-        ]);
+  const { data: foodCategories = [], isLoading: loadingFood } = useQuery({
+    queryKey: ["categories", "food"],
+    queryFn: async () => {
+      const response = await getFoodCategories();
+      return response?.data || [];
+    },
+    staleTime: 1000 * 60 * 30, // 30 minutos
+  });
 
-        // Validamos y asignamos foodC
-        if (food?.success && Array.isArray(food.data)) {
-          setFoodC(food.data);
-        } else {
-          setFoodC([]);
-        }
+  const { data: tagCategories = [], isLoading: loadingTags } = useQuery({
+    queryKey: ["categories", "tags"],
+    queryFn: async () => {
+      const response = await getTags();
+      return response?.data || [];
+    },
+    staleTime: 1000 * 60 * 30, // 30 minutos
+  });
 
-        // Validamos y asignamos communityC
-        if (tags?.success && Array.isArray(tags.data)) {
-          setCommunityC(tags.data);
-        } else {
-          setCommunityC([]);
-        }
-      } catch (e: unknown) {
-        console.log("Error con las categorías", e);
-        showToast(
-          "error",
-          "No se pudieron cargar las categorías. Inténtalo de nuevo.",
-          "Error",
-        );
-      }
-    };
+  const foodC: FoodCategory[] = (foodCategories as FoodCategory[]) || [];
+  const communityC: CommunityTag[] = (tagCategories as CommunityTag[]) || [];
 
-    fetch();
-  }, []);
+  const isLoading = loadingFood || loadingTags;
 
   const handleOpen = (section: "food" | "community") => {
     setOpen((prev) => (prev === section ? null : section));
@@ -133,7 +120,6 @@ export default function Onboarding() {
         communityPreferenceIds,
         tempToken,
       );
-      
     } catch (e) {
       console.log("Error al enviar datos de completado de perfil:", e);
       showToast(

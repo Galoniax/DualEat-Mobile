@@ -10,9 +10,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Octicons from "@expo/vector-icons/Octicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useLocation } from "@/context/extension/LocationContext";
+import { useAppMode } from "@/context/app/AppModeContext";
 
 export default function HomeScreen() {
   const { address } = useLocation();
+  const { switchMode } = useAppMode();
 
   return (
     <SafeAreaView className="flex-1 bg-bg-gray">
@@ -24,7 +26,7 @@ export default function HomeScreen() {
       <View className="flex-1 px-4 pt-3 ">
         <View className="flex-row justify-between items-center">
           <TouchableOpacity
-            onPress={() => console.log("Toggle mode")}
+            onPress={() => switchMode()}
             className="p-[9px] border bg-bg-yellow border-bg-yellow rounded-[5px]"
           >
             <MaterialCommunityIcons

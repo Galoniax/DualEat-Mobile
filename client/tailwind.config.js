@@ -1,6 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ["./app/**/*.{js,jsx,ts,tsx}", "./components/**/*.{js,jsx,ts,tsx}"],
+  safelist: [
+    "text-green-800",
+    "text-[#3578e4]",
+    "text-purple-600",
+    "text-[#B53325]",
+    "text-[#e5a657]"
+  ],
   presets: [require("nativewind/preset")],
   theme: {
     extend: {

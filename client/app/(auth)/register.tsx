@@ -11,7 +11,7 @@ import Toast from "react-native-toast-message";
 import { GoogleIcon } from "@/assets/icon/google";
 import { useState } from "react";
 
-import TextInputUI from "@/components/ui/TextInput";
+import TextInputUI from "@/components/ui/inputs/TextInput";
 
 import { useRouter } from "expo-router";
 
@@ -33,7 +33,7 @@ export default function Register() {
   const { register } = useAuth();
   const { handleGoogleLogin } = useGoogleAuth();
 
-  const Logo = require("@/assets/images/icon/LogoDualEat.png");
+  const Logo = require("@/assets/icon//LogoDualEat.png");
 
   const handleRegister = async () => {
     const deviceId = await getDeviceId();
@@ -69,7 +69,12 @@ export default function Register() {
 
         <View className="flex-row justify-between w-[90%] mx-auto items-center mt-[15%] mb-12">
           <View className="flex-1">
-            <Ionicons name="chevron-back" size={22} color="#fff" onPress={() => router.push(ROUTES.PUBLIC.HOME)} />
+            <Ionicons
+              name="chevron-back"
+              size={22}
+              color="#fff"
+              onPress={() => router.push(ROUTES.PUBLIC.HOME)}
+            />
           </View>
 
           <View className="flex-row items-center flex-2 justify-center">

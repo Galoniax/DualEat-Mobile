@@ -19,31 +19,32 @@ import { es } from "date-fns/locale";
 
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Order, ResponseWithPagination } from "@/interface/global";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { FlatList } from "react-native-gesture-handler";
 import { showToast } from "@/utils/toast";
 import FontAwesome from "@expo/vector-icons/build/FontAwesome";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { formatPrice } from "@/utils/distance";
-
-interface ExtendedOrder extends Order {
-  _count?: {
-    order_items: number;
-  };
-}
+import {
+  ORDER_STATUS_DICT,
+  ROUTES,
+  STATUS_COLORS,
+} from "@/constants/constants";
 
 export default function OrdersScreen() {
   const insets = useSafeAreaInsets();
 
+  const router = useRouter();
+
   const filter = {
-    entregados: false,
+    completados: false,
     cancelados: false,
   };
 
   type FilterKey = keyof typeof filter;
 
   const FILTER_OPTIONS: { name: string; key: FilterKey }[] = [
-    { name: "Entregados", key: "entregados" },
+    { name: "Completados", key: "completados" },
     { name: "Cancelados", key: "cancelados" },
   ];
 
@@ -65,13 +66,13 @@ export default function OrdersScreen() {
     error,
     refetch,
     isLoading,
-  } = useInfiniteQuery<ResponseWithPagination<ExtendedOrder>>({
+  } = useInfiniteQuery<ResponseWithPagination<Order>>({
     queryKey: ["userOrders"],
     queryFn: async ({ pageParam = 1 }) => {
       const response = await getUserOrders(pageParam as number);
 
       if (!response) throw new Error("Error obteniendo las órdenes");
-      return response as ResponseWithPagination<ExtendedOrder>;
+      return response as ResponseWithPagination<Order>;
     },
     getNextPageParam: (lastPage) => {
       if (lastPage?.pagination?.hasMore) {
@@ -85,7 +86,7 @@ export default function OrdersScreen() {
   const orders =
     data?.pages
       .flatMap((page) => page?.data || [])
-      .filter((order): order is ExtendedOrder => Boolean(order)) || [];
+      .filter((order): order is Order => Boolean(order)) || [];
 
   useFocusEffect(
     useCallback(() => {
@@ -99,102 +100,103 @@ export default function OrdersScreen() {
     }
   };
 
-  const status: Record<string, string> = {
-    pending: "Pendiente",
-    paid: "Pagado",
-    completed: "Entregado",
-    canceled: "Cancelado",
-  };
-
   let filtered = orders;
 
-  if (filters.entregados) {
-    filtered = filtered.filter((order) => order.status === "completed");
+  if (filters.completados) {
+    filtered = filtered.filter((order) => order.status === "COMPLETED");
   }
 
   if (filters.cancelados) {
-    filtered = filtered.filter((order) => order.status === "canceled");
+    filtered = filtered.filter((order) => order.status === "CANCELED");
   }
 
-  const renderOrderItem = ({ item }: { item: ExtendedOrder }) => {
-    return (
-      <View className="px-2 py-4 mb-2 flex-row gap-4 items-stretch border border-dashed border-gray-400 rounded-lg">
-        <View className="gap-2">
-          <Image
-            source={{ uri: item.local?.image_url || undefined }}
-            className="w-12 h-12 rounded-[5px]"
-          />
-          {item.status === "paid" && item.short_code && (
-            <TouchableOpacity
-              className={`bg-bg-semi-black py-3 rounded-[5px] items-center`}
-            >
-              <Ionicons name="qr-code-sharp" size={20} color="#fff" />
-            </TouchableOpacity>
-          )}
-        </View>
-        <View className="flex-1 flex-col gap-0.5">
-          <View className="flex-row items-end gap-2">
-            <Text
-              className={`text-[12px] font-dosis-bold 
-                ${
-                  item.status === "completed"
-                    ? "text-green-800"
-                    : item.status === "paid"
-                      ? "text-[#3578e4]"
-                      : item.status === "canceled"
-                        ? "text-[#B53325]"
-                        : "text-[#e5a657]"
-                }`}
-            >
-              {status[item.status] || "Desconocido"}
-            </Text>
+  const renderOrderItem = useCallback(
+    ({ item }: { item: Order }) => {
+      console.log(JSON.stringify(item.status, null, 2));
 
-            <Text className="text-text-3 text-[11px] font-dosis-medium">
-              {format(
-                new Date(item?.delivery_date || item.created_at),
-                "EEE d MMM '•' HH:mm'hs'",
-                {
-                  locale: es,
-                },
-              )}
-            </Text>
-            {item.short_code && item.status === "paid" && (
-              <Text className="text-text-3 text-[11px] font-dosis-bold">
-                Código: {item.short_code || "N/A"}
-              </Text>
+     
+      return (
+        <TouchableOpacity
+          onPress={() => {
+            router.push({
+              pathname: ROUTES.SHARED.ORDER_INFO,
+              params: {
+                order_id: item.id,
+              },
+            });
+          }}
+          className="px-2 py-4 mb-2 flex-row gap-4 items-stretch border border-dashed border-gray-400 rounded-lg"
+        >
+          <View className="gap-2">
+            <Image
+              source={{ uri: item.local?.image_url || undefined }}
+              className="w-12 h-12 rounded-[5px]"
+            />
+            {item.status === "PAID" && item.short_code && (
+              <TouchableOpacity
+                className={`bg-bg-semi-black py-3 rounded-[5px] items-center`}
+              >
+                <Ionicons name="qr-code-sharp" size={20} color="#fff" />
+              </TouchableOpacity>
             )}
           </View>
-          <Text
-            className="text-[16px] font-dosis-bold text-text-3 mt-1 max-w-[70%] text-ellipsis overflow-hidden"
-            numberOfLines={2}
-          >
-            {item.local?.name || "Local desconocido"}
-            {item.local?.address ? ` - ${item.local.address}` : ""}
-          </Text>
+          <View className="flex-1 flex-col gap-0.5">
+            <View className="flex-row items-end gap-2">
+              <Text
+                className={`text-[12px] font-dosis-bold 
+                ${STATUS_COLORS[item.status]}`}
+              >
+                {ORDER_STATUS_DICT[item.status] || "Desconocido"}
+              </Text>
 
-          <Text
-            className="text-[13px] font-dosis-regular text-text-3"
-            numberOfLines={1}
-          >
-            {item._count?.order_items} artículos
-          </Text>
-
-          <View className="flex-row items-center gap-1 mt-1">
-            <FontAwesome name="star" size={10} color="#2F2F2F" />
+              <Text className="text-text-3 text-[11px] font-dosis-medium">
+                {format(
+                  new Date(item?.delivery_date || item.created_at),
+                  "EEE d MMM '•' HH:mm'hs'",
+                  {
+                    locale: es,
+                  },
+                )}
+              </Text>
+              {item.short_code && item.status === "PAID" && (
+                <Text className="text-text-3 text-[11px] font-dosis-bold">
+                  Código: {item.short_code || "N/A"}
+                </Text>
+              )}
+            </View>
             <Text
-              className="text-[11px] font-dosis-bold text-text-3"
+              className="text-[16px] font-dosis-bold text-text-3 mt-1 max-w-[70%] text-ellipsis overflow-hidden"
+              numberOfLines={2}
+            >
+              {item.local?.name || "Local desconocido"}
+              {item.local?.address ? ` - ${item.local.address}` : ""}
+            </Text>
+
+            <Text
+              className="text-[13px] font-dosis-regular text-text-3"
               numberOfLines={1}
             >
-              {item.review?.rating || "Sin calificar"}
+              {item._count?.order_items} artículos
             </Text>
+
+            <View className="flex-row items-center gap-1 mt-1">
+              <FontAwesome name="star" size={10} color="#2F2F2F" />
+              <Text
+                className="text-[11px] font-dosis-bold text-text-3"
+                numberOfLines={1}
+              >
+                {item.review?.rating || "Sin calificar"}
+              </Text>
+            </View>
           </View>
-        </View>
-        <Text className="text-[17px] absolute right-4 top-1/2 -translate-y-1/2 font-dosis-bold text-text-3">
-          {formatPrice(item.total)}
-        </Text>
-      </View>
-    );
-  };
+          <Text className="text-[17px] absolute right-4 top-1/2 -translate-y-1/2 font-dosis-bold text-text-3">
+            {formatPrice(item.total)}
+          </Text>
+        </TouchableOpacity>
+      );
+    },
+    [router],
+  );
 
   if (isError) {
     showToast(
@@ -220,7 +222,7 @@ export default function OrdersScreen() {
       </View>
 
       {/** FILTROS */}
-      <View className="w-full flex-row items-center justify-start gap-4 px-4 py-2">
+      <View className="w-full flex-row items-center justify-start gap-4 px-4 py-2 mb-2">
         <View className="flex-row items-center gap-x-3">
           <Ionicons name="options-sharp" size={16} color="black" />
           <Text className="text-[13px] font-dosis-bold text-text-3">
@@ -251,6 +253,7 @@ export default function OrdersScreen() {
         })}
       </View>
 
+      {/** LISTA DE ORDENES */}
       <View className="flex-1">
         {isLoading ? (
           <ActivityIndicator size={24} color="#3578e4" className="mt-10" />

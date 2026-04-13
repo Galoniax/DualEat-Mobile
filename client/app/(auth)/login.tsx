@@ -4,16 +4,14 @@ import {
   View,
   ImageBackground,
   Image,
+  ActivityIndicator,
 } from "react-native";
 
-import Toast from "react-native-toast-message";
-
+import { WebView } from "react-native-webview";
 import { GoogleIcon } from "@/assets/icon/google";
 import { useRef, useState } from "react";
 
-import Recaptcha, { RecaptchaRef } from "react-native-recaptcha-that-works";
-
-import TextInputUI from "@/components/ui/TextInput";
+import TextInputUI from "@/components/ui/inputs/TextInput";
 
 import { useRouter } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -22,11 +20,13 @@ import { ROUTES } from "@/constants/constants";
 import { useGoogleAuth } from "@/hooks/auth/useGoogleAuth";
 import { getDeviceId } from "@/utils/device";
 import { useAuth } from "@/context/auth/AuthContext";
+import { showToast } from "@/utils/toast";
 
 export default function Login() {
   // --- ESTADOS LOCALES ---
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // --- HOOKS ---
   const router = useRouter();
@@ -34,39 +34,104 @@ export default function Login() {
   const { login } = useAuth();
   const { handleGoogleLogin } = useGoogleAuth();
 
-  const Logo = require("@/assets/images/icon/LogoDualEat.png");
+  const Logo = require("@/assets/icon/LogoDualEat.png");
 
   // --- REFERENCIA AL RECAPTCHA ---
-  const recaptchaRef = useRef<RecaptchaRef>(null);
+  const recaptchaRef = useRef<WebView>(null);
 
-  const handleLogin = async () => {
-    if (email === "" || password === "") {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Por favor, completa todos los campos.",
-      });
+  const onPressLogin = async () => {
+    if (email.trim() === "" || password.trim() === "") {
+      showToast("error", "Por favor, completa todos los campos.", "Error");
       return;
     }
 
-    recaptchaRef.current?.open();
+    setLoading(true);
+
+    try {
+      recaptchaRef.current?.injectJavaScript(`
+        if (window.turnstileWidgetId !== undefined) {
+          turnstile.execute(window.turnstileWidgetId);
+        }
+        true;
+      `);
+    } catch (e) {
+      console.log("Error inyectando script: ", e);
+      setLoading(false);
+    }
   };
 
-  const onVerify = async (token: string) => {
-    const deviceId = await getDeviceId();
+  // 2. Manejador de la respuesta de Cloudflare
+  const onMessage = async (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
 
-    await login(email.trim(), password.trim(), true, token, deviceId);
+      if (data.type === "success") {
+        try {
+          // === INICIO DEL LOGIN REAL ===
+          const deviceId = await getDeviceId();
+          await login(
+            email.trim(),
+            password.trim(),
+            true,
+            data.token,
+            deviceId,
+          );
+        } catch (e) {
+          console.log("Error en credenciales o servidor:", e);
+        } finally {
+          setLoading(false);
+        }
+      } else if (data.type === "error") {
+        showToast(
+          "error",
+          "Por favor, completa todos los campos.",
+          "Error de Seguridad",
+        );
+        setLoading(false);
+      } else if (data.type === "expired") {
+        showToast(
+          "error",
+          "Por favor, vuelve a intentar iniciar sesión.",
+          "Sesión Expirada",
+        );
+        setLoading(false);
+      }
+    } catch (e) {
+      console.log("Error parseando mensaje de Turnstile:", e);
+      setLoading(false);
+    }
   };
-
-  const onExpire = () => {
-    recaptchaRef.current?.close();
-
-    Toast.show({
-      type: "error",
-      text1: "Verificación expirada",
-      text2: "Por favor, intenta nuevamente.",
-    });
-  };
+  const cloudfareHTML = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
+      </head>
+      <body>
+        <div id="cf-turnstile"></div>
+        <script>
+          window.onload = function () {
+            window.turnstileWidgetId = turnstile.render('#cf-turnstile', {
+              sitekey: '0x4AAAAAACny8xDMqyxHHXxu',
+              size: 'invisible',
+              execution: 'execute', 
+              callback: function(token) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'success', token: token }));
+              },
+              'error-callback': function(err) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'error', error: String(err) }));
+              },
+              'expired-callback': function() {
+                turnstile.reset(window.turnstileWidgetId);
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'expired' }));
+              }
+            });
+          };
+        </script>
+      </body>
+    </html>
+  `;
 
   return (
     <View className="flex-1 bg-bg-semi-black">
@@ -145,27 +210,18 @@ export default function Login() {
             </Text>
           </TouchableOpacity>
 
-          <View className="w-[80%] items-center my-4">
-            <Recaptcha
-              ref={recaptchaRef}
-              siteKey="6LcEHaYrAAAAAOD2H4YUWk_9AiJsgtAdbHI1usz1"
-              baseUrl="http://localhost"
-              onVerify={onVerify}
-              onExpire={onExpire}
-              size="normal"
-              theme="light"
-              style={{ width: "100%", height: 80 }}
-            />
-          </View>
-
           <TouchableOpacity
-            onPress={handleLogin}
-            activeOpacity={0.7}
-            className="bg-bg-red w-[80%] p-3 rounded-full items-center border border-gray-300"
+            onPress={onPressLogin}
+            activeOpacity={0.9}
+            className="bg-bg-red w-[80%] p-3 rounded-full items-center border border-gray-300 mt-6"
           >
-            <Text className="text-text-1 font-dosis-bold text-[15px] tracking-tighter">
-              Iniciar Sesión
-            </Text>
+            {loading ? (
+              <ActivityIndicator className="py-0.5" color="#fff" />
+            ) : (
+              <Text className="text-text-1 font-dosis-bold text-[15px] tracking-tighter">
+                Iniciar Sesión
+              </Text>
+            )}
           </TouchableOpacity>
 
           {/* --- Divisor "o" --- */}
@@ -188,16 +244,16 @@ export default function Login() {
         </View>
       </View>
 
-      {/* reCAPTCHA Modal */}
-      <Recaptcha
-        ref={recaptchaRef}
-        siteKey="6LcEHaYrAAAAAOD2H4YUWk_9AiJsgtAdbHI1usz1"
-        baseUrl="http://localhost"
-        onVerify={onVerify}
-        onExpire={onExpire}
-        size="normal"
-        theme="light"
-      />
+      <View style={{ width: 0, height: 0, overflow: "hidden", opacity: 0 }}>
+        <WebView
+          ref={recaptchaRef}
+          source={{ html: cloudfareHTML, baseUrl: "http://localhost" }}
+          onMessage={onMessage}
+          javaScriptEnabled={true}
+          bounces={false}
+          scrollEnabled={false}
+        />
+      </View>
     </View>
   );
 }

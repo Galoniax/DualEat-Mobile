@@ -1,16 +1,12 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
-import { router } from "expo-router";
-import { ROUTES } from "@/constants/constants";
 
 const TOKEN_KEY = process.env.TOKEN_KEY || "dualeat_session_token";
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
-console.log("Conectando a:", BASE_URL);
-
 const axiosInterceptor = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 15000,
 });
 
 // 1. INTERCEPTOR DE REQUEST (Salida)
@@ -29,7 +25,9 @@ axiosInterceptor.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
+
 // 2. INTERCEPTOR DE RESPONSE (Llegada)
+/*
 axiosInterceptor.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -44,5 +42,6 @@ axiosInterceptor.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+*/
 
 export default axiosInterceptor;

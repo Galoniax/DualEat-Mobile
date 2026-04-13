@@ -12,14 +12,13 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import Toast from "react-native-toast-message";
 import "@/app/global.css";
 import { useFonts } from "expo-font";
-import { useColorScheme } from "../hooks/use-color-scheme";
 import { AuthProvider, useAuth } from "@/context/auth/AuthContext";
 import { LocationProvider } from "@/context/extension/LocationContext";
 import { configureNotifications } from "@/utils/notifications";
 import * as Location from "expo-location";
 import "../tasks/locationTask";
 import { useRedirect } from "@/hooks/router/useRedirect";
-import LoadingScreen from "@/components/ui/LoadingScreen";
+import LoadingScreen from "@/components/ui/feedback/LoadingScreen";
 import { LoaderProvider, useLoader } from "@/context/app/LoadingContext";
 import { OrderingProvider } from "@/context/cart/OrderingContext";
 import { AppModeProvider, useAppMode } from "@/context/app/AppModeContext";
@@ -132,7 +131,7 @@ export default function RootLayout() {
             </AuthProvider>
           </LoaderProvider>
 
-          <StatusBar style="dark" />
+          <StatusBar style="auto" animated />
           <Toast />
         </ThemeProvider>
       </QueryClientProvider>

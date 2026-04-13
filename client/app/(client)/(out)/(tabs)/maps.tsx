@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   View,
   StyleSheet,
@@ -7,42 +13,50 @@ import {
   TextInput,
   TouchableOpacity,
   Animated,
+  useWindowDimensions,
+  Image,
+  Keyboard,
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { useLocation } from "@/context/extension/LocationContext";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-import CustomBottomSheet from "@/components/ui/BottomSheetModal";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Feather from "@expo/vector-icons/Feather";
 
 import { useIsFocused } from "@react-navigation/native";
 
-import BottomSheet, {
-  BottomSheetModal,
-  BottomSheetView,
-} from "@gorhom/bottom-sheet";
+import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
+
 import FilterComponent, {
-  FilterViewMode,
-  initialFilters,
-} from "@/components/ui/FilterComponent";
+  FilterModalRef,
+} from "@/components/features/map/FilterComponent";
 
 import { getLocalInBounds } from "@/services/discovery.api";
 import { Local } from "@/interface/global";
 import MaterialIcons from "@expo/vector-icons/build/MaterialIcons";
-import PinMarker from "@/components/ui/Marker";
-import { useFocusEffect } from "expo-router";
+import PinMarker from "@/components/features/map/Marker";
+import { useRouter } from "expo-router";
 
-import { mapStyle } from "@/constants/constants";
+import { ROUTES, mapStyle } from "@/constants/constants";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { FlatList } from "react-native-gesture-handler";
+import { calculateDistance, formatDistance } from "@/utils/distance";
+import { initial, preferencesDTO } from "@/interface/global.dto";
+import { FontAwesome, FontAwesome5 } from "@expo/vector-icons";
 
 export default function MapScreen() {
   const { location, address } = useLocation();
+  const router = useRouter();
+
   const isFocused = useIsFocused();
+  const { width } = useWindowDimensions();
 
   // --- UBICACIÓN --
   const lat = location?.coords.latitude;
   const lng = location?.coords.longitude;
+
+  const CARD_WIDTH = width * 0.95;
 
   const [bounds, setBounds] = useState<{
     minLat: number | null;
@@ -51,81 +65,232 @@ export default function MapScreen() {
     maxLng: number | null;
   } | null>(null);
 
-  const [locales, setLocales] = useState<Local[]>([]);
   const [query, setQuery] = useState("");
+  const [localQuery, setLocalQuery] = useState("");
 
   const [pinImages, setPinImages] = useState<Record<string, string>>({});
 
   // --- REF ---
-  const inputRef = useRef<TextInput | null>(null);
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
+  const filterModalRef = useRef<FilterModalRef>(null);
   const bottomSheet = useRef<BottomSheet>(null);
   const mapRef = useRef<MapView>(null);
+  const isScrolling = useRef(false);
+
+  const flatListRef = useRef<FlatList>(null);
 
   const translateX = useRef(new Animated.Value(-300)).current;
 
   // --- ESTADOS ---
-  const [filters, setFilters] = useState(initialFilters);
-  const [tempFilters, setTempFilters] = useState(initialFilters);
-
-  const [modal, setModal] = useState<FilterViewMode>("all");
-  const [loading, setLoading] = useState(true);
-
-  const filterSheet = (mode: FilterViewMode, open: boolean) => {
-    setModal(mode);
-    if (open) {
-      bottomSheetRef.current?.expand();
-    } else {
-      bottomSheetRef.current?.dismiss();
-    }
-  };
+  const [filters, setFilters] = useState(initial);
 
   const handlePinCaptured = (id: string, uri: string) => {
     setPinImages((prev) => ({ ...prev, [id]: uri }));
   };
 
-  useEffect(() => {
-    const fetchLocals = async () => {
-      try {
-        setLoading(true);
-        if (!bounds || !isFocused) return;
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50,
+  }).current;
 
-        if (bounds.minLat && bounds.maxLat && bounds.minLng && bounds.maxLng) {
-          const response = await getLocalInBounds(
-            bounds.minLat,
-            bounds.maxLat,
-            bounds.minLng,
-            bounds.maxLng,
-            filters,
-            query,
-          );
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: any[] }) => {
+      if (isScrolling.current && viewableItems.length > 0) {
+        const visible = viewableItems[0].item as Local;
 
-          if (response && response.success) {
-            const locales = response.data as Local[];
-
-            setPinImages((prevImages) => {
-              const imagenesValidas: { [key: string]: string } = {};
-              locales.forEach((loc) => {
-                if (prevImages[loc.id]) {
-                  imagenesValidas[loc.id] = prevImages[loc.id];
-                }
-              });
-              return imagenesValidas;
-            });
-
-            setLocales(locales);
-          }
-        }
-      } catch (e) {
-        console.log(e);
-      } finally {
-        setLoading(false);
+        mapRef.current?.animateToRegion(
+          {
+            latitude: visible.latitude - 0.0006,
+            longitude: visible.longitude,
+            latitudeDelta: 0.009,
+            longitudeDelta: 0.009,
+          },
+          800,
+        );
       }
-    };
+    },
+  ).current;
 
-    const timeoutId = setTimeout(fetchLocals, 500);
-    return () => clearTimeout(timeoutId);
-  }, [bounds, filters, query, isFocused]);
+  const { data: locales = [], isLoading } = useQuery({
+    queryKey: ["locals", bounds, filters, query],
+
+    enabled: !!bounds && isFocused,
+
+    queryFn: async () => {
+      const response = await getLocalInBounds(
+        bounds!.minLat!,
+        bounds!.maxLat!,
+        bounds!.minLng!,
+        bounds!.maxLng!,
+        filters,
+        query,
+      );
+
+      if (response && response.success && response.status === 200) {
+        return response.data as Local[];
+      } else {
+        return [];
+      }
+    },
+    refetchOnReconnect: true,
+    placeholderData: keepPreviousData,
+  });
+
+  const sortedLocales = useMemo(() => {
+    if (!lat || !lng || !locales || locales.length === 0) return locales;
+
+    return [...locales].sort((a, b) => {
+      const A = calculateDistance(lat, lng, a.latitude, a.longitude);
+      const B = calculateDistance(lat, lng, b.latitude, b.longitude);
+      return A - B;
+    });
+  }, [locales, lat, lng]);
+
+  const mapMarkers = useMemo(() => {
+    return sortedLocales.map((loc) => {
+      const uri = pinImages[loc.id];
+      if (!uri) return null;
+
+      return (
+        <Marker
+          key={`marker-${loc.id}`}
+          coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
+          image={{ uri: uri }}
+          tracksViewChanges={false}
+          anchor={{ x: 0.5, y: 1 }}
+          zIndex={1}
+          onPress={(e) => {
+            e.stopPropagation();
+
+            mapRef.current?.animateToRegion(
+              {
+                latitude: loc.latitude - 0.0006,
+                longitude: loc.longitude,
+                latitudeDelta: 0.004,
+                longitudeDelta: 0.004,
+              },
+              800,
+            );
+            const index = sortedLocales.findIndex((item) => item.id === loc.id);
+            if (index !== -1 && flatListRef.current) {
+              const offset = index * (CARD_WIDTH + 16);
+              flatListRef.current.scrollToOffset({
+                offset: offset,
+                animated: true,
+              });
+            }
+          }}
+        />
+      );
+    });
+  }, [sortedLocales, pinImages, CARD_WIDTH]);
+
+  const hiddenPinGenerators = useMemo(() => {
+    return sortedLocales.map((loc) => {
+      if (pinImages[loc.id]) return null;
+      return (
+        <PinMarker
+          key={`generator-${loc.id}`}
+          loc={loc}
+          onCaptured={handlePinCaptured}
+        />
+      );
+    });
+  }, [sortedLocales, pinImages]);
+
+  const renderLocalItem = useCallback(
+    ({ item }: { item: Local }) => {
+      const distance = location?.coords
+        ? calculateDistance(
+            location.coords.latitude,
+            location.coords.longitude,
+            item.latitude,
+            item.longitude,
+          )
+        : 0;
+
+      const displayDistance = formatDistance(distance);
+
+      return (
+        <TouchableOpacity
+          key={item.id}
+          style={{ width: CARD_WIDTH, paddingHorizontal: 16 }}
+          className="justify-center"
+          onPress={() => {
+            router.push({
+              pathname: ROUTES.USER.LOCAL,
+              params: { slug: item.slug },
+            });
+          }}
+        >
+          <Image
+            source={{
+              uri: item.image_url
+                ? item.image_url
+                : "https://placehold.co/300x100",
+            }}
+            className="w-full h-[100px] object-cover rounded-[14px]"
+          />
+          <View className="flex-row items-center mt-2 px-2">
+            <View className="flex-1 flex-row items-center gap-2">
+              <Text className="text-text-3 text-[13.5px] font-dosis-bold">
+                {item.name}
+              </Text>
+              <Text className="text-text-4 text-[13.5px] font-dosis-regular">
+                <Text className="text-text-6">-</Text> {item.address}
+              </Text>
+            </View>
+            <View className="flex-row items-center gap-2">
+              <FontAwesome5 name="walking" size={14} color="#2F2F2F" />
+              <Text className="text-text-3 text-[12px]  font-dosis-bold">
+                {displayDistance}
+              </Text>
+            </View>
+          </View>
+          <View className="flex-row items-center gap-x-1 mt-1 px-2">
+            <FontAwesome name="star" size={12} color="#2F2F2F" />
+            <Text className="text-[12px] font-dosis-bold text-text-5">
+              {item.average_rating === 0
+                ? "Sin reseñas"
+                : item.average_rating.toFixed(1) +
+                  " " +
+                  "(" +
+                  item._count?.reviews +
+                  ")"}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      );
+    },
+    [location?.coords, CARD_WIDTH, router],
+  );
+
+  const onSubmit = () => {
+    setQuery(localQuery);
+    Keyboard.dismiss();
+
+    mapRef.current?.animateToRegion(
+      {
+        latitude: Number(lat),
+        longitude: Number(lng),
+        latitudeDelta: 0.15,
+        longitudeDelta: 0.15,
+      },
+      800,
+    );
+  };
+
+  useEffect(() => {
+    if (locales.length === 0) return;
+
+    setPinImages((prevImages) => {
+      const imagenesValidas: { [key: string]: string } = {};
+      locales.forEach((loc) => {
+        if (prevImages[loc.id]) {
+          imagenesValidas[loc.id] = prevImages[loc.id];
+        }
+      });
+      return imagenesValidas;
+    });
+  }, [locales]);
 
   useEffect(() => {
     Animated.loop(
@@ -139,16 +304,11 @@ export default function MapScreen() {
     ).start();
   }, [translateX]);
 
-  useFocusEffect(
-    useCallback(() => {
-      bottomSheetRef.current?.expand();
-      return () => {
-        bottomSheetRef.current?.close();
-      };
-    }, []),
-  );
+  const handleRegionChangeComplete = (region: any, details: any) => {
+    if (details && details.isGesture === false) {
+      return;
+    }
 
-  const handleRegionChangeComplete = (region: any) => {
     setBounds({
       minLat: region.latitude - region.latitudeDelta / 2,
       maxLat: region.latitude + region.latitudeDelta / 2,
@@ -165,12 +325,6 @@ export default function MapScreen() {
     );
   }
 
-  console.log("Locales:", JSON.stringify(locales, null, 2));
-
-  const focusInput = () => {
-    inputRef.current?.focus();
-  };
-
   return (
     <View style={{ flex: 1 }}>
       <MapView
@@ -181,57 +335,34 @@ export default function MapScreen() {
         showsMyLocationButton={false}
         showsCompass={false}
         customMapStyle={mapStyle}
-        minZoomLevel={14}
+        minZoomLevel={12}
         maxZoomLevel={20}
         initialRegion={{
           latitude: Number(lat),
           longitude: Number(lng),
-          latitudeDelta: 0.008,
-          longitudeDelta: 0.008,
+          latitudeDelta: 0.04,
+          longitudeDelta: 0.04,
         }}
         onRegionChangeComplete={handleRegionChangeComplete}
+        onMapReady={() => {
+          setTimeout(() => {
+            mapRef.current?.animateToRegion(
+              {
+                latitude: Number(lat),
+                longitude: Number(lng),
+                latitudeDelta: 0.04,
+                longitudeDelta: 0.04,
+              },
+              800,
+            );
+          }, 100);
+        }}
       >
-        {locales.map((loc) => {
-          const uri = pinImages[loc.id];
-
-          if (!uri) return null;
-
-          return (
-            <Marker
-              key={`marker-${loc.id}`}
-              coordinate={{ latitude: loc.latitude, longitude: loc.longitude }}
-              image={{ uri: uri }}
-              tracksViewChanges={false}
-              anchor={{ x: 0.5, y: 1 }}
-              onPress={(e) => {
-                e.stopPropagation();
-                mapRef.current?.animateToRegion(
-                  {
-                    latitude: loc.latitude - 0.0006,
-                    longitude: loc.longitude,
-                    latitudeDelta: 0.004,
-                    longitudeDelta: 0.004,
-                  },
-                  800,
-                );
-              }}
-            />
-          );
-        })}
+        {mapMarkers}
       </MapView>
 
       <View style={{ position: "absolute", top: -10000, left: -10000 }}>
-        {locales.map((loc) => {
-          if (pinImages[loc.id]) return null;
-
-          return (
-            <PinMarker
-              key={`generator-${loc.id}`}
-              loc={loc}
-              onCaptured={handlePinCaptured}
-            />
-          );
-        })}
+        {hiddenPinGenerators}
       </View>
 
       {/* CAPA DE UI */}
@@ -242,21 +373,25 @@ export default function MapScreen() {
         {/* Barra de busqueda */}
         <View className="flex gap-3 items-center flex-row justify-evenly pt-4 px-6 mx-auto w-full">
           <View
-            onTouchStart={focusInput}
             className="flex-[1] border overflow-hidden relative border-gray-400 justify-start w-full bg-bg-gray rounded-full flex-row items-center gap-2"
             pointerEvents="box-none"
           >
-            <Feather name="search" className="ps-4" size={20} color="#707070" />
+            <View className="absolute left-4 z-10" pointerEvents="none">
+              <Feather name="search" size={20} color="#707070" />
+            </View>
 
             <TextInput
-              ref={inputRef}
-              className="rounded-[40px] font-dosis-medium placeholder:text-text-5"
+              className="flex-[1] ps-14 h-full rounded-[40px] font-dosis-medium placeholder:text-text-5"
               placeholder={`Buscá en ${
                 address?.region?.split("Provincia de ")[1] || "tu zona"
               }`}
               placeholderTextColor="#6B7280"
+              value={localQuery}
+              onChangeText={setLocalQuery}
+              onSubmitEditing={onSubmit}
+              returnKeyType="search"
             />
-            {loading && (
+            {isLoading && (
               <Animated.View
                 className={"absolute bottom-[-1px] bg-bg-red"}
                 style={{
@@ -271,7 +406,7 @@ export default function MapScreen() {
 
           {/* Botón de filtro */}
           <TouchableOpacity
-            onPress={() => filterSheet("all", true)}
+            onPress={() => filterModalRef.current?.open()}
             className="border border-gray-400"
             style={{
               backgroundColor: "#f5f5f5",
@@ -284,7 +419,7 @@ export default function MapScreen() {
         </View>
 
         {/* Botón de ubicación */}
-        <View className="px-4 items-end mb-[15%]">
+        <View className="px-4 items-end mb-[18%]">
           <TouchableOpacity
             onPress={() => {
               mapRef.current?.animateToRegion(
@@ -304,93 +439,75 @@ export default function MapScreen() {
         </View>
       </SafeAreaView>
 
-      {/* --- FILTROS --- */}
-      <CustomBottomSheet
-        ref={bottomSheetRef}
-        modal={true}
-        type={2}
-        scrollable={true}
-      >
-        <View style={{ flex: 1 }} className="px-1">
-          {/* --- Header del filtro --- */}
-          <View className="flex-row relative justify-center items-center pb-5 gap-4 border-b border-dashed border-gray-200">
-            <TouchableOpacity
-              className="absolute left-4 top-0 z-10"
-              onPress={() => filterSheet("all", false)}
-            >
-              <Ionicons name="close" size={24} color="black" />
-            </TouchableOpacity>
-            <Text className="text-[18px] font-dosis-bold text-text-3">
-              Filtros
-            </Text>
-          </View>
-
-          {/* Este componente ahora maneja su propio scroll */}
-          <FilterComponent
-            filters={tempFilters}
-            setPending={setTempFilters}
-            viewMode={modal}
-          />
-
-          {/* --- Botones inferiores fijos --- */}
-          <View className="flex-row gap-4 p-4 border-t border-gray-200 bg-white">
-            <TouchableOpacity
-              className="flex-1 py-3 rounded-full border border-gray-300 items-center justify-center"
-              onPress={() => {
-                setTempFilters(initialFilters);
-                setFilters(initialFilters);
-              }}
-            >
-              <Text className="font-dosis-bold text-gray-700">Limpiar</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="flex-1 py-3 rounded-full bg-bg-red items-center justify-center shadow-sm"
-              onPress={() => {
-                setFilters(tempFilters);
-                filterSheet("all", false);
-              }}
-            >
-              <Text className="text-white font-dosis-bold text-base">
-                Aplicar
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </CustomBottomSheet>
+      {/* --- BOTTOM MODAL DE FILTROS --- */}
+      <FilterComponent
+        ref={filterModalRef}
+        filters={filters}
+        onApply={(nuevosFiltros: preferencesDTO) => {
+          setFilters(nuevosFiltros);
+          filterModalRef.current?.close();
+        }}
+        onCancel={() => filterModalRef.current?.close()}
+      />
 
       {/* --- BOTTOM SHEET DE LOCALES CERCANOS --- */}
-      <BottomSheet
-        ref={bottomSheet}
-        index={0}
-        snapPoints={["10%", "20%"]}
-        enablePanDownToClose={false}
-        enableDynamicSizing={false}
-        enableOverDrag={false}
-        enableContentPanningGesture={true}
-        enableHandlePanningGesture={true}
-        handleIndicatorStyle={{
-          backgroundColor: "#2F2F2F",
-          width: 35,
-          height: 5,
-          borderRadius: 9999,
-          marginBottom: 10,
-        }}
-      >
-        <BottomSheetView style={{ flex: 1, paddingBottom: 30 }}>
-          {!loading && locales.length === 0 ? (
-            <View className="flex-row justify-center py-2 border-y border-dashed border-gray-300">
-              <Text className="text-text-3 text-[14px] font-dosis-regular">
-                No hay locales cerca
-              </Text>
-            </View>
-          ) : (
-            <View className="flex-row justify-center pb-4 border-b border-dashed border-gray-300">
-              <Ionicons name="qr-code-sharp" size={30} color="#fff" />
-            </View>
-          )}
-        </BottomSheetView>
-      </BottomSheet>
+      {isFocused && (
+        <BottomSheet
+          ref={bottomSheet}
+          index={0}
+          snapPoints={["13%", "25%"]}
+          enablePanDownToClose={false}
+          enableDynamicSizing={false}
+          enableOverDrag={false}
+          enableContentPanningGesture={true}
+          enableHandlePanningGesture={true}
+          handleIndicatorStyle={{
+            backgroundColor: "#B53325",
+            width: 35,
+            height: 5,
+            borderRadius: 9999,
+            marginBottom: 6,
+            marginTop: 5,
+          }}
+          backgroundStyle={{
+            borderRadius: 20,
+            borderColor: "#B53325",
+            borderWidth: 0.5,
+          }}
+        >
+          <BottomSheetView
+            style={{ flex: 1, paddingBottom: 30, width: "100%" }}
+          >
+            {!isLoading && locales.length === 0 ? (
+              <View className="flex-row justify-center items-center py-2 gap-2 border-y border-dashed border-gray-300">
+                <Ionicons name="restaurant" size={16} color="#B53325" />
+                <Text className="text-text-3 text-[14px] font-dosis-regular">
+                  No hay locales cerca
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                ref={flatListRef}
+                data={sortedLocales}
+                horizontal={true}
+                showsHorizontalScrollIndicator={false}
+                snapToInterval={CARD_WIDTH + 10}
+                decelerationRate="fast"
+                snapToAlignment="center"
+                onViewableItemsChanged={onViewableItemsChanged}
+                viewabilityConfig={viewabilityConfig}
+                renderItem={renderLocalItem}
+                onScrollBeginDrag={() => {
+                  isScrolling.current = true;
+                }}
+                onMomentumScrollEnd={() => {
+                  isScrolling.current = false;
+                }}
+              />
+            )}
+          </BottomSheetView>
+        </BottomSheet>
+      )}
     </View>
   );
 }
