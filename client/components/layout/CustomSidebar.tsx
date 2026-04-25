@@ -1,31 +1,34 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
 import {
-  useDrawerStatus,
-} from "@react-navigation/drawer";
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
+import { useDrawerStatus } from "@react-navigation/drawer";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/context/auth/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMyCommunities } from "@/hooks/api/useMyCommunities";
+import { useAppMode } from "@/context/app/AppModeContext";
+import { CommunityMember } from "@/interface/global";
+import { ROUTES } from "@/constants/constants";
 
-export const CustomSidebar = () => {
+export const CustomSidebar = (props: any) => {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const insets = useSafeAreaInsets();
+
+  const { user } = useAuth();
+  const { switchMode } = useAppMode();
 
   const { data: communities, refetch } = useMyCommunities();
-
-  const expandOptions = [
-    { name: "Comunidades", key: "comunity" },
-    { name: "Chats", key: "chats" },
-  ];
-
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const toggleOption = (key: string) =>
     setExpanded((p) => ({ ...p, [key]: !p[key] }));
-
-  const insets = useSafeAreaInsets();
 
   const isDrawerOpen = useDrawerStatus() === "open";
 
@@ -33,8 +36,8 @@ export const CustomSidebar = () => {
     if (isDrawerOpen) {
       refetch();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDrawerOpen]);
+  }, [isDrawerOpen, refetch]);
+
   return (
     <View
       style={{
@@ -58,87 +61,84 @@ export const CustomSidebar = () => {
         </View>
       </View>
 
-      <ScrollView>
-        <View className="mt-4">
-          <View className="flex-col gap-2">
-            <SidebarItem icon="person-outline" label="Perfil" />
-            <SidebarItem icon="receipt-outline" label="Mapa" />
-            <SidebarItem icon="search-outline" label="Explorar" />
+      <ScrollView className="mt-4 flex-1 " showsVerticalScrollIndicator={false}>
+        <View className="flex-col gap-y-4">
+          <SidebarItem icon="person-outline" label="Perfil" />
+          <SidebarItem icon="receipt-outline" label="Mapa" />
+          <SidebarItem icon="search-outline" label="Explorar" />
 
-            <TouchableOpacity
-              style={{ borderColor: "#E5E5E5" }}
-              className={`flex-row items-center py-3 border-y mt-2`}
-            >
-              <View className="flex-row items-center">
-                <Ionicons name="add-circle-outline" size={20} color="#333" />
-                <Text
-                  className="font-dosis-bold text-[16.5px]"
-                  style={styles.menuText}
+          <View className=" border-y border-gray-200 my-2">
+            <SidebarItem
+              icon="add-circle-outline"
+              label="Crear Comunidad"
+              onPress={() => router.push(ROUTES.USER.CREATE_COMMUNITY)}
+            />
+          </View>
+
+          <SidebarItem
+            icon="people-outline"
+            label="Comunidades"
+            onPress={() => toggleOption("comunity")}
+            isExpanded={expanded.comunity}
+          />
+
+          {expanded.comunity && communities && communities.length > 0 && (
+            <View className="pb-2">
+              {communities.map((item: CommunityMember) => (
+                <TouchableOpacity
+                  key={item.community.id}
+                  onPress={() => {
+                    router.push({
+                      pathname: ROUTES.USER.COMMUNITY,
+                      params: {
+                        community_slug: item.community.slug || "",
+                      },
+                    });
+                    props.navigation.closeDrawer();
+                  }}
+                  className="flex-row items-center py-1"
                 >
-                  Crear Comunidad
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+                  {/* Avatar */}
+                  <Image
+                    source={{ uri: item.community.image_url }}
+                    className="w-6 h-6 rounded-full mr-3"
+                  />
 
-          <View className="flex-col gap-2 mt-7">
-            <SidebarItem
-              icon="people-outline"
-              label="Comunidades"
-              onPress={() => toggleOption("comunity")}
-              isExpanded={expanded.comunity}
-            />
-
-            {expanded.comunity && (
-              <View className="flex-col gap-2">
-                {communities && communities.length > 0 ? (
-                  communities.map((community) => (
-                    <TouchableOpacity
-                      key={community.id}
-                      className="flex-row items-center py-3"
+                  {/* Community Info */}
+                  <View className="flex-1">
+                    <Text
+                      className="font-dosis-regular text-[14px] text-text-4 truncate"
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
                     >
-                      <View className="flex-row items-center">
-                        <Image
-                          source={{ uri: community.image_url }}
-                          className="h-11 w-11 rounded-full"
-                        />
-                        <Text
-                          className="font-dosis-bold text-[16.5px]"
-                          style={styles.menuText}
-                        >
-                          {community.name}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))
-                ) : (
-                  <Text className="font-dosis-regular text-[14.5px] text-center mb-2">
-                    No tienes comunidades
-                  </Text>
-                )}
-              </View>
-            )}
-            <SidebarItem icon="chatbubbles-outline" label="Chats" />
-          </View>
+                      {item.community.name}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
 
-          <View style={styles.divider} />
-          <View>
-            <SidebarItem
-              icon="swap-horizontal-outline"
-              label="Cambiar Modo"
-              // onPress={toggleAppMode}
-            />
-            <SidebarItem icon="qr-code-outline" label="Escanear QR" />
-          </View>
+          <SidebarItem
+            icon="chatbubbles-outline"
+            label="Chats"
+            onPress={() => toggleOption("chat")}
+            isExpanded={expanded.chat}
+          />
 
-          <View style={styles.divider} />
+          <SidebarItem
+            icon="swap-horizontal-outline"
+            label="Cambiar Modo"
+            onPress={switchMode}
+          />
+          <SidebarItem icon="qr-code-outline" label="Escanear QR" />
         </View>
-
-        
       </ScrollView>
-      <TouchableOpacity className="p-2.5 rounded-[8px]">
-          <Ionicons name="log-out-outline" size={26} color="#B53325" />
-        </TouchableOpacity>
+
+      {/* Botón de Logout fijo abajo */}
+      <TouchableOpacity className="p-2.5 rounded-[8px] mt-auto">
+        <Ionicons name="log-out-outline" size={26} color="#B53325" />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -147,24 +147,24 @@ const SidebarItem = ({
   icon,
   label,
   onPress,
-  isExpanded,
+  isExpanded = null,
 }: {
   icon: any;
   label: string;
   onPress?: () => void;
-  isExpanded?: boolean;
+  isExpanded?: boolean | null;
 }) => (
   <TouchableOpacity
     className={`flex-row items-center ${onPress ? "justify-between" : ""} py-3`}
     onPress={onPress}
   >
     <View className="flex-row items-center">
-      <Ionicons name={icon} size={24} color="#333" strokeWidth={5} />
-      <Text className="font-dosis-bold text-[18px]" style={styles.menuText}>
+      <Ionicons name={icon} size={20} color="#333" />
+      <Text className="font-dosis-bold text-[16px]" style={styles.menuText}>
         {label}
       </Text>
     </View>
-    {onPress && (
+    {isExpanded !== null && (
       <Ionicons
         name={isExpanded ? "chevron-up-outline" : "chevron-down-outline"}
         size={17}
@@ -178,11 +178,5 @@ const styles = StyleSheet.create({
   menuText: {
     marginLeft: 15,
     color: "#333",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#E5E5E5",
-    marginHorizontal: 20,
-    marginVertical: 10,
   },
 });

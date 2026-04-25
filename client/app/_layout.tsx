@@ -1,7 +1,4 @@
-import {
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
+import { DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
@@ -9,7 +6,6 @@ import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
-import Toast from "react-native-toast-message";
 import "@/app/global.css";
 import { useFonts } from "expo-font";
 import { AuthProvider, useAuth } from "@/context/auth/AuthContext";
@@ -114,9 +110,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={client}>
-        <ThemeProvider
-          value={DefaultTheme}
-        >
+        <ThemeProvider value={DefaultTheme}>
           <LoaderProvider>
             <AuthProvider>
               <AppModeProvider>
@@ -131,8 +125,7 @@ export default function RootLayout() {
             </AuthProvider>
           </LoaderProvider>
 
-          <StatusBar style="auto" animated />
-          <Toast />
+          <StatusBar style="dark" animated />
         </ThemeProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>

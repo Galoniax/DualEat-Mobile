@@ -20,7 +20,7 @@ export default function Tab({ data }: TabProps) {
     elevation: 0,
     shadowOpacity: 0,
     borderTopWidth: 1,
-    borderTopColor: "#dbdbdb",
+    borderTopColor: "#e5e7eb",
     backgroundColor: "#fefefe",
   };
 
