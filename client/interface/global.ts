@@ -20,10 +20,15 @@ export interface ResponseWithPagination<T = unknown> {
 }
 
 export interface ChatSessionResponse {
-  chat_id: string;
-  messages: ChatSessionData[];
-  title: string;
+  chat: ChatSession;
   recipes: Recipe[] | null;
+  search_query: "SEARCH" | "CHAT";
+}
+
+export interface UploadResponse {
+  post_images: string[];
+  recipe_main_image: string;
+  recipe_step_images: string[];
 }
 
 interface PaginationInfo {
@@ -186,7 +191,7 @@ export interface CommunityTag {
   id: number;
   name: string;
   active: boolean;
-  
+
   category: TagCategory;
   communities: Community[];
 
@@ -209,7 +214,8 @@ export interface Community {
   name: string;
   description: string;
   image_url: string | "https://placehold.co/100x100";
-  visibility: "PUBLIC" | "PRIVATE";
+  banner_url: string | null;
+
   total_members: number;
 
   creator: User;
@@ -223,6 +229,9 @@ export interface Community {
   members: CommunityMember[];
 
   tags: CommunityTag[];
+
+  isMember?: boolean;
+  recieves_notifications?: NotificationFrequency;
 }
 
 export interface CommunityMember {
@@ -240,6 +249,22 @@ export interface CommunityMember {
 }
 
 export type NotificationFrequency = "ALWAYS" | "NONE";
+
+export type ContentType = "POST" | "COMMENT";
+
+export type VoteType = "UP" | "DOWN";
+
+export interface Vote {
+  id: number;
+  user: User;
+  user_id: string;
+  content_type: ContentType;
+  content_id: string;
+
+  vote_type: VoteType;
+  created_at: Date;
+  updated_at: Date;
+}
 
 export interface Post {
   id: string;
@@ -268,13 +293,14 @@ export interface Post {
   recipe: Recipe | null;
   recipe_id: string | null;
 
-  userVote?: "UP" | "DOWN" | null;
-  hasVoted?: boolean;
+  user_vote?: VoteType | null;
+  has_voted?: boolean;
+
+  _count?: { comments?: number };
 }
 
 export interface PostComment {
   id: string;
-
   user: User;
   user_id: string;
 
@@ -291,10 +317,14 @@ export interface PostComment {
 
   created_at: Date;
   updated_at: Date;
-  edited: boolean;
   active: boolean;
 
+  user_vote?: VoteType | null;
+  has_voted?: boolean;
+
   replies: PostComment[];
+
+  _count?: { replies?: number };
 }
 
 export interface Recipe {
@@ -337,7 +367,7 @@ export interface RecipeIngredient {
   ingredient: Ingredient;
   ingredient_id: string;
 
-  quantity: number;
+  quantity: string;
   unit: Unit;
   notes: string | null;
 }
@@ -362,6 +392,20 @@ export enum Unit {
   PAQUETE = "PAQUETE",
   OPCIONAL = "OPCIONAL",
 }
+
+export const UnitList: Unit[] = [
+  Unit.GRAMOS,
+  Unit.KILOGRAMOS,
+  Unit.MILILITROS,
+  Unit.LITROS,
+  Unit.CUCHARADITA,
+  Unit.CUCHARADA,
+  Unit.TAZA,
+  Unit.UNIDAD,
+  Unit.PIZCA,
+  Unit.PAQUETE,
+  Unit.OPCIONAL,
+];
 
 export const UnitNames: Record<Unit, { abbreviation: string; name: string }> = {
   [Unit.GRAMOS]: {
@@ -482,7 +526,6 @@ export type QRLocalPayload = {
 };
 
 export type QRData = QROrderPayload | QRUserPayload | QRLocalPayload;
-
 
 export interface ChatSession {
   chat_id: string;

@@ -8,6 +8,8 @@ import {
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLoader } from "./LoadingContext";
+import { DrawerActions } from "@react-navigation/native";
+import { useNavigation } from "expo-router";
 
 export type AppMode = "in" | "out" | null;
 
@@ -36,6 +38,7 @@ function parseMode(saved: string | null): AppMode {
 export const AppModeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const navigation = useNavigation();
   const [mode, setMode] = useState<AppMode>(null);
 
   const { setType } = useLoader();
@@ -58,6 +61,7 @@ export const AppModeProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const switchMode = useCallback(async () => {
     try {
+      navigation.dispatch(DrawerActions.closeDrawer());
       setType("global");
       const Umode = await AsyncStorage.getItem(STORAGE_KEY);
       let newMode: AppMode = Umode === "out" ? "in" : "out";
@@ -70,12 +74,13 @@ export const AppModeProvider: React.FC<{ children: React.ReactNode }> = ({
       setType(null);
       console.log("Error al cambiar el modo", e);
     }
-  }, [setType]);
+  }, [setType, navigation]);
 
   const clearMode = useCallback(async () => {
+    navigation.dispatch(DrawerActions.closeDrawer());
     setMode(null);
     await AsyncStorage.removeItem(STORAGE_KEY);
-  }, []);
+  }, [navigation]);
 
   const contextValue = useMemo(
     () => ({

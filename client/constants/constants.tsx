@@ -13,7 +13,7 @@ export const ROUTES = {
   },
   USER: {
     DASHBOARD_OUT: "/(client)/(out)/(tabs)",
-    DASHBOARD_IN: "/(client)/(in)/(tabs)",
+    DASHBOARD_IN: "/(client)/(in)/(home)/(tabs)",
     LOCAL: "/(client)/(out)/local",
     CART: "/(client)/(out)/cart",
     QR: "/(client)/(out)/(tabs)/qr",
@@ -21,12 +21,14 @@ export const ROUTES = {
     COMMUNITY: "/(client)/(in)/c/[community_slug]",
     POST: "/(client)/(in)/c/[community_slug]/p/[post_id]/[post_slug]",
     RECIPE: "/(client)/(in)/c/[community_slug]/r/[recipe_id]/[recipe_slug]",
-    CREATE: "/(client)/(in)/(tabs)/create",
+    CREATE: "/(client)/(in)/(home)/(tabs)/create/index",
+    CREATE_RECIPE: "/(client)/(in)/(home)/(tabs)/create/recipe",
+    CREATE_COMMUNITY: "/(client)/(in)/create-community",
     
-    CHAT_HISTORY: "/(client)/(in)/(tabs)/chat/history",
-    CHAT: "/(client)/(in)/(tabs)/chat/[chat_id]",
+    CHAT_HISTORY: "/(client)/(in)/(home)/(tabs)/chat/history",
+    CHAT: "/(client)/(in)/(home)/(tabs)/chat/[chat_id]",
 
-    EXPLORE: "/(client)/(in)/(tabs)/index",
+    EXPLORE: "/(client)/(in)/(home)/(tabs)/index",
     EXPLORE_TAG: "/(client)/(in)/(tabs)/explore/[tag_id]",
     EXPLORE_CATEGORY: "/(client)/(in)/(tabs)/explore/[category_id]/[category_slug]",
   },
