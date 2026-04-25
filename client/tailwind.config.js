@@ -24,6 +24,7 @@ module.exports = {
         'bg-gray': '#f5f5f5',
         'bg-semi-white': '#fefefe',
         'bg-blue': '#3578e4',
+        'bg-blue-black': '#054FAF',
       },
       fontFamily: {
         'dosis-bold': ['Dosis-Bold'], 
