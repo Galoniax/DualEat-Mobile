@@ -17,15 +17,27 @@ export interface UploadPayload {
   post_images?: UploadableFile[];
   recipe_main_image?: UploadableFile;
   recipe_step_images?: UploadableFile[];
+  image_url?: UploadableFile;
+  banner_url?: UploadableFile;
 }
 
 export interface CommunityDTO {
   name: string;
   description: string;
-  image_url: UploadableFile;
-  banner_url: UploadableFile;
+  image_url: UploadableFile | null;
+  banner_url: UploadableFile | null;
 
   tags: number[];
+}
+
+export interface CommunityRequest {
+  name: string;
+  description: string;
+  tags: number[];
+  image_url: string;
+  banner_url:
+    | string
+    | "https://ohhvldagwoycuifwhgtc.supabase.co/storage/v1/object/public/community/icon_1761245783004_icon.jpeg";
 }
 
 export interface PostDTO {
