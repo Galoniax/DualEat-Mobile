@@ -1,6 +1,6 @@
-import { isAxiosError } from "axios";
 import axiosInterceptor from "@/api/client";
 import { Response } from "@/interface/global";
+import { handleApiError } from "@/utils/apiErrorHandler";
 
 // --- 1. OBTENER CATEGORIAS (FOOD)---
 // ===================================
@@ -14,31 +14,7 @@ export const getFoodCategories = async (): Promise<Response> => {
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
-    };
+    return handleApiError(err);
   }
 };
 
@@ -54,31 +30,7 @@ export const getTagCategories = async (): Promise<Response> => {
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
-    };
+    return handleApiError(err);
   }
 };
 
@@ -94,39 +46,19 @@ export const getTags = async (): Promise<Response> => {
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
-    };
+    return handleApiError(err);
   }
 };
 
 // --- 4. OBTENER TAGS POR CATEGORIA (TAGS) ---
 // ===================================
-export const getTagsByCategoryId = async (category_id: number): Promise<Response> => {
+export const getTagsByCategoryId = async (
+  category_id: number,
+): Promise<Response> => {
   try {
-    const response = await axiosInterceptor.get(`/community-tags/tags/category/${category_id}`);
+    const response = await axiosInterceptor.get(
+      `/community-tags/tags/category/${category_id}`,
+    );
 
     return {
       success: response.data.success ?? true,
@@ -134,30 +66,6 @@ export const getTagsByCategoryId = async (category_id: number): Promise<Response
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
-    };
+    return handleApiError(err);
   }
 };

@@ -1,5 +1,3 @@
-import { isAxiosError } from "axios";
-
 import axiosInterceptor from "@/api/client";
 import {
   Local,
@@ -8,6 +6,7 @@ import {
   ResponseWithPagination,
 } from "@/interface/global";
 import { MenuFood } from "@/components/features/menu/MenuScreen";
+import { handleApiError } from "@/utils/apiErrorHandler";
 
 interface CartPayload {
   items: MenuFood[];
@@ -32,31 +31,7 @@ export const getCartInfo = async (
       data: response.data.data as CartPayload,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
-    };
+    return handleApiError(err);
   }
 };
 
@@ -75,10 +50,7 @@ export const getUserOrders = async (
     if (!response.data.success) return null;
     else return response.data as ResponseWithPagination<Order>;
   } catch (err: unknown) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-    }
-    return null;
+    return handleApiError(err);
   }
 };
 
@@ -94,30 +66,6 @@ export const getOrderById = async (id: string): Promise<Response> => {
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
-    };
+    return handleApiError(err);
   }
 };

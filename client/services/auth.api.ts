@@ -1,7 +1,6 @@
-import { isAxiosError } from "axios";
 import axiosInterceptor from "@/api/client";
-import { showToast } from "@/utils/toast";
 import { AuthResponse } from "@/interface/global";
+import { handleApiError } from "@/utils/apiErrorHandler";
 
 // --- 1. INICIO DE SESIÓN ---
 // ===================================
@@ -27,14 +26,7 @@ export const login = async (
 
     return response.data as AuthResponse;
   } catch (err: unknown) {
-    if (isAxiosError(err)) {
-      showToast(
-        "error",
-        err.response?.data?.message || "Error al iniciar sesión",
-        "Error",
-      );
-    }
-    return null;
+    return handleApiError(err);
   }
 };
 
@@ -54,14 +46,7 @@ export const register = async (
 
     return response.data as AuthResponse;
   } catch (err: unknown) {
-    if (isAxiosError(err)) {
-      showToast(
-        "error",
-        err.response?.data?.message || "Error al registrar",
-        "Error",
-      );
-    }
-    return null;
+    return handleApiError(err);
   }
 };
 
@@ -87,14 +72,7 @@ export const completeProfile = async (
 
     return response.data as AuthResponse;
   } catch (err: unknown) {
-    if (isAxiosError(err)) {
-      showToast(
-        "error",
-        err.response?.data?.message || "Error al completar el perfil",
-        "Error",
-      );
-    }
-    return null;
+    return handleApiError(err);
   }
 };
 
@@ -110,14 +88,7 @@ export const logout = async () => {
 
     return response.data as AuthResponse;
   } catch (err: unknown) {
-    if (isAxiosError(err)) {
-      showToast(
-        "error",
-        err.response?.data?.message || "Error al cerrar sesión",
-        "Error",
-      );
-    } 
-    return null;
+    return handleApiError(err);
   }
 };
 
@@ -130,9 +101,6 @@ export const getMe = async () => {
     });
     return response.data;
   } catch (err: unknown) {
-    if (isAxiosError(err)) {
-      console.log(err.response?.data?.message);
-    }
-    throw err;
+    return handleApiError(err);
   }
 };

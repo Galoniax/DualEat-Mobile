@@ -4,7 +4,7 @@ import {
   ChatSessionResponse,
   Response,
 } from "@/interface/global";
-import { isAxiosError } from "axios";
+import { handleApiError } from "@/utils/apiErrorHandler";
 
 // --- 1. CONSULTAS AL CHAT ---
 // ===================================
@@ -26,31 +26,7 @@ export const ask = async (
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
-    };
+    return handleApiError(err);
   }
 };
 
@@ -68,31 +44,7 @@ export const getById = async (chat_id: string): Promise<Response> => {
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
-    };
+    return handleApiError(err);
   }
 };
 
@@ -110,31 +62,7 @@ export const getHistory = async (search?: string): Promise<Response> => {
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
-    };
+    return handleApiError(err);
   }
 };
 
@@ -150,42 +78,22 @@ export const deleteChat = async (chat_id: string): Promise<Response> => {
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
-    };
+    return handleApiError(err);
   }
 };
 
-
 // --- 4. EDITAR TÍTULO DEL CHAT ---
 // ===================================
-export const editTitle = async (chat_id: string, title: string): Promise<Response> => {
+export const editTitle = async (
+  chat_id: string,
+  title: string,
+): Promise<Response> => {
   try {
     const normalize = title.trim();
 
-    const response = await axiosInterceptor.put(`/chat/${chat_id}/title`, { title: normalize });
+    const response = await axiosInterceptor.put(`/chat/${chat_id}/title`, {
+      title: normalize,
+    });
 
     return {
       success: response.data.success ?? true,
@@ -193,30 +101,6 @@ export const editTitle = async (chat_id: string, title: string): Promise<Respons
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
-    };
+    return handleApiError(err);
   }
 };
