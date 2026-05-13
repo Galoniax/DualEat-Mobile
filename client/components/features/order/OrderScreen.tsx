@@ -1,39 +1,35 @@
 import {
+  ORDER_STATUS_DICT,
+  ROUTES,
+  STATUS_COLORS,
+} from "@/constants/constants";
+import { Order, ResponseWithPagination } from "@/interface/global";
+import { getUserOrders } from "@/services/order.api";
+import { formatPrice } from "@/utils/distance";
+import { showToast } from "@/utils/toast";
+import {
+  FontAwesome,
+  Ionicons,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
+import { useHeaderHeight } from "@react-navigation/elements";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import {
   ActivityIndicator,
+  FlatList,
   Image,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import Feather from "@expo/vector-icons/Feather";
-import { useCallback, useState } from "react";
-import { getUserOrders } from "@/services/order.api";
-
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { Order, ResponseWithPagination } from "@/interface/global";
-import { useFocusEffect, useRouter } from "expo-router";
-import { FlatList } from "react-native-gesture-handler";
-import { showToast } from "@/utils/toast";
-import FontAwesome from "@expo/vector-icons/build/FontAwesome";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { formatPrice } from "@/utils/distance";
-import {
-  ORDER_STATUS_DICT,
-  ROUTES,
-  STATUS_COLORS,
-} from "@/constants/constants";
-
-export default function OrdersScreen() {
-  const insets = useSafeAreaInsets();
-
+export default function OrdersView() {
+  const headerHeight = useHeaderHeight();
   const router = useRouter();
 
   const filter = {
@@ -112,14 +108,12 @@ export default function OrdersScreen() {
 
   const renderOrderItem = useCallback(
     ({ item }: { item: Order }) => {
-      console.log(JSON.stringify(item.status, null, 2));
 
-     
       return (
         <TouchableOpacity
           onPress={() => {
             router.push({
-              pathname: ROUTES.SHARED.ORDER_INFO,
+              pathname: ROUTES.USER.ORDER_INFO,
               params: {
                 order_id: item.id,
               },
@@ -207,22 +201,13 @@ export default function OrdersScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-bg-semi-white h-full">
-      <View
-        style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
-        className="w-full flex-row  items-center justify-around py-4"
-      >
-        <Text className="text-[16px] font-dosis-bold">Tus pedidos</Text>
-        <TouchableOpacity
-          className="w-[40px] h-[40px] absolute right-4"
-          onPress={() => {}}
-        >
-          <Feather name="shopping-cart" size={18} color="#4A4947" />
-        </TouchableOpacity>
-      </View>
-
+    <SafeAreaView
+      style={{ paddingTop: headerHeight }}
+      edges={["left", "right"]}
+      className="flex-1 bg-bg-semi-white"
+    >
       {/** FILTROS */}
-      <View className="w-full flex-row items-center justify-start gap-4 px-4 py-2 mb-2">
+      <View className="w-full flex-row items-center justify-center gap-4 px-4 py-2 mb-2">
         <View className="flex-row items-center gap-x-3">
           <Ionicons name="options-sharp" size={16} color="black" />
           <Text className="text-[13px] font-dosis-bold text-text-3">
@@ -256,7 +241,7 @@ export default function OrdersScreen() {
       {/** LISTA DE ORDENES */}
       <View className="flex-1">
         {isLoading ? (
-          <ActivityIndicator size={24} color="#3578e4" className="mt-10" />
+          <ActivityIndicator size="large" color="#B53325" className="mt-10" />
         ) : (
           <FlatList
             data={filtered}
@@ -277,13 +262,13 @@ export default function OrdersScreen() {
               ) : null
             }
             ListEmptyComponent={
-              <View className="flex-1 justify-center items-center flex-row gap-2 mt-10">
+              <View className="flex-1 justify-center items-center flex-row gap-x-4 mt-10">
                 <MaterialCommunityIcons
                   name="book-remove-multiple-outline"
-                  size={20}
-                  color="black"
+                  size={18}
+                  color="#4A4947"
                 />
-                <Text className="text-center text-text-3 text-[14.5px] font-dosis-medium">
+                <Text className="text-text-3 text-[16px] font-dosis-medium">
                   Aún no tienes órdenes.
                 </Text>
               </View>

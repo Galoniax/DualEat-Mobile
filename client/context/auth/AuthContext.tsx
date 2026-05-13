@@ -73,6 +73,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(userData);
       }
     } catch (error: any) {
+
+      console.log("Error en init auth:");
       let status: number | undefined;
       if (error && error.response) {
         status = error.response.status;
@@ -180,6 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         }
         showToast("success", msg, "Éxito");
         const url = `${ROUTES.AUTH.ONBOARDING}${response.next_step}`;
+        
         router.push(url as Route);
 
         setType(null);

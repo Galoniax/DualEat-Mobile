@@ -11,45 +11,39 @@ export const TopSearchBar = (props: any) => {
     if (!user) return;
     navigation.dispatch(DrawerActions.openDrawer());
   };
+  const options = props?.options || {};
+  const title = options?.title || "";
 
-  const { options } = props;
-
-  const title =
-    options.headerTitle !== undefined ? options.headerTitle : options.title;
-  const RightActions = options.headerRight;
+  const RightActions = options?.headerRight || null;
 
   return (
     <View
       style={{
         paddingTop: Platform.OS === "ios" ? 50 : 46,
         paddingBottom: 10,
+        zIndex: 10
       }}
-      className="flex-row px-5 items-center justify-between"
+      className="flex-row px-4 items-center justify-between"
     >
       {/* --- IZQUIERDA: Perfil --- */}
-      <TouchableOpacity onPress={handleMenuPress} style={{ zIndex: 10 }}>
+      <TouchableOpacity onPress={handleMenuPress}>
         <Image
           source={{ uri: user?.avatar_url }}
-          className="w-[28px] h-[28px] rounded-full bg-gray-200"
+          className="w-[32px] h-[32px] rounded-full bg-gray-200"
         />
       </TouchableOpacity>
 
       {/* --- CENTRO: Título Dinámico --- */}
-      <View
-        pointerEvents="none"
-        className="flex-1 items-center"
-       
-        
-      >
+      <View pointerEvents="none" className="flex-1 items-center">
         {typeof title === "string" ? (
-          <Text className="font-dosis-bold text-[16px] text-text-3">{title}</Text>
-        ) : typeof title === "function" ? (
-          title({ children: "", tintColor: "#333" })
+          <Text className="font-dosis-bold text-[15px] text-text-3">
+            {title}
+          </Text>
         ) : null}
       </View>
 
       {/* --- DERECHA: Botones Dinámicos --- */}
-      <View style={{ zIndex: 10 }}>
+      <View>
         {RightActions ? (
           RightActions({
             tintColor: "#333",

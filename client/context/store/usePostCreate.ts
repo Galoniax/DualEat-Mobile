@@ -11,9 +11,9 @@ export const usePostCreateStore = create<PostCreateState>((set) => ({
   post: {
     title: "",
     content: "",
-    images_urls: [],
+    image_urls: [],
     community_id: null,
   },
   setPost: (post) => set({ post }),
-  clearPost: () => set({ post: { title: "", content: "", images_urls: [], community_id: null } }),
+  clearPost: () => set({ post: { title: "", content: "", image_urls: [], community_id: null } }),
 }));

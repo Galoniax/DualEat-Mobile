@@ -125,7 +125,7 @@ export default function RootLayout() {
             </AuthProvider>
           </LoaderProvider>
 
-          <StatusBar style="dark" animated />
+          <StatusBar style="inverted" animated />
         </ThemeProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>
