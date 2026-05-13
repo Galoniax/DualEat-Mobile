@@ -1,5 +1,9 @@
 import axiosInterceptor from "@/api/client";
-import { Response } from "@/interface/global";
+import {
+  LocalReview,
+  Response,
+  ResponseWithPagination,
+} from "@/interface/global";
 import { preferencesDTO } from "@/interface/global.dto";
 import { handleApiError } from "@/utils/apiErrorHandler";
 
@@ -57,17 +61,16 @@ export const getLocalByNearby = async (
 
 // --- 3. OBTENER LOCAL ---
 // ===================================
-export const getLocalBySlug = async (
-  slug: string,
-): Promise<Response | null> => {
+export const getLocalById = async (id: string): Promise<Response> => {
   try {
-    const response = await axiosInterceptor.get(
-      `/local/discovery/local/${slug}`,
-    );
+    const response = await axiosInterceptor.get(`/local/discovery/${id}`);
 
-    if (response.data.success === false) return null;
-    else return response.data as Response;
-  } catch (err: unknown) {
+    return {
+      success: response.data.success ?? true,
+      status: response.status,
+      data: response.data.data,
+    };
+  } catch (err: any) {
     return handleApiError(err);
   }
 };
@@ -75,15 +78,46 @@ export const getLocalBySlug = async (
 // --- 4. OBTENER RESEÑAS DEL LOCAL ---
 // ===================================
 export const getLocalReviews = async (
-  slug: string,
-): Promise<Response | null> => {
+  local_id: string,
+  page: number,
+): Promise<ResponseWithPagination<{ reviews: LocalReview[]; total: number }>> => {
   try {
     const response = await axiosInterceptor.get(
-      `/local/discovery/${slug}/reviews`,
+      `/local/discovery/${local_id}/reviews`,
+      {
+        params: {
+          page,
+        },
+      },
     );
-    if (response.data.success === false) return null;
-    else return response.data as Response;
-  } catch (err: unknown) {
+    return {
+      success: response.data.success,
+      status: response.status,
+      data: response.data.data,
+      pagination: response.data.pagination,
+    };
+  } catch (err: any) {
+    return handleApiError(err);
+  }
+};
+
+// --- 5. OBTENER LOCAL HOME ---
+// ===================================
+export const getHomeDiscovery = async (lat: number, lng: number): Promise<Response> => {
+  try {
+    const response = await axiosInterceptor.get("/local/discovery/home", {
+      params: {
+        lat,
+        lng,
+      },
+    });
+
+    return {
+      success: response.data.success ?? true,
+      status: response.status,
+      data: response.data.data,
+    };
+  } catch (err: any) {
     return handleApiError(err);
   }
 };

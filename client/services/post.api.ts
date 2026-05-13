@@ -6,7 +6,12 @@ import {
   ResponseWithPagination,
   UploadResponse,
 } from "@/interface/global";
-import { PostDTO, RecipeDTO, UploadPayload } from "@/interface/global.dto";
+import {
+  PostCommentDTO,
+  PostDTO,
+  RecipeDTO,
+  UploadPayload,
+} from "@/interface/global.dto";
 import { handleApiError } from "@/utils/apiErrorHandler";
 
 // --- 1. OBTENER POSTS ---
@@ -72,6 +77,22 @@ export const getComments = async (
   }
 };
 
+export const createComment = async (
+  comment: PostCommentDTO,
+): Promise<Response> => {
+  try {
+    const response = await axiosInterceptor.post("/post/comment", { comment });
+
+    return {
+      success: response.data.success ?? true,
+      status: response.status,
+      data: response.data.data,
+    };
+  } catch (err: any) {
+    return handleApiError(err);
+  }
+};
+
 // --- 3. OBTENER COMENTARIOS DE UN POST ---
 // ===================================
 export const getReplies = async (
@@ -130,8 +151,6 @@ export const createPost = async (
       post,
       recipe,
     });
-
-    console.log("RESPONSE: ", JSON.stringify(response.data, null, 2));
 
     return {
       success: response.data.success ?? true,

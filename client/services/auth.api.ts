@@ -20,8 +20,7 @@ export const login = async (
         remember: r,
         recaptcha: rt,
         deviceId: d,
-      },
-      { withCredentials: true },
+      }
     );
 
     return response.data as AuthResponse;
@@ -66,8 +65,7 @@ export const completeProfile = async (
         foodPreferences: fPreferences,
         communityPreferences: cPreferences,
         tempToken: tt,
-      },
-      { withCredentials: true },
+      }
     );
 
     return response.data as AuthResponse;
@@ -80,11 +78,7 @@ export const completeProfile = async (
 // ===================================
 export const logout = async () => {
   try {
-    const response = await axiosInterceptor.post(
-      "/auth/logout",
-      {},
-      { withCredentials: true },
-    );
+    const response = await axiosInterceptor.post("/auth/logout", {});
 
     return response.data as AuthResponse;
   } catch (err: unknown) {
@@ -96,11 +90,10 @@ export const logout = async () => {
 // ===================================
 export const getMe = async () => {
   try {
-    const response = await axiosInterceptor.get("/auth/me", {
-      withCredentials: true,
-    });
+    const response = await axiosInterceptor.get("/auth/me");
     return response.data;
   } catch (err: unknown) {
+    console.log("Error al obtener datos del usuario", err);
     return handleApiError(err);
   }
 };

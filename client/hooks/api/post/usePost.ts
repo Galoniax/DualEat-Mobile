@@ -1,6 +1,9 @@
 import { Post, PostComment, ResponseWithPagination } from "@/interface/global";
-import { getComments, getPostById, getReplies } from "@/services/post.api";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { PostCommentDTO } from "@/interface/global.dto";
+import { createComment, getComments, getPostById, getReplies } from "@/services/post.api";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import * as Crypto from "expo-crypto";
 
 //==============================================
 // usePostById (GET)
@@ -99,3 +102,94 @@ export const useReplies = (comment_id: string, enabled: boolean) => {
   });
 };
 
+
+export const useCreateComment = (currentUser: any) => { 
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (comment: PostCommentDTO) => await createComment(comment),
+
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ["comments", variables.post_id] });
+      await queryClient.cancelQueries({ queryKey: ["post", variables.post_id] });
+
+      const previousComments = queryClient.getQueryData(["comments", variables.post_id]);
+      const previousPost = queryClient.getQueryData(["post", variables.post_id]);
+
+      const optimisticComment = {
+        id: `temp-${Crypto.getRandomBytesAsync(10)}`,
+        content: variables.content,
+        post_id: variables.post_id,
+        parent_comment_id: variables.parent_comment_id || null,
+        reply_to_user_id: variables.reply_to_user_id || null,
+        created_at: new Date().toISOString(),
+        votes_up: 0,
+        votes_down: 0,
+        active: true,
+        user: {
+          id: currentUser?.id,
+          name: currentUser?.name || "Tú",
+          slug: currentUser?.slug || "",
+          avatar_url: currentUser?.avatar_url || "",
+        },
+        replies: [],
+      };
+
+      queryClient.setQueryData(["comments", variables.post_id], (oldData: any) => {
+        if (!oldData || !oldData.pages) return oldData;
+
+        const newPages = oldData.pages.map((page: any, pageIndex: number) => {
+          if (pageIndex !== 0) return page;
+
+          let newCommentsArray = [...page.data];
+
+          if (!variables.parent_comment_id) {
+            newCommentsArray = [optimisticComment, ...newCommentsArray];
+          } else {
+            newCommentsArray = newCommentsArray.map((comment) => {
+              if (comment.id === variables.parent_comment_id) {
+                return {
+                  ...comment,
+                  replies: [...(comment.replies || []), optimisticComment],
+                };
+              }
+              return comment;
+            });
+          }
+
+          return { ...page, data: newCommentsArray };
+        });
+
+        return { ...oldData, pages: newPages };
+      });
+
+      queryClient.setQueryData(["post", variables.post_id], (oldPost: any) => {
+        if (!oldPost) return oldPost;
+        return {
+          ...oldPost,
+          data: {
+            ...oldPost.data,
+            total_comments: (oldPost.data.total_comments || 0) + 1,
+          }
+        };
+      });
+
+      return { previousComments, previousPost };
+    },
+
+    onError: (error, variables, context) => {
+      console.error("Error al crear el comentario:", error);
+      if (context?.previousComments) {
+        queryClient.setQueryData(["comments", variables.post_id], context.previousComments);
+      }
+      if (context?.previousPost) {
+        queryClient.setQueryData(["post", variables.post_id], context.previousPost);
+      }
+    },
+
+    onSettled: async (_, __, variables) => {
+      await queryClient.invalidateQueries({ queryKey: ["comments", variables.post_id] });
+      await queryClient.invalidateQueries({ queryKey: ["post", variables.post_id] });
+    },
+  });
+};

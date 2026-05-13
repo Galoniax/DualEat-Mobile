@@ -1,6 +1,6 @@
 import axiosInterceptor from "@/api/client";
 import { Response, Community, CommunityMember } from "@/interface/global";
-import { CommunityRequest, UploadPayload } from "@/interface/global.dto";
+import { CommunityDTO, UploadPayload } from "@/interface/global.dto";
 import { handleApiError } from "@/utils/apiErrorHandler";
 
 // --- 1. OBTENER COMUNIDADES DEL USUARIO ---
@@ -81,9 +81,9 @@ export const joinLeave = async (
 
 // --- 5. CREAR UNA COMUNIDAD ---
 // ===================================
-export const create = async (community: CommunityRequest): Promise<Response> => {
+export const create = async (community: CommunityDTO): Promise<Response> => {
   try {
-    const response = await axiosInterceptor.post(`/community`, community);
+    const response = await axiosInterceptor.post(`/community/create`, { community });
 
     return {
       success: response.data.success ?? true,
@@ -125,6 +125,23 @@ export const upload = async (
       success: response.data.success ?? true,
       status: response.status,
       data: response.data.urls,
+    };
+  } catch (err: any) {
+    return handleApiError(err);
+  }
+};
+
+
+// --- 7. OBTENER COMUNIDADES POR CATEGORÍA ---
+// ===================================
+export const getByCategorySkeleton = async (category_id: number): Promise<Response> => {
+  try {
+    const response = await axiosInterceptor.get(`/community/category/${category_id}`);
+
+    return {
+      success: response.data.success ?? true,
+      status: response.status,
+      data: response.data.data,
     };
   } catch (err: any) {
     return handleApiError(err);

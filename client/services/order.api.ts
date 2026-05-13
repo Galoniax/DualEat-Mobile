@@ -1,24 +1,20 @@
 import axiosInterceptor from "@/api/client";
+import { MenuFood } from "@/app/(client)/(out)/l/[local_id]/[local_slug]";
 import {
   Local,
   Order,
   Response,
   ResponseWithPagination,
 } from "@/interface/global";
-import { MenuFood } from "@/components/features/menu/MenuScreen";
-import { handleApiError } from "@/utils/apiErrorHandler";
 
-interface CartPayload {
-  items: MenuFood[];
-  local: Local;
-}
+import { handleApiError } from "@/utils/apiErrorHandler";
 
 // --- 1. OBTENER INFO DE CARRITO ---
 // ===================================
 export const getCartInfo = async (
   iIds: string[], // itemIds
   lId: string, // localId
-): Promise<Response<CartPayload>> => {
+): Promise<Response<{ items: MenuFood[]; local: Local }>> => {
   try {
     const response = await axiosInterceptor.post("/order/cart/validate", {
       food_ids: iIds,
@@ -28,7 +24,7 @@ export const getCartInfo = async (
     return {
       success: response.data.success ?? true,
       status: response.status,
-      data: response.data.data as CartPayload,
+      data: response.data.data as { items: MenuFood[]; local: Local },
     };
   } catch (err: any) {
     return handleApiError(err);

@@ -2,6 +2,7 @@ import axiosInterceptor from "@/api/client";
 import {
   ChatSessionData,
   ChatSessionResponse,
+  Ingredient,
   Response,
 } from "@/interface/global";
 import { handleApiError } from "@/utils/apiErrorHandler";
@@ -11,13 +12,17 @@ import { handleApiError } from "@/utils/apiErrorHandler";
 export const ask = async (
   question: string,
   chat_id: string | null,
+  recipe_id: string | null,
   conversation: ChatSessionData[],
+  ingredients: Ingredient[],
 ): Promise<Response<ChatSessionResponse>> => {
   try {
     const response = await axiosInterceptor.post(`/chat/ask`, {
       question,
       chat_id,
+      recipe_id,
       conversation,
+      ingredients,
     });
 
     return {

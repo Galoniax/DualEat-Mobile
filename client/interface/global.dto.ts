@@ -13,6 +13,13 @@ export const initial: preferencesDTO = {
   bestSellers: false,
 };
 
+export interface PostCommentDTO {
+  post_id: string;
+  parent_comment_id?: string | null;
+  reply_to_user_id?: string | null;
+  content: string;
+}
+
 export interface UploadPayload {
   post_images?: UploadableFile[];
   recipe_main_image?: UploadableFile;
@@ -24,20 +31,10 @@ export interface UploadPayload {
 export interface CommunityDTO {
   name: string;
   description: string;
-  image_url: UploadableFile | null;
-  banner_url: UploadableFile | null;
+  image_url: UploadableFile | string;
+  banner_url: UploadableFile | string;
 
   tags: number[];
-}
-
-export interface CommunityRequest {
-  name: string;
-  description: string;
-  tags: number[];
-  image_url: string;
-  banner_url:
-    | string
-    | "https://ohhvldagwoycuifwhgtc.supabase.co/storage/v1/object/public/community/icon_1761245783004_icon.jpeg";
 }
 
 export interface PostDTO {
@@ -51,7 +48,7 @@ export interface RecipeDTO {
   name: string;
   description: string;
   total_time?: number;
-  main_image: string | UploadableFile;
+  main_image: UploadableFile | string;
 
   ingredients: RecipeIngredientDTO[];
   steps: RecipeStepDTO[];
@@ -61,7 +58,7 @@ export interface RecipeStepDTO {
   step_number: number;
   description: string;
   estimated_time: number | null;
-  image_url: string | UploadableFile;
+  image_url: UploadableFile | string;
 }
 
 export interface RecipeIngredientDTO {
