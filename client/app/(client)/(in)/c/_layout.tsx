@@ -5,11 +5,17 @@ export default function CommunityLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        animation: "slide_from_right",
       }}
     >
       <Stack.Screen name="index" />
       <Stack.Screen name="[community_slug]" />
+      <Stack.Screen
+        name="search"
+        options={{
+          presentation: "fullScreenModal",
+          animation: "fade",
+        }}
+      />
     </Stack>
   );
 }

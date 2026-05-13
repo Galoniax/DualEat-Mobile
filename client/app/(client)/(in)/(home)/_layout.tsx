@@ -1,7 +1,7 @@
 import { Drawer } from "expo-router/drawer";
 import { CustomSidebar } from "@/components/layout/CustomSidebar";
 
-export default function HomeDrawerLayout() {
+export default function HomeInDrawerLayout() {
   return (
     <Drawer
       drawerContent={(props: any) => <CustomSidebar {...props} />}

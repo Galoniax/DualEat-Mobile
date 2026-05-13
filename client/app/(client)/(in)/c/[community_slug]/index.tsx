@@ -16,11 +16,12 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Community, Post, ResponseWithPagination } from "@/interface/global";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { FlashList } from "@shopify/flash-list";
-import { StatusBar } from "expo-status-bar";
 import PostCard from "@/components/features/post/PostCard";
 import { useJoinLeave } from "@/hooks/api/useMyCommunities";
 import { getCommunityPosts } from "@/services/post.api";
 import { Entypo, Feather } from "@expo/vector-icons";
+import { ROUTES } from "@/constants/constants";
+import { useRecentsStore } from "@/context/store/useRecents";
 
 export default function CommunityScreen() {
   const headerHeight = useHeaderHeight();
@@ -28,6 +29,7 @@ export default function CommunityScreen() {
   const router = useRouter();
 
   const { mutate: joinLeave } = useJoinLeave();
+  const { setCommunity } = useRecentsStore();
 
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -134,14 +136,14 @@ export default function CommunityScreen() {
         <View className="relative overflow-hidden" style={{ height: 120 }}>
           {/* 1. Imagen Base (Nítida) */}
           <Animated.Image
-            source={{ uri: community.image_url }}
+            source={{ uri: community.banner_url || "https://placehold.co/100x100" }}
             style={[{ height: 120, width: "100%", position: "absolute" }]}
             resizeMode="cover"
           />
 
           {/* 2. Imagen Borrosa */}
           <Animated.Image
-            source={{ uri: community.image_url }}
+            source={{ uri: community.banner_url || "https://placehold.co/100x100" }}
             blurRadius={20}
             style={[
               { height: 120, width: "100%", position: "absolute" },
@@ -182,7 +184,10 @@ export default function CommunityScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => router.back()}
+              onPress={() => {
+                setCommunity(community);
+                router.push(ROUTES.USER.COMMUNITY_SEARCH)
+              }}
               style={{ height: 40, width: 40 }}
               className="bg-black/60 rounded-full items-center justify-center"
             >
@@ -210,7 +215,7 @@ export default function CommunityScreen() {
               >
                 {community.name}
               </Text>
-              <Text className="text-[14px] text-text-4 font-dosis-regular">
+              <Text className="text-[13px] text-text-4 font-dosis-regular">
                 {community.total_members} miembros
               </Text>
             </View>
@@ -229,7 +234,7 @@ export default function CommunityScreen() {
               className={`flex-row items-center px-3 py-1 justify-center gap-x-2 ${isMember ? "bg-bg-semi-white" : "bg-bg-blue-black"}`}
             >
               <Text
-                className={`text-[14px]  font-dosis-semibold leading-6 ${isMember ? "text-text-5" : "text-text-1"}`}
+                className={`text-[14px] font-dosis-semibold leading-6 ${isMember ? "text-text-5" : "text-text-1"}`}
               >
                 {isMember ? "Te uniste" : "Unirse"}
               </Text>
@@ -259,9 +264,16 @@ export default function CommunityScreen() {
 
         {community.tags.length > 0 && (
           <View className="flex-row px-8 gap-x-2">
-            <Text className="text-[14px] text-text-5 font-dosis-regular leading-6">
-              {community.tags.join(", ")}
-            </Text>
+            {community.tags.map((tag) => (
+              <TouchableOpacity
+                key={tag.id}
+                className="px-2 py-1 rounded-[5px] border border-gray-200"
+              >
+                <Text className="text-[14px] text-text-5 font-dosis-regular">
+                  {tag.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         )}
       </View>
@@ -270,7 +282,6 @@ export default function CommunityScreen() {
 
   return (
     <>
-      <StatusBar style="light" />
       <SafeAreaView
         edges={["left", "right"]}
         style={{ paddingTop: headerHeight }}

@@ -6,19 +6,19 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { MenuLocal } from "./MenuScreen";
 
-import EvilIcons from "@expo/vector-icons/EvilIcons";
 import { formatPrice } from "@/utils/distance";
 import { useOrdering } from "@/context/cart/OrderingContext";
 import { useMemo, useState } from "react";
 import FontAwesome from "@expo/vector-icons/build/FontAwesome";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import AddButton from "../../ui/buttons/AddButton";
+import { MenuLocal } from "@/app/(client)/(out)/l/[local_id]/[local_slug]";
+import { EdgeInsets } from "react-native-safe-area-context";
 
 interface MenuViewProps {
   local: MenuLocal;
-  insets: any;
+  insets: EdgeInsets;
 }
 
 function MenuView({ local, insets }: MenuViewProps) {
@@ -192,7 +192,7 @@ function MenuView({ local, insets }: MenuViewProps) {
         keyExtractor={(item) => item.id.toString()}
         renderSectionHeader={({ section: { title, data } }) =>
           data.length > 0 ? (
-            <Text className="text-[20px] font-dosis-bold mb-4 mt-6 bg-white">
+            <Text className="text-[20px] font-dosis-bold mb-4 bg-white">
               {title}
             </Text>
           ) : null
@@ -230,8 +230,7 @@ function MenuView({ local, insets }: MenuViewProps) {
                 <View
                   style={{ marginHorizontal: 10, marginVertical: 8 }}
                   className={`absolute top-0 left-0 right-0 flex-row items-start
-
-                      ${item.discount_pct_applied ? "justify-between" : "justify-end"}`}
+                  ${item.discount_pct_applied ? "justify-between" : "justify-end"}`}
                 >
                   {item.discount_pct_applied &&
                     item.discount_pct_applied > 0 && (
@@ -241,13 +240,6 @@ function MenuView({ local, insets }: MenuViewProps) {
                         </Text>
                       </View>
                     )}
-
-                  <TouchableOpacity
-                    onPress={() => console.log("Agregar a favoritos")}
-                    className="w-[30px] h-[30px] justify-center items-center bg-bg-semi-white rounded-full"
-                  >
-                    <EvilIcons name="heart" size={20} color="#333333" />
-                  </TouchableOpacity>
                 </View>
 
                 <AddButton
