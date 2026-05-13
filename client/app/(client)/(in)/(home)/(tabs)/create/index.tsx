@@ -29,51 +29,21 @@ import {
   ImageBridge,
 } from "@10play/tentap-editor";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import EditorToolbar, {
   EditorToolbarRef,
 } from "@/components/shared/EditorToolbar";
-import { PostDTO, UploadableFile, UploadPayload } from "@/interface/global.dto";
+import { PostDTO, UploadableFile } from "@/interface/global.dto";
 import { useEvent } from "expo";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
-import CommunityModal from "@/components/features/create/CommunityModal";
+import CommunityModal from "@/components/features/create/community/CommunityModal";
 import { Community } from "@/interface/global";
 import { ROUTES } from "@/constants/constants";
 import { usePostCreateStore } from "@/context/store/usePostCreate";
 import { upload, createPost } from "@/services/post.api";
+import { useHeaderHeight } from "@react-navigation/elements";
 
-export default function CreateScreen() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const { user } = useAuth();
-
-  const { setPost } = usePostCreateStore();
-
-  const [title, setTitle] = useState("");
-  const [images, setImages] = useState<UploadableFile[]>([]);
-  const [video, setVideo] = useState<UploadableFile | null>(null);
-
-  const [community, setCommunity] = useState<Community | null>(null);
-
-  const [withRecipe, setWithRecipe] = useState(false);
-
-  const ref = useRef<BottomSheetModal>(null);
-  const toolbarRef = useRef<EditorToolbarRef>(null);
-
-  const player = useVideoPlayer(video?.uri || "", (player) => {
-    player.loop = true;
-    player.pause();
-  });
-
-  const { isPlaying } = useEvent(player, "playingChange", {
-    isPlaying: player.playing,
-  });
-
-  const { muted } = useEvent(player, "mutedChange", {
-    muted: player.muted,
-  });
-
-  const customCSS = `
+const CUSTOM_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Dosis:wght@400;500;600;700&display=swap');
 
   p {
@@ -102,27 +72,60 @@ export default function CreateScreen() {
   ul, ol {
     padding-left: 20px;
   }
-  `;
+`;
+
+const EDITOR_EXTENSIONS = [
+  ...TenTapStartKit,
+  PlaceholderBridge.configureExtension({
+    placeholder: "Empieza a escribir...",
+  }),
+  ImageBridge,
+];
+
+export default function CreateScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
+
+  const { user } = useAuth();
+
+  const { setPost } = usePostCreateStore();
+
+  const [title, setTitle] = useState("");
+  const [images, setImages] = useState<UploadableFile[]>([]);
+  const [video, setVideo] = useState<UploadableFile | null>(null);
+
+  const [community, setCommunity] = useState<Community | null>(null);
+
+  const [withRecipe, setWithRecipe] = useState(false);
+
+  const ref = useRef<BottomSheetModal>(null);
+  const toolbarRef = useRef<EditorToolbarRef>(null);
+
+  const player = useVideoPlayer(video?.uri || "", (player) => {
+    player.loop = true;
+    player.pause();
+  });
+
+  const { isPlaying } = useEvent(player, "playingChange", {
+    isPlaying: player.playing,
+  });
+
+  const { muted } = useEvent(player, "mutedChange", {
+    muted: player.muted,
+  });
 
   const editor = useEditorBridge({
     autofocus: true,
     avoidIosKeyboard: true,
-
-    bridgeExtensions: [
-      ...TenTapStartKit,
-      PlaceholderBridge.configureExtension({
-        placeholder: "Empieza a escribir...",
-      }),
-      ImageBridge,
-    ],
+    bridgeExtensions: EDITOR_EXTENSIONS,
   });
 
   useEffect(() => {
     if (editor.getEditorState().isReady) {
-      editor.injectCSS(customCSS);
+      editor.injectCSS(CUSTOM_CSS);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editor.getEditorState().isReady, editor, customCSS]);
+  }, [editor]);
 
   const remove = useCallback(
     (index: number, type: "image" | "video") => {
@@ -134,8 +137,6 @@ export default function CreateScreen() {
     },
     [images],
   );
-
-  console.log(editor.getHTML());
 
   const handleSubmit = async () => {
     const content = await editor.getHTML();
@@ -164,32 +165,30 @@ export default function CreateScreen() {
 
       router.push(ROUTES.USER.CREATE_RECIPE);
     } else {
-      const uploadPayload: UploadPayload = {
-        post_images: images
-          ? images.map((image) => image)
-          : video
-            ? [video]
-            : [],
-      };
+      const filesToUpload = images.length > 0 ? images : video ? [video] : [];
 
-      console.log("UPLOAD PAYLOAD", JSON.stringify(uploadPayload, null, 2));
+      let finalImageUrls: string[] = [];
 
-      const response = await upload(uploadPayload);
+      if (filesToUpload.length > 0) {
+        const uploadPayload = { post_images: filesToUpload };
 
-      const urls = response.data;
+        const response = await upload(uploadPayload);
 
-      console.log("UPLOAD RESPONSE", JSON.stringify(urls, null, 2));
+        if (response?.success && response?.data) {
+          finalImageUrls = response.data.post_images || [];
+        }
+      }
 
       const post: PostDTO = {
         title: title,
         content: content,
-        image_urls: urls?.post_images || [],
+        image_urls: finalImageUrls,
         community_id: community?.id || null,
       };
 
-      const r = await createPost(post);
+      const result = await createPost(post);
 
-      console.log("CREATE RESPONSE", JSON.stringify(r, null, 2));
+      console.log("CREATE RESPONSE", JSON.stringify(result, null, 2));
 
       /*if (createResponse.success) {
         router.back();
@@ -197,9 +196,26 @@ export default function CreateScreen() {
     }
   };
 
+  const Editor = useMemo(() => {
+    return (
+      <View
+        style={{
+          marginTop: 12,
+          paddingHorizontal: insets.left + insets.right + 20,
+          flex: 1,
+          flexDirection: "row",
+          alignItems: "flex-start",
+        }}
+      >
+        <RichText style={{ backgroundColor: "transparent" }} editor={editor} />
+      </View>
+    );
+  }, [editor, insets.left, insets.right]);
+
   return (
     <SafeAreaView
       edges={["top", "left", "right"]}
+      style={{ paddingTop: headerHeight }}
       className="flex-1 bg-bg-semi-white"
     >
       {/* HEADER */}
@@ -212,7 +228,7 @@ export default function CreateScreen() {
         </TouchableOpacity>
 
         <Text className="font-dosis-bold text-center text-[16px] text-text-3 flex-1">
-          Crear
+          Crear Post
         </Text>
 
         <TouchableOpacity
@@ -226,7 +242,6 @@ export default function CreateScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-
       <View className="flex-row gap-x-4 px-6 items-center">
         <Image
           className="h-8 w-8 rounded-full"
@@ -360,18 +375,7 @@ export default function CreateScreen() {
       )}
 
       {/** EDITOR DE TEXTO */}
-      <View
-        style={{
-          marginTop: 12,
-          paddingHorizontal: insets.left + insets.right + 20,
-          flex: 1,
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "flex-start",
-        }}
-      >
-        <RichText style={{ backgroundColor: "transparent" }} editor={editor} />
-      </View>
+      <View style={{ flex: 1 }}>{Editor}</View>
 
       <View className="flex-row items-center w-full border border-gray-200">
         <TouchableOpacity

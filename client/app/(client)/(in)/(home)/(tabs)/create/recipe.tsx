@@ -22,7 +22,7 @@ import {
 } from "@/interface/global.dto";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Unit, UnitList, UnitNames } from "@/interface/global";
+import { Ingredient, Unit, UnitList, UnitNames } from "@/interface/global";
 import {
   BottomSheetBackdrop,
   BottomSheetFlatList,
@@ -135,17 +135,14 @@ export default function CreateRecipeScreen() {
     unitModalRef.current?.dismiss();
   };
 
-  const handleSelectIngredient = (selectedIngredientId: string) => {
+  const handleSelectIngredient = (selectedIngredient: Ingredient) => {
     setIngredients((prev) =>
       prev.map((item, i) =>
         i === indexIngredient.current
           ? {
               ...item,
-              ingredient_id: selectedIngredientId,
-              name:
-                data?.find(
-                  (ingredient) => ingredient.id === selectedIngredientId,
-                )?.name || "",
+              ingredient_id: selectedIngredient.id,
+              name: selectedIngredient.name,
             }
           : item,
       ),
@@ -223,17 +220,17 @@ export default function CreateRecipeScreen() {
           notes: ingredient.notes?.trim() || "",
         };
       }),
-      steps: steps.map((step) => {
-        let image_url = "";
+      steps: steps.map((step): RecipeStepDTO => {
+        let image_url: string | null = null;
         if (step.image_url) {
-          image_url = urls?.recipe_step_images?.[counter] || "";
+          image_url = urls?.recipe_step_images?.[counter] || null;
           counter++;
         }
 
         return {
           ...step,
           description: step.description.trim(),
-          image_url: image_url,
+          image_url: image_url as string,
         };
       }),
     };

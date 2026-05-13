@@ -12,7 +12,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 interface IngredientsModalProps {
   ingredients: Ingredient[];
   isLoading: boolean;
-  onSelectIngredient: (id: string) => void;
+  onSelectIngredient: (ingredient: Ingredient) => void;
+  ingredientsIDs?: Ingredient[];
 }
 
 const IngredientItem = memo(
@@ -23,11 +24,11 @@ const IngredientItem = memo(
   }: {
     item: Ingredient;
     isSelected: boolean;
-    onSelect: (id: string) => void;
+    onSelect: (ingredient: Ingredient) => void;
   }) => {
     return (
       <TouchableOpacity
-        onPress={() => onSelect(item.id)}
+        onPress={() => onSelect(item)}
         style={{
           height: 45,
           width: "100%",
@@ -62,6 +63,7 @@ export default function IngredientsModal({
   ingredients,
   isLoading,
   onSelectIngredient,
+  ingredientsIDs,
 }: IngredientsModalProps) {
   const insets = useSafeAreaInsets();
 
@@ -76,45 +78,20 @@ export default function IngredientsModal({
     );
   }, [ingredients, searchQuery]);
 
-  /*const handleSelect = useCallback(
-    (id: string) => {
-      setIngredientsIDs((prev) => {
-        if (prev.includes(id)) {
-          return prev.filter((i) => i !== id);
-        } else {
-          return [...prev, id];
-        }
-      });
-    },
-    [setIngredientsIDs],
-  );*/
-
-  /*const renderItem = useCallback(
-    ({ item, extraData }: { item: Ingredient; extraData: string[] }) => {
-      const isSelected = extraData.includes(item.id);
+  const renderItem = useCallback(
+    ({ item }: { item: Ingredient }) => {
+      const isSelected = ingredientsIDs
+        ? ingredientsIDs.includes(item)
+        : false;
       return (
         <IngredientItem
           item={item}
           isSelected={isSelected}
-          onSelect={handleSelect}
-        />
-      );
-    },
-    [handleSelect],
-  );*/
-
-  const renderItem = useCallback(
-    ({ item }: { item: Ingredient }) => {
-      //const isSelected = extraData.includes(item.id);
-      return (
-        <IngredientItem
-          item={item}
-          isSelected={false}
           onSelect={onSelectIngredient}
         />
       );
     },
-    [onSelectIngredient],
+    [onSelectIngredient, ingredientsIDs],
   );
 
   const ListEmptyComponent = useCallback(
@@ -166,7 +143,7 @@ export default function IngredientsModal({
       {/* --- LISTA DE INGREDIENTES --- */}
       <BottomSheetFlashList
         data={filteredIngredients}
-        //extraData={searchQuery}
+        extraData={searchQuery}
         keyboardShouldPersistTaps="handled"
         keyExtractor={(item: Ingredient) => item.id}
         showsVerticalScrollIndicator={true}
@@ -185,48 +162,3 @@ export default function IngredientsModal({
     </View>
   );
 }
-
-/** 
- * <BottomSheetModal
-      ref={ingredientsRef}
-      snapPoints={snapPoints}
-      enableDynamicSizing={false}
-      enablePanDownToClose={true}
-      style={{ flex: 1 }}
-      index={0}
-      handleIndicatorStyle={{
-        backgroundColor: "#2F2F2F",
-        marginTop: 10,
-      }}
-      backgroundStyle={{
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        borderColor: "#dbdbdb",
-        borderWidth: 1,
-        backgroundColor: "#fefefe",
-      }}
-    >
-      <BottomSheetFlashList
-        data={sort}
-        extraData={ingredientsIDs}
-        keyExtractor={(item: Ingredient) => item.id}
-        showsVerticalScrollIndicator={false}
-        numColumns={2}
-        drawDistance={600}
-        scrollEnabled={true}
-        ListHeaderComponent={Header}
-        estimatedItemSize={65}
-        getItemType={(item: Ingredient) => "ingredient_button"}
-        renderItem={renderItem}
-        style={{
-          flex: 1,
-        }}
-        ListEmptyComponent={ListEmptyComponent}
-        contentContainerStyle={{
-          paddingBottom: insets.bottom + 40,
-          paddingHorizontal: insets.left + insets.right + 30,
-          flexGrow: 1,
-        }}
-      />
-    </BottomSheetModal>
- */

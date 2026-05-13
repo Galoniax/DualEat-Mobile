@@ -1,5 +1,5 @@
 import { useMyCommunities } from "@/hooks/api/useMyCommunities";
-import { Community } from "@/interface/global";
+import { Community, CommunityMember } from "@/interface/global";
 import { getByName } from "@/services/community.api";
 import { EvilIcons } from "@expo/vector-icons";
 import {
@@ -27,8 +27,6 @@ interface Props {
 export default function CommunityModal({ ref, setCommunity }: Props) {
   const { data: myCommunities } = useMyCommunities();
 
-  console.log("MY COMMUNITIES", JSON.stringify(myCommunities, null, 2));
-
   const [search, setSearch] = useState("");
   const snapPoint = useMemo(() => ["90%"], []);
 
@@ -46,8 +44,6 @@ export default function CommunityModal({ ref, setCommunity }: Props) {
     enabled: search.trim().length > 0,
     staleTime: 1000 * 60 * 5,
   });
-
-  console.log(JSON.stringify(communities, null, 2));
 
   useEffect(() => {
     if (!search.trim()) return;
@@ -69,40 +65,47 @@ export default function CommunityModal({ ref, setCommunity }: Props) {
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: Community }) => (
+    ({ item }: { item: CommunityMember }) => (
       <TouchableOpacity
         onPress={() => {
-          setCommunity(item);
+          setCommunity(item.community);
           ref.current?.dismiss();
         }}
         className="flex-row items-center justify-between px-6 py-3 border-b border-gray-200 gap-x-4"
       >
-        <Image
-          style={{ flex: 1 }}
-          className="max-h-10 max-w-10 rounded-full w-full h-full flex-shrink-0"
-          source={{
-            uri: item.image_url,
-          }}
-        />
+        {item.community.image_url ? (
+          <Image
+            style={{ flex: 1 }}
+            className="max-h-10 max-w-10 rounded-full w-full h-full flex-shrink-0"
+            source={{
+              uri: item.community.image_url,
+            }}
+          />
+        ) : (
+          <View
+            style={{ flex: 1 }}
+            className="max-h-10 max-w-10 rounded-full w-full h-full flex-shrink-0 bg-bg-semi-black"
+          />
+        )}
 
         <View style={{ flex: 5 }} className="flex-col gap-y-0.5">
           <Text className="font-dosis-bold text-[14px] text-text-5">
-            {item.name}
+            {item.community.name}
           </Text>
           <Text
             ellipsizeMode="tail"
             numberOfLines={2}
             className="font-dosis-regular text-[13px] text-text-5 truncate"
           >
-            {item.description}
+            {item.community.description}
           </Text>
           <Text className="font-dosis-light text-[13px] text-text-5">
-            {item.total_members} miembros
+            {item.community.total_members} miembros
           </Text>
 
-          {item.tags && item.tags.length > 0 && (
+          {item.community.tags && item.community.tags.length > 0 && (
             <View className="flex-row gap-2">
-              {item.tags.map((tag) => (
+              {item.community.tags.map((tag) => (
                 <Text
                   key={tag.id}
                   className="font-dosis-regular text-[14px] text-text-5"
@@ -165,7 +168,7 @@ export default function CommunityModal({ ref, setCommunity }: Props) {
         ListHeaderComponent={
           <View
             style={{
-              marginTop: 16,
+              marginVertical: 16,
             }}
             className="items-center mx-6 px-4 py-0.5 justify-start flex-row border border-gray-200 rounded-full"
           >

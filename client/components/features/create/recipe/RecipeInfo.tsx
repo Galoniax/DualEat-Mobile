@@ -1,4 +1,4 @@
-import { RecipeDTO } from "@/interface/global.dto";
+import { RecipeDTO, UploadableFile } from "@/interface/global.dto";
 import { AntDesign, Entypo } from "@expo/vector-icons";
 import {
   Image,
@@ -21,7 +21,7 @@ export default function RecipeInfo({
   recipe,
   setRecipe,
   handleAddImage,
-  children
+  children,
 }: Props) {
   return (
     <>
@@ -29,13 +29,13 @@ export default function RecipeInfo({
       {recipe.main_image ? (
         <View className="relative h-64 rounded-lg border border-gray-200 overflow-hidden">
           <Image
-            source={{ uri: recipe.main_image.uri }}
+            source={{ uri: (recipe.main_image as UploadableFile).uri }}
             className="w-full h-full"
             resizeMode="cover"
           />
 
           <TouchableOpacity
-            onPress={() => setRecipe((prev) => ({ ...prev, main_image: null }))}
+            onPress={() => setRecipe((prev) => ({ ...prev, main_image: "" }))}
             style={{
               opacity: 0.8,
             }}
@@ -61,7 +61,7 @@ export default function RecipeInfo({
         placeholderTextColor="#999"
         className="font-dosis-bold text-[20px] text-text-3 flex-1"
       />
-      
+
       {children}
       {/** Descripción */}
       <TextInput
