@@ -3,25 +3,31 @@ import { useOrderStore } from "@/context/store/useOrderStore";
 import { Entypo, Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Image,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
 import { getCartInfo } from "@/services/order.api";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Local, QROrderPayload } from "@/interface/global";
-import { MenuFood } from "@/components/features/menu/MenuScreen";
 import { useFocusEffect, useRouter } from "expo-router";
 import { ROUTES } from "@/constants/constants";
 import { formatPrice } from "@/utils/distance";
 import { ScrollView } from "react-native-gesture-handler";
 import { isLocalOpen } from "@/utils/isLocalOpen";
-import { useLoader } from "@/context/app/LoadingContext";
 import { useAuth } from "@/context/auth/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { useQRParser } from "@/utils/qr";
+import { MenuFood } from "./l/[local_id]/[local_slug]";
+import AddButton from "@/components/ui/buttons/AddButton";
 
 export default function CartScreen() {
   const insets = useSafeAreaInsets();
@@ -29,8 +35,7 @@ export default function CartScreen() {
 
   const { user } = useAuth();
 
-  const { clear, items } = useOrdering();
-  const { setType } = useLoader();
+  const { clear, items, addItem } = useOrdering();
 
   const { generateQR } = useQRParser();
 
@@ -53,22 +58,12 @@ export default function CartScreen() {
 
     enabled: itemsIDs.length > 0 && !!localId,
 
-    refetchInterval: 2 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
   });
 
   const local: Local | null = (data?.local as Local) || null;
-  const foods: MenuFood[] = (data?.items as MenuFood[]) || [];
 
-  useEffect(() => {
-    if (isLoading) {
-      setType("minimal");
-    } else {
-      setType(null);
-    }
-    return () => {
-      setType(null);
-    };
-  }, [isLoading, setType]);
+  const [isOpen, setIsOpen] = useState(isLocalOpen(local?.schedules || []));
 
   useFocusEffect(
     useCallback(() => {
@@ -99,38 +94,77 @@ export default function CartScreen() {
     }
   };
 
-  const isOpen = isLocalOpen(local?.schedules || []);
+  useEffect(() => {
+    if (!local) return;
 
-  const originalTotal = foods.reduce(
-    (total, item) => total + item.original_price,
-    0,
-  );
-  const finalTotal = foods.reduce((total, item) => total + item.price, 0);
+    setIsOpen(isLocalOpen(local.schedules || []));
 
-  const hasDiscount = finalTotal < originalTotal;
+    const intervalId = setInterval(() => {
+      const currentlyOpen = isLocalOpen(local.schedules || []);
+
+      setIsOpen((prevIsOpen) => {
+        if (prevIsOpen !== currentlyOpen) {
+          return currentlyOpen;
+        }
+        return prevIsOpen;
+      });
+    }, 60000);
+
+    return () => clearInterval(intervalId);
+  }, [local]);
 
   useEffect(() => {
     if (items.length === 0) {
       router.back();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items]);
+  }, [items, router]);
+
+  const itemsForCart = useMemo(() => {
+    const fetchedItems = (data?.items as MenuFood[]) || [];
+
+    return fetchedItems.map((item) => {
+      const item_quantity =
+        items.find((i) => i.food_id === item.id)?.quantity || 0;
+
+      return {
+        ...item,
+        quantity: item_quantity,
+        subtotal_price: item.price * item_quantity,
+        subtotal_original_price: item.original_price * item_quantity,
+      };
+    });
+  }, [items, data]);
+
+  console.log("ITEMS FOR CART", JSON.stringify(itemsForCart, null, 2));
+
+  const finalTotal = itemsForCart.reduce(
+    (total, item) => total + item.subtotal_price,
+    0,
+  );
+
+  const originalTotal = itemsForCart.reduce(
+    (total, item) => total + item.subtotal_original_price,
+    0,
+  );
 
   return (
-    <SafeAreaView className="flex-1 bg-white h-full">
+    <SafeAreaView
+      edges={["left", "right", "top"]}
+      className="flex-1 bg-bg-semi-white"
+    >
       <View
-        style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
-        className="w-full flex-row items-center justify-around py-4"
+        style={{ paddingTop: insets.top }}
+        className="w-full flex-row items-center justify-between px-4"
       >
         <TouchableOpacity
           onPress={() => router.back()}
-          className="w-[40px] h-[40px] justify-center items-center "
+          className="w-[40px] h-[40px] justify-center items-center"
         >
           <Entypo name="chevron-thin-left" size={18} color="#333333" />
         </TouchableOpacity>
         <Text className="text-[16px] font-dosis-bold">Tu carrito</Text>
         <TouchableOpacity
-          className="w-[40px] h-[40px] justify-center items-center "
+          className="w-[40px] h-[40px] justify-center items-center"
           onPress={() => {
             clear();
           }}
@@ -139,63 +173,76 @@ export default function CartScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
-        {local && (
-          <TouchableOpacity
-            onPress={() => {
-              router.push({
-                pathname: ROUTES.USER.LOCAL,
-                params: { slug: local.slug },
-              });
-            }}
-            style={{
-              borderBottomWidth: 1,
-              borderStyle: "dashed",
-              borderBottomColor: "#878787",
-            }}
-            className="w-full pt-2 px-6 flex-row justify-between items-center gap-4 pb-6"
-          >
-            <View className="flex-row items-center gap-4">
-              <Image
-                source={{ uri: local.image_url }}
-                className="w-12 h-12 rounded-full"
-              />
+      {isLoading ? (
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color="#B53325" />
+        </View>
+      ) : (
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingHorizontal: insets.left + insets.right + 14,
+            gap: 20,
+            flexDirection: "column",
+            paddingVertical: 20,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          {local && (
+            <TouchableOpacity
+              onPress={() => {
+                router.push({
+                  pathname: ROUTES.USER.LOCAL,
+                  params: { local_id: local.id, local_slug: local.slug },
+                });
+              }}
+              style={{
+                borderBottomWidth: 1,
+                borderStyle: "dashed",
+                borderBottomColor: "#878787",
+              }}
+              className="w-full pt-2 flex-row justify-between items-center gap-x-4 pb-6"
+            >
+              <View className="flex-row items-center gap-4">
+                <Image
+                  source={{ uri: local.image_url }}
+                  className="w-12 h-12 rounded-full"
+                />
 
-              <View className="flex-col gap-1.5">
-                <Text className="text-[16px] font-dosis-bold text-text-3">
-                  {local.name}
-                </Text>
-                <View className="flex-row items-center gap-1">
-                  <MaterialCommunityIcons
-                    name="google-maps"
-                    size={14}
-                    color="#2F2F2F"
-                  />
-                  <Text className="text-[13px] font-dosis-regular text-text-5 text-ellipsis">
-                    {local.address}
+                <View className="flex-col gap-1.5">
+                  <Text className="text-[16px] font-dosis-bold text-text-3">
+                    {local.name}
                   </Text>
+                  <View className="flex-row items-center gap-1">
+                    <MaterialCommunityIcons
+                      name="google-maps"
+                      size={14}
+                      color="#2F2F2F"
+                    />
+                    <Text className="text-[13px] font-dosis-regular text-text-5 text-ellipsis">
+                      {local.address}
+                    </Text>
+                  </View>
                 </View>
               </View>
-            </View>
-            <Entypo name="chevron-thin-right" size={16} color="#2F2F2F" />
-          </TouchableOpacity>
-        )}
+              <Entypo name="chevron-thin-right" size={16} color="#2F2F2F" />
+            </TouchableOpacity>
+          )}
 
-        <View style={{ paddingHorizontal: insets.left + insets.right + 18 }}>
           {/** PRODUCTOS */}
-          <View className="w-full mt-8">
-            <Text className="text-[18px] font-dosis-bold text-text-3 mb-2">
+          <View>
+            <Text className="text-[18px] font-dosis-bold text-text-3 mb-4">
               Productos
             </Text>
-            {foods.map((item) => (
+            {itemsForCart.map((item) => (
               <View
                 key={item.id}
-                className="w-full px-6 py-3 flex-row items-start gap-4"
+                className="w-full flex-row items-center gap-x-4"
               >
                 <Image
                   source={{ uri: item.image_url }}
-                  style={{ borderRadius: 12, height: 48, width: 48 }}
-                  className="object-cover mt-2"
+                  style={{ borderRadius: 15, height: 46, width: 46 }}
+                  className="object-cover"
                 />
 
                 <View className="flex-col gap-1">
@@ -205,13 +252,14 @@ export default function CartScreen() {
 
                   <View className="flex-row items-center gap-2 mb-1">
                     <Text className="font-dosis-bold text-[15.5px] text-text-3">
-                      {formatPrice(item.price)}
+                      {formatPrice(item.subtotal_price)}
                     </Text>
-                    {item.price !== item.original_price ? (
+
+                    {item.discount_pct_applied !== null && (
                       <Text className="line-through text-[11px] text-text-4 tracking-[-0.5px]">
-                        {formatPrice(item.original_price)}
+                        {formatPrice(item.subtotal_original_price)}
                       </Text>
-                    ) : null}
+                    )}
                   </View>
                 </View>
                 {item.discount_pct_applied && item.discount_pct_applied > 0 && (
@@ -230,20 +278,36 @@ export default function CartScreen() {
                     </Text>
                   </View>
                 )}
+
+                <AddButton
+                  onAdd={() => {
+                    addItem({
+                      food_id: item.id,
+                      local: {
+                        id: item.local_id,
+                        name: local.name,
+                      },
+                      name: item.name,
+                      unit_price: item.price,
+                      quantity: 1,
+                    });
+                  }}
+                  item_id={item.id}
+                />
               </View>
             ))}
           </View>
 
           {/** RESUMEN */}
-          <View className="mt-12">
-            <Text className="text-[20px] font-dosis-bold text-text-3">
+          <View>
+            <Text className="text-[18px] font-dosis-bold text-text-3 mb-4">
               Resumen
             </Text>
-            <View className="w-full px-6 py-3 flex-col items-center">
+            <View className="flex-col items-center">
               {["Productos", "Descuento"].map((label, index) => (
                 <View
                   key={index}
-                  className="w-full py-1.5 flex-row justify-between items-center"
+                  className="w-full pb-2.5 flex-row justify-between items-center"
                 >
                   <Text className="text-[14.5px] font-dosis-regular text-text-3">
                     {label}
@@ -257,34 +321,31 @@ export default function CartScreen() {
               ))}
             </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      )}
 
-      {/* ** TOCHANGE isOpen && */}
       {items.length > 0 && items[0].local.id === local?.id && (
         <View
           style={{
             paddingTop: 16,
             paddingHorizontal: 16,
-            paddingBottom: insets.bottom - 16,
-            borderTopWidth: 0.5,
-            borderTopColor: "#333333",
-            width: "100%",
-            gap: 10,
+            paddingBottom: insets.bottom + 16,
+            borderTopWidth: 1,
+            borderTopColor: "#dbdbdb",
           }}
-          className="bg-bg-semi-white flex-col "
+          className="bg-bg-semi-white flex-col gap-y-2"
         >
           <View className="flex-row justify-between items-center">
-            <Text className="text-text-5 text-[18px] font-dosis-bold">
+            <Text className="text-text-3 text-[18px] font-dosis-bold">
               Subtotal
             </Text>
             <View style={{ alignItems: "flex-end" }} className="flex-col gap-1">
-              {hasDiscount && (
+              {finalTotal < originalTotal && (
                 <Text className="line-through text-[12px] text-text-4 tracking-[-0.5px]">
                   {formatPrice(originalTotal)}
                 </Text>
               )}
-              <Text className="text-text-3 text-[18px] font-dosis-bold">
+              <Text className="text-text-3 text-[16px] font-dosis-bold">
                 {formatPrice(finalTotal)}
               </Text>
             </View>
@@ -296,7 +357,8 @@ export default function CartScreen() {
           <View className="w-full flex-row items-center justify-center mt-2 gap-2">
             <TouchableOpacity
               onPress={() => console.log("Continuar con el pago")}
-              className={`bg-bg-red py-3 rounded-full items-center flex-[3]`}
+              style={{ flex: 3 }}
+              className={`bg-bg-red py-2.5 rounded-[8px] items-center`}
             >
               <Text className="text-white font-dosis-bold text-[14px]">
                 ¿Pagar ahora?
@@ -304,9 +366,10 @@ export default function CartScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handleOpenQR()}
-              className={`bg-bg-semi-black py-3 rounded-full items-center flex-[1]`}
+              style={{ flex: 1 }}
+              className={`bg-bg-semi-black py-2.5 rounded-[8px] items-center`}
             >
-              <Ionicons name="qr-code-sharp" size={22} color="#fff" />
+              <Ionicons name="qr-code-sharp" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>

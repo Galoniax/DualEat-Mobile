@@ -217,7 +217,7 @@ export default function MapScreen() {
           onPress={() => {
             router.push({
               pathname: ROUTES.USER.LOCAL,
-              params: { slug: item.slug },
+              params: { local_id: item.id, local_slug: item.slug },
             });
           }}
         >
