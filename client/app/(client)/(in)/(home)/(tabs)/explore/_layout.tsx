@@ -8,17 +8,25 @@ export default function ExploreLayout() {
         animation: "simple_push",
         headerShown: false,
         presentation: "card",
-        gestureEnabled: true,
-        gestureDirection: "vertical",
       }}
     >
       <Stack.Screen
-        name="index"
+        name="[category_id]/[category_slug]"
         options={{
           title: "Explorar",
           headerShown: true,
           headerTransparent: true,
-          header: () => <TopSearchBar />,
+          header: (props) => <TopSearchBar {...props} />,
+        }}
+      />
+
+      <Stack.Screen
+        name="search"
+        options={{
+          title: "Buscar",
+          headerShown: false,
+          presentation: "containedModal",
+          animation: "simple_push",
         }}
       />
 
@@ -27,17 +35,9 @@ export default function ExploreLayout() {
         options={{
           title: "Comunidades por tag",
           headerShown: false,
-          headerTransparent: false,
         }}
       />
-      <Stack.Screen
-        name="[category_id]/[category_slug]"
-        options={{
-          title: "Comunidades por categoría",
-          headerShown: false,
-          headerTransparent: false,
-        }}
-      />
+      
     </Stack>
   );
 }

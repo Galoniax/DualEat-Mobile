@@ -15,17 +15,16 @@ export default function ChatStackLayout() {
       <Stack.Screen
         name="[chat_id]"
         options={{
-          title: "Chat",
+          title: "Chats",
           headerShown: true,
           headerTransparent: true,
-          header: () => <TopSearchBar />,
+          header: (props) => <TopSearchBar {...props} />,
         }}
       />
       <Stack.Screen
         name="history"
         options={{
           title: "Historial",
-          headerShown: false,
         }}
       />
     </Stack>

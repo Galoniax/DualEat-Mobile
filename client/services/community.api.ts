@@ -1,11 +1,13 @@
 import axiosInterceptor from "@/api/client";
 import { Response, Community, CommunityMember } from "@/interface/global";
-
-import { isAxiosError } from "axios";
+import { CommunityDTO, UploadPayload } from "@/interface/global.dto";
+import { handleApiError } from "@/utils/apiErrorHandler";
 
 // --- 1. OBTENER COMUNIDADES DEL USUARIO ---
 // ===================================
-export const getUserCommunities = async (): Promise<Response<CommunityMember[]>> => {
+export const getUserCommunities = async (): Promise<
+  Response<CommunityMember[]>
+> => {
   try {
     const response = await axiosInterceptor.get("/community/user");
 
@@ -15,31 +17,7 @@ export const getUserCommunities = async (): Promise<Response<CommunityMember[]>>
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
-    };
+    return handleApiError(err);
   }
 };
 
@@ -59,31 +37,7 @@ export const getByName = async (
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
-    };
+    return handleApiError(err);
   }
 };
 
@@ -99,31 +53,7 @@ export const getBySlug = async (slug: string): Promise<Response> => {
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
-    };
+    return handleApiError(err);
   }
 };
 
@@ -145,30 +75,75 @@ export const joinLeave = async (
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
+    return handleApiError(err);
+  }
+};
 
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
+// --- 5. CREAR UNA COMUNIDAD ---
+// ===================================
+export const create = async (community: CommunityDTO): Promise<Response> => {
+  try {
+    const response = await axiosInterceptor.post(`/community/create`, { community });
 
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
     return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
+      success: response.data.success ?? true,
+      status: response.status,
+      data: response.data.data,
     };
+  } catch (err: any) {
+    return handleApiError(err);
+  }
+};
+
+// --- 6. SUBIR IMAGENES DE LA COMUNIDAD ---
+// ===================================
+export const upload = async (
+  payload: UploadPayload,
+): Promise<Response<{ banner_url: string; image_url: string }>> => {
+  try {
+    const formData = new FormData();
+
+    if (payload.banner_url) {
+      formData.append("banner_url", payload.banner_url as any);
+    }
+
+    if (payload.image_url) {
+      formData.append("image_url", payload.image_url as any);
+    }
+
+    const response = await axiosInterceptor.post(
+      "/community/upload",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    );
+
+    return {
+      success: response.data.success ?? true,
+      status: response.status,
+      data: response.data.urls,
+    };
+  } catch (err: any) {
+    return handleApiError(err);
+  }
+};
+
+
+// --- 7. OBTENER COMUNIDADES POR CATEGORÍA ---
+// ===================================
+export const getByCategorySkeleton = async (category_id: number): Promise<Response> => {
+  try {
+    const response = await axiosInterceptor.get(`/community/category/${category_id}`);
+
+    return {
+      success: response.data.success ?? true,
+      status: response.status,
+      data: response.data.data,
+    };
+  } catch (err: any) {
+    return handleApiError(err);
   }
 };

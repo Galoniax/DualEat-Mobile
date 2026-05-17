@@ -61,7 +61,6 @@ export const AppModeProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const switchMode = useCallback(async () => {
     try {
-      navigation.dispatch(DrawerActions.closeDrawer());
       setType("global");
       const Umode = await AsyncStorage.getItem(STORAGE_KEY);
       let newMode: AppMode = Umode === "out" ? "in" : "out";
@@ -74,7 +73,7 @@ export const AppModeProvider: React.FC<{ children: React.ReactNode }> = ({
       setType(null);
       console.log("Error al cambiar el modo", e);
     }
-  }, [setType, navigation]);
+  }, [setType]);
 
   const clearMode = useCallback(async () => {
     navigation.dispatch(DrawerActions.closeDrawer());

@@ -17,6 +17,10 @@ export interface PickMediaOptions {
   selectionLimit?: number;
 }
 
+// TODO: Toast
+
+// --- 1. OBTENER IMAGEN O VIDEO DE LA GALERÍA ---
+// ===================================
 export const pickMedia = async ({
   mediaType = "Images",
   allowsMultipleSelection = false,

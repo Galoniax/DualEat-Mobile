@@ -1,9 +1,7 @@
-import { Order, OrderItem, QROrderItem } from "@/interface/global";
+import { Food, Order, QROrderItem } from "@/interface/global";
 import { useQuery } from "@tanstack/react-query";
-import { getOrderById } from "@/services/order.api";
 import {
   ActivityIndicator,
-  FlatList,
   Image,
   Pressable,
   Text,
@@ -20,84 +18,46 @@ import {
 } from "@/constants/constants";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { router, useFocusEffect } from "expo-router";
-import { useLoader } from "@/context/app/LoadingContext";
-import { ErrorType, ErrorView } from "../../ui/feedback/ErrorView";
-import { usePermissions } from "@/hooks/usePermissions";
 import { getFoods } from "@/services/menu.api";
-import { MenuFood, MenuLocal } from "../menu/MenuScreen";
+import {
+  BottomSheetBackdrop,
+  BottomSheetFlatList,
+  BottomSheetModal,
+} from "@gorhom/bottom-sheet";
 
 interface Props {
-  order_id: string;
+  order: Order;
   insets: EdgeInsets;
   selected: QROrderItem[];
   setSelected: React.Dispatch<React.SetStateAction<QROrderItem[]>>;
+  isCustomer: boolean;
+  isStaff: boolean;
 }
 
 export default function OrderView({
-  order_id,
+  order,
   insets,
   selected,
   setSelected,
+  isCustomer,
+  isStaff,
 }: Props) {
-  const { setType } = useLoader();
-  const [isExpanded, setIsExpanded] = useState<Record<string, boolean>>({
-    tuPedido: true,
-    menuAdicional: true,
-  });
+  const modalRef = useRef<BottomSheetModal>(null);
 
+  const [isExpanded, setIsExpanded] = useState(true);
   const [addFoods, setAddFoods] = useState(false);
 
-  console.log(isExpanded);
-
-  const toggleList = (listName: string) => {
-    setIsExpanded((prev) => ({
-      ...prev,
-      [listName]: !prev[listName],
-    }));
-  };
-
-  const {
-    data: order,
-    isLoading,
-    error,
-    refetch,
-    isFetching,
-    isError,
-  } = useQuery({
-    queryKey: ["order-id", order_id],
-
-    enabled: !!order_id,
-    queryFn: async () => {
-      if (!order_id)
-        throw new Error("No se proporciono un id de orden", { cause: 400 });
-
-      const response = await getOrderById(order_id);
-
-      //console.log("Order Data:", JSON.stringify(response, null, 2));
-
-      if (!response || !response.success) {
-        throw new Error(response?.message || "Error al obtener la orden", {
-          cause: response?.status,
-        });
-      }
-
-      return response.data as Order;
-    },
-
-    retry: 2,
-    refetchOnReconnect: true,
-    refetchOnWindowFocus: true,
-  });
+  // && order.status === "READY"
 
   const {
     data: foods,
-    isLoading: isLoadingFoods,
-    error: errorFoods,
-    isError: isErrorFoods,
+    isLoading,
+    error,
+    isError,
   } = useQuery({
-    queryKey: ["local", "by-id", order?.local_id],
+    queryKey: ["local_foods", order?.local_id],
     enabled: !!order?.local_id && addFoods,
 
     queryFn: async () => {
@@ -109,36 +69,30 @@ export default function OrderView({
         });
       }
 
-      return response.data as MenuLocal;
+      console.log("Foods Data:", JSON.stringify(response.data, null, 2));
+
+      return response.data as Food[];
     },
 
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 10,
     retry: 1,
   });
 
-  //console.log("Foods", JSON.stringify(foods, null, 2));
-
-  const { isStaff, isCustomer } = usePermissions(
-    order?.local?.id,
-    order?.user_id,
-  );
-
   useFocusEffect(
     useCallback(() => {
-      refetch();
-    }, [refetch]),
+      if (modalRef.current?.present) {
+        setAddFoods(true);
+      }
+
+      return () => {
+        modalRef.current?.close();
+      };
+    }, []),
   );
 
-  useEffect(() => {
-    if (isLoading || isFetching) {
-      setType("minimal");
-    } else {
-      setType(null);
-    }
-    return () => setType(null);
-  }, [isLoading, setType, isFetching]);
+  //console.log("Foods", JSON.stringify(foods, null, 2));
 
-  const handleAddFood = (food: MenuFood, isDelete: boolean) => {
+  const handleAddFood = (food: Food, isDelete: boolean) => {
     setSelected((prev) => {
       if (isDelete) {
         return prev.filter((f) => f.id !== food.id);
@@ -156,45 +110,8 @@ export default function OrderView({
     });
   };
 
-  const renderItem = useCallback(
-    ({ item }: { item: OrderItem }) => (
-      <View className="flex-row justify-between gap-3 mb-4">
-        <Image
-          source={{ uri: item.food.image_url }}
-          style={{
-            width: 30,
-            height: "60%",
-            resizeMode: "cover",
-            borderRadius: 3,
-          }}
-        />
-        <View className="flex-col flex-1 justify-between">
-          <Text className="text-text-3 text-[14.5px] font-dosis-semibold">
-            {item.food.name}
-          </Text>
-
-          <Text className="text-text-3 text-[15.5px] font-dosis-bold mb-1">
-            {formatPrice(item.unit_price)}
-          </Text>
-          <Text
-            className="text-text-4 text-[12.5px] font-dosis-regular"
-            ellipsizeMode="tail"
-            numberOfLines={1}
-          >
-            {item.food.description}
-          </Text>
-        </View>
-
-        <Text className="text-text-3 text-[16px] font-dosis-bold">
-          {item.quantity}x
-        </Text>
-      </View>
-    ),
-    [],
-  );
-
   const renderFoodItem = useCallback(
-    ({ item }: { item: MenuFood }) => {
+    ({ item }: { item: Food }) => {
       if (!item.available) return null;
 
       const selectedItem = selected.find((f) => f.id === item.id);
@@ -206,6 +123,12 @@ export default function OrderView({
             style={{ gap: 10 }}
             className={`my-2 rounded-[2px] px-3 flex-row items-center flex-1`}
           >
+            <Image
+              source={{ uri: item.image_url }}
+              style={{ borderRadius: 15, height: 46, width: 46 }}
+              className="object-cover"
+            />
+
             <View className="flex-col flex-1">
               <Text className={`font-dosis-bold text-[14px] text-text-3`}>
                 {item.name}
@@ -213,33 +136,35 @@ export default function OrderView({
 
               <Text
                 style={{ fontSize: 12 }}
+                ellipsizeMode="tail"
+                numberOfLines={2}
                 className={`font-dosis-regular text-text-6`}
               >
                 {item.description}
               </Text>
-            </View>
 
-            <View className="flex-row items-center justify-end gap-3">
-              {selectedItem ? (
-                <>
-                  <Text className="font-dosis-bold text-[14px] text-text-3">
-                    (x{selectedItem.q})
-                  </Text>
+              <View className="flex-row items-center gap-3">
+                {selectedItem ? (
+                  <>
+                    <Text className="font-dosis-bold text-[14px] text-text-3">
+                      (x{selectedItem.q})
+                    </Text>
+                    <Text
+                      style={{ fontSize: 14 }}
+                      className="tracking-[-0.5px] font-dosis-bold text-text-3"
+                    >
+                      {formatPrice(item.price * selectedItem?.q)}
+                    </Text>
+                  </>
+                ) : (
                   <Text
                     style={{ fontSize: 14 }}
-                    className="tracking-[-0.5px] font-dosis-bold text-text-3"
+                    className={`tracking-[-0.5px] font-dosis-bold text-text-3`}
                   >
-                    {formatPrice(item.price * selectedItem?.q)}
+                    {formatPrice(item.price)}
                   </Text>
-                </>
-              ) : (
-                <Text
-                  style={{ fontSize: 14 }}
-                  className={`tracking-[-0.5px] font-dosis-bold text-text-3`}
-                >
-                  {formatPrice(item.price)}
-                </Text>
-              )}
+                )}
+              </View>
             </View>
           </TouchableOpacity>
 
@@ -258,41 +183,23 @@ export default function OrderView({
     [selected],
   );
 
-  const flatFoods = useMemo(() => {
-    if (!foods?.categories) return [];
-
-    return foods.categories
-      .flatMap((category) => category.foods)
-      .filter((food) => food.available !== false);
-  }, [foods?.categories]);
-
-  const errorCode = (() => {
-    if (!order) return 404;
-    if (!isStaff && !isCustomer) return 403;
-    if (isError) return error.cause || 500;
-    return null;
-  })();
-
-  if (errorCode || !order) {
-    return (
-      <ErrorView type={errorCode as ErrorType} onAction={() => router.back()} />
-    );
-  }
-
   /** Actions (User) */
   const toReview =
     isCustomer && order.review?.rating === null && order.status === "COMPLETED";
   const toShowQR = isCustomer && order.short_code && order.status === "PAID";
+
+  const snapPoints = useMemo(() => ["60%"], []);
 
   return (
     <View
       style={{
         paddingTop: 20,
         paddingHorizontal: insets.left + insets.right + 20,
-        height: "100%",
+        paddingBottom: insets.bottom + 16,
+        flex: 1,
         marginTop: 150,
       }}
-      className="bg-bg-semi-white  w-full rounded-t-3xl"
+      className="bg-bg-semi-white w-full rounded-t-3xl"
     >
       <View className="flex-row items-center w-full justify-between border-b border-dashed border-gray-300 pb-6">
         <View className="flex-row items-start gap-4 flex-1">
@@ -379,101 +286,132 @@ export default function OrderView({
 
         {!toShowQR &&
           !toReview &&
-          isCustomer &&
+          //isCustomer &&
           (order.status === "PENDING" || order.status === "READY") && (
             <TouchableOpacity
-              disabled={addFoods}
-              onPress={() => setAddFoods(true)}
-              className={`flex-row items-center justify-center  ${addFoods ? "bg-[#33333380]" : "bg-bg-semi-black"} gap-x-2 py-3 rounded-[5px]`}
+              disabled={isLoading}
+              onPress={() => {
+                modalRef.current?.present();
+                setAddFoods(true);
+              }}
+              className={`flex-row items-center justify-center  ${isLoading ? "bg-[#33333380]" : "bg-bg-semi-black"} gap-x-2 py-3 rounded-[5px]`}
             >
-              <MaterialCommunityIcons
-                name="invoice-plus-outline"
-                size={16}
-                color="#fff"
-              />
-              {isLoadingFoods ? (
+              {isLoading ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text className="text-text-1 font-dosis-bold text-[13px]">
-                  Agregar más items
-                </Text>
+                <View className="flex-row items-center gap-x-2">
+                  <MaterialCommunityIcons
+                    name="invoice-plus-outline"
+                    size={16}
+                    color="#fff"
+                  />
+
+                  <Text className="text-text-1 font-dosis-bold text-[13px]">
+                    Agregar más items
+                  </Text>
+                </View>
               )}
             </TouchableOpacity>
           )}
       </View>
 
-      <View style={{ gap: 20 }} className="mt-4 flex-col">
-        <View>
-          <Pressable
-            onPress={() => {
-              toggleList("tuPedido");
-            }}
-            className="flex-row items-center justify-between"
-          >
-            <Text className="font-dosis-bold text-text-3 text-[20px]">
-              Tu pedido
-            </Text>
+      <View className="mt-4 flex-col gap-y-4 flex-1">
+        <Pressable
+          onPress={() => {
+            setIsExpanded(!isExpanded);
+          }}
+          className="flex-row items-center justify-between"
+        >
+          <Text className="font-dosis-bold text-text-3 text-[20px]">
+            Tu pedido
+          </Text>
 
-            <Ionicons
-              name={isExpanded["tuPedido"] ? "chevron-up" : "chevron-down"}
-              size={18}
-              color="#2F2F2F"
-            />
-          </Pressable>
+          <Ionicons
+            name={isExpanded ? "chevron-up" : "chevron-down"}
+            size={18}
+            color="#2F2F2F"
+          />
+        </Pressable>
 
-          {isExpanded["tuPedido"] && (
-            <FlatList
-              data={order.order_items}
-              scrollEnabled={false}
-              showsVerticalScrollIndicator={false}
-              keyExtractor={(item) => item.id}
-              renderItem={renderItem}
-              className="mt-6"
-            />
-          )}
-        </View>
-
-        <View>
-          {addFoods && (
-            <View className="mb-6">
-              <Pressable
-                onPress={() => {
-                  toggleList("menuAdicional");
+        {isExpanded &&
+          order.order_items.map((item) => (
+            <View key={item.id} className="flex-row justify-between gap-3 mb-4">
+              <Image
+                source={{ uri: item.food.image_url }}
+                style={{
+                  width: 30,
+                  height: "60%",
+                  resizeMode: "cover",
+                  borderRadius: 3,
                 }}
-                className="flex-row items-center justify-between py-2"
-              >
-                <Text className="font-dosis-bold text-text-3 text-[20px]">
-                  Menú
+              />
+              <View className="flex-col flex-1 justify-between">
+                <Text className="text-text-3 text-[14.5px] font-dosis-semibold">
+                  {item.food.name}
                 </Text>
 
-                <Ionicons
-                  name={
-                    isExpanded["menuAdicional"] ? "chevron-up" : "chevron-down"
-                  }
-                  size={18}
-                  color="#2F2F2F"
-                />
-              </Pressable>
-              {foods && isExpanded["menuAdicional"] && (
-                <FlatList
-                  data={flatFoods}
-                  scrollEnabled={false}
-                  keyExtractor={(item) => item.id?.toString()}
-                  renderItem={renderFoodItem}
-                />
-              )}
+                <Text className="text-text-3 text-[15.5px] font-dosis-bold mb-1">
+                  {formatPrice(item.unit_price)}
+                </Text>
+                <Text
+                  className="text-text-4 text-[12.5px] font-dosis-regular"
+                  ellipsizeMode="tail"
+                  numberOfLines={1}
+                >
+                  {item.food.description}
+                </Text>
+              </View>
+
+              <Text className="text-text-3 text-[16px] font-dosis-bold">
+                {item.quantity}x
+              </Text>
             </View>
-          )}
-        </View>
+          ))}
       </View>
 
-      <View className="mt-8 border-t border-gray-300 pt-4 flex-row items-center justify-between">
+      <View className="border-t border-dashed border-gray-300 pt-4 flex-row items-center justify-between">
         <Text className="font-dosis-bold text-text-3 text-[15px]">Total</Text>
 
         <Text className="font-dosis-bold text-text-3 text-[15px]">
           {formatPrice(order.total)}
         </Text>
       </View>
+
+      <BottomSheetModal
+        ref={modalRef}
+        index={0}
+        snapPoints={snapPoints}
+        backgroundStyle={{
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          backgroundColor: "#fefefe",
+        }}
+        enableOverDrag={false}
+        enablePanDownToClose={true}
+        enableDynamicSizing={false}
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop
+            {...props}
+            disappearsOnIndex={-1}
+            appearsOnIndex={0}
+            opacity={0.4}
+            pressBehavior="close"
+          />
+        )}
+      >
+        <BottomSheetFlatList
+          data={foods}
+          keyExtractor={(item: Food) => item.id}
+          renderItem={renderFoodItem}
+          showsVerticalScrollIndicator={false}
+          style={{ paddingHorizontal: insets.left + insets.right }}
+          ListFooterComponent={
+            isLoading ? (
+              <ActivityIndicator size="large" color="#B53325" />
+            ) : null
+          }
+        />
+      </BottomSheetModal>
     </View>
   );
 }

@@ -102,12 +102,16 @@ export interface LocalReview {
 
   order?: Order;
   order_id?: string;
+
+  total?: number;
 }
 
 export interface Food {
   id: string;
   local_id: string;
+  local: Local;
   category_id: number;
+  category: FoodCategory;
   name: string;
   description?: string;
   price: number;
@@ -117,6 +121,8 @@ export interface Food {
   votes_down: number;
   created_at?: Date;
   updated_at?: Date;
+  promotions?: Promotion;
+  order_items: OrderItem[];
 }
 
 export interface Promotion {
@@ -308,6 +314,9 @@ export interface PostComment {
   post_id: string;
   parent_comment: PostComment | null;
   parent_comment_id: string | null;
+
+  reply_to_user: User | null;
+  reply_to_user_id: string | null;
 
   content: string;
 

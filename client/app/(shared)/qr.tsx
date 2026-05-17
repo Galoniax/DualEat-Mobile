@@ -133,7 +133,7 @@ export default function QrScreen() {
             e.stopPropagation();
             router.push({
               pathname: ROUTES.USER.LOCAL,
-              params: { slug: item.slug },
+              params: { local_id: item.id, local_slug: item.slug},
             });
           }}
           className=" rounded-full flex-row items-center py-2 mr-4 border border-gray-200 justify-between px-4 border-opacity-50"

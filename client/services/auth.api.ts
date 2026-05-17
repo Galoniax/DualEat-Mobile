@@ -1,7 +1,6 @@
-import { isAxiosError } from "axios";
 import axiosInterceptor from "@/api/client";
-import { showToast } from "@/utils/toast";
 import { AuthResponse } from "@/interface/global";
+import { handleApiError } from "@/utils/apiErrorHandler";
 
 // --- 1. INICIO DE SESIÓN ---
 // ===================================
@@ -21,22 +20,12 @@ export const login = async (
         remember: r,
         recaptcha: rt,
         deviceId: d,
-        platform: 'mobile',
-      },
-      { withCredentials: true },
+      }
     );
 
     return response.data as AuthResponse;
   } catch (err: unknown) {
-    console.log("Login API Error:", JSON.stringify(err, null, 2));
-    if (isAxiosError(err)) {
-      showToast(
-        "error",
-        err.response?.data?.message || "Error al iniciar sesión",
-        "Error",
-      );
-    }
-    return null;
+    return handleApiError(err);
   }
 };
 
@@ -56,14 +45,7 @@ export const register = async (
 
     return response.data as AuthResponse;
   } catch (err: unknown) {
-    if (isAxiosError(err)) {
-      showToast(
-        "error",
-        err.response?.data?.message || "Error al registrar",
-        "Error",
-      );
-    }
-    return null;
+    return handleApiError(err);
   }
 };
 
@@ -83,20 +65,12 @@ export const completeProfile = async (
         foodPreferences: fPreferences,
         communityPreferences: cPreferences,
         tempToken: tt,
-      },
-      { withCredentials: true },
+      }
     );
 
     return response.data as AuthResponse;
   } catch (err: unknown) {
-    if (isAxiosError(err)) {
-      showToast(
-        "error",
-        err.response?.data?.message || "Error al completar el perfil",
-        "Error",
-      );
-    }
-    return null;
+    return handleApiError(err);
   }
 };
 
@@ -104,22 +78,11 @@ export const completeProfile = async (
 // ===================================
 export const logout = async () => {
   try {
-    const response = await axiosInterceptor.post(
-      "/auth/logout",
-      {},
-      { withCredentials: true },
-    );
+    const response = await axiosInterceptor.post("/auth/logout", {});
 
     return response.data as AuthResponse;
   } catch (err: unknown) {
-    if (isAxiosError(err)) {
-      showToast(
-        "error",
-        err.response?.data?.message || "Error al cerrar sesión",
-        "Error",
-      );
-    } 
-    return null;
+    return handleApiError(err);
   }
 };
 
@@ -127,15 +90,11 @@ export const logout = async () => {
 // ===================================
 export const getMe = async () => {
   try {
-    const response = await axiosInterceptor.get("/auth/me", {
-      withCredentials: true,
-    });
+    const response = await axiosInterceptor.get("/auth/me");
     return response.data;
   } catch (err: unknown) {
-    if (isAxiosError(err)) {
-      console.log(err.response?.data?.message);
-    }
-    throw err;
+    console.log("Error al obtener datos del usuario", err);
+    return handleApiError(err);
   }
 };
 

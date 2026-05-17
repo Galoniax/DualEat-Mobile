@@ -1,6 +1,7 @@
 import axiosInterceptor from "@/api/client";
 import { Response } from "@/interface/global";
-import axios, { isAxiosError } from "axios";
+import { handleApiError } from "@/utils/apiErrorHandler";
+import axios from "axios";
 
 // --- 1. OBTENER TODOS LOS INGREDIENTES ---
 // ===================================
@@ -14,31 +15,7 @@ export const getAllIngredients = async (): Promise<Response> => {
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
-    };
+    return handleApiError(err);
   }
 };
 
@@ -54,31 +31,7 @@ export const getRecipeById = async (recipeId: string): Promise<Response> => {
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
-    };
+    return handleApiError(err);
   }
 };
 
@@ -120,14 +73,13 @@ export async function getIngredientNutrition(ingredient: string) {
 // ===================================
 export async function getRecipeNutrition(ingredients: string[]) {
   const valid: any[] = [];
-  
+
   // Fetch sequentially to prevent triggering rate-limits or bot protection from Open Food Facts
   for (const ing of ingredients) {
     const result = await getIngredientNutrition(ing);
     if (result.found) {
       valid.push(result);
     }
-    // Pequeño retraso entre peticiones
     await new Promise((resolve) => setTimeout(resolve, 400));
   }
 

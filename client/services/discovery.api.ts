@@ -1,8 +1,11 @@
-import { isAxiosError } from "axios";
 import axiosInterceptor from "@/api/client";
-import { Response } from "@/interface/global";
+import {
+  LocalReview,
+  Response,
+  ResponseWithPagination,
+} from "@/interface/global";
 import { preferencesDTO } from "@/interface/global.dto";
-import { showToast } from "@/utils/toast";
+import { handleApiError } from "@/utils/apiErrorHandler";
 
 // --- 1. OBTENER LOCALES EN RANGO ---
 // ===================================
@@ -33,31 +36,7 @@ export const getLocalInBounds = async (
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.code === "ECONNABORTED") {
-        return {
-          success: false,
-          status: 408,
-          message: "La solicitud tardó demasiado en responder.",
-        };
-      }
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message:
-            err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado procesando la solicitud.",
-    };
+    return handleApiError(err);
   }
 };
 
@@ -76,48 +55,69 @@ export const getLocalByNearby = async (
     if (response.data.success === false) return null;
     else return response.data as Response;
   } catch (err: unknown) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-    }
-    return null;
+    return handleApiError(err);
   }
 };
 
 // --- 3. OBTENER LOCAL ---
 // ===================================
-export const getLocalBySlug = async (
-  slug: string,
-): Promise<Response | null> => {
+export const getLocalById = async (id: string): Promise<Response> => {
   try {
-    const response = await axiosInterceptor.get(
-      `/local/discovery/local/${slug}`,
-    );
+    const response = await axiosInterceptor.get(`/local/discovery/${id}`);
 
-    if (response.data.success === false) return null;
-    else return response.data as Response;
-  } catch (err: unknown) {
-    if (isAxiosError(err)) {
-      showToast("error", "No se pudo obtener el local");
-    }
-    return null;
+    return {
+      success: response.data.success ?? true,
+      status: response.status,
+      data: response.data.data,
+    };
+  } catch (err: any) {
+    return handleApiError(err);
   }
 };
 
 // --- 4. OBTENER RESEÑAS DEL LOCAL ---
 // ===================================
 export const getLocalReviews = async (
-  slug: string,
-): Promise<Response | null> => {
+  local_id: string,
+  page: number,
+): Promise<ResponseWithPagination<{ reviews: LocalReview[]; total: number }>> => {
   try {
     const response = await axiosInterceptor.get(
-      `/local/discovery/${slug}/reviews`,
+      `/local/discovery/${local_id}/reviews`,
+      {
+        params: {
+          page,
+        },
+      },
     );
-    if (response.data.success === false) return null;
-    else return response.data as Response;
-  } catch (err: unknown) {
-    if (isAxiosError(err)) {
-      showToast("error", "No se pudo obtener las reseñas del local");
-    }
-    return null;
+    return {
+      success: response.data.success,
+      status: response.status,
+      data: response.data.data,
+      pagination: response.data.pagination,
+    };
+  } catch (err: any) {
+    return handleApiError(err);
+  }
+};
+
+// --- 5. OBTENER LOCAL HOME ---
+// ===================================
+export const getHomeDiscovery = async (lat: number, lng: number): Promise<Response> => {
+  try {
+    const response = await axiosInterceptor.get("/local/discovery/home", {
+      params: {
+        lat,
+        lng,
+      },
+    });
+
+    return {
+      success: response.data.success ?? true,
+      status: response.status,
+      data: response.data.data,
+    };
+  } catch (err: any) {
+    return handleApiError(err);
   }
 };

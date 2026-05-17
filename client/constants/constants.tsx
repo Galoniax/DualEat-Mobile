@@ -16,11 +16,13 @@ export const ROUTES = {
     LOCAL: "/(staff)/local/[local_id]",
   },
   USER: {
-    DASHBOARD_OUT: "/(client)/(out)/(tabs)",
+    DASHBOARD_OUT: "/(client)/(out)/(home)/(tabs)",
     DASHBOARD_IN: "/(client)/(in)/(home)/(tabs)",
-    LOCAL: "/(client)/(out)/local",
+    LOCAL: "/(client)/(out)/l/[local_id]/[local_slug]",
     CART: "/(client)/(out)/cart",
     QR: "/(client)/(out)/(tabs)/qr",
+
+    ORDER_INFO: "/(client)/(out)/order_info/[order_id]",
 
     COMMUNITY: "/(client)/(in)/c/[community_slug]",
     POST: "/(client)/(in)/c/[community_slug]/p/[post_id]/[post_slug]",
@@ -32,7 +34,12 @@ export const ROUTES = {
     CHAT_HISTORY: "/(client)/(in)/(home)/(tabs)/chat/history",
     CHAT: "/(client)/(in)/(home)/(tabs)/chat/[chat_id]",
 
-    EXPLORE: "/(client)/(in)/(home)/(tabs)/index",
+   
+
+    EXPLORE_SEARCH: "/(client)/(in)/(home)/(tabs)/explore/search",
+
+    COMMUNITY_SEARCH: "/(client)/(in)/c/[community_slug]/search",
+    
     EXPLORE_TAG: "/(client)/(in)/(tabs)/explore/[tag_id]",
     EXPLORE_CATEGORY: "/(client)/(in)/(tabs)/explore/[category_id]/[category_slug]",
   },

@@ -27,7 +27,7 @@ export default function TabLayout() {
         tabBarButton: HapticTab,
         tabBarStyle: TabStyle,
         headerTransparent: true,
-        header: () => <TopSearchBar />,
+        header: (props) => <TopSearchBar {...props} />,
         tabBarIconStyle: {
           flex: 1,
           justifyContent: "center",
@@ -70,7 +70,6 @@ export default function TabLayout() {
         options={{
           title: "Explorar",
           headerShown: false,
-          tabBarShowLabel: true,
           tabBarIcon: ({ color, focused }) => {
             const size = 24;
             return focused ? (
@@ -98,7 +97,6 @@ export default function TabLayout() {
         options={{
           title: "Chats",
           headerShown: false,
-          tabBarShowLabel: true,
           tabBarIcon: ({ color, focused }) => {
             const size = 26;
             return focused ? (
