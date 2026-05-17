@@ -6,7 +6,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useAuth } from "@/context/auth/AuthContext";
 import { useQuery } from "@tanstack/react-query";
-import { getLocalBySlug } from "@/services/discovery.api";
+import { getLocalById } from "@/services/discovery.api";
 import { Local } from "@/interface/global";
 
 export default function LocalHomeScreen() {
@@ -15,12 +15,10 @@ export default function LocalHomeScreen() {
   const { local_id } = useGlobalSearchParams();
   const { user } = useAuth();
 
-  const localSlug = user?.workplaces?.find((w) => w.id === local_id)?.slug;
-
   const { data: response, isLoading, isError } = useQuery({
-    queryKey: ["local", localSlug],
-    queryFn: () => getLocalBySlug(localSlug as string),
-    enabled: !!localSlug,
+    queryKey: ["local", local_id],
+    queryFn: () => getLocalById(local_id as string),
+    enabled: !!local_id,
   });
 
   const localData = response?.data as Local | undefined;

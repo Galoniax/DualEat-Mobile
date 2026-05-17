@@ -158,6 +158,7 @@ export interface Order {
 
   short_code?: string;
   delivery_date?: Date;
+  notes?: string | null;
 
   order_items: OrderItem[];
   review?: LocalReview;

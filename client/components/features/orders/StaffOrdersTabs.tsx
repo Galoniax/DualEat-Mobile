@@ -5,7 +5,7 @@ import { useRouter } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useAuth } from "@/context/auth/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getLocalBySlug } from "@/services/discovery.api";
+import { getLocalById } from "@/services/discovery.api";
 import { createManualOrder, getLocalOrders, updateOrderStatus, updateOrderItems } from "@/services/order.api";
 import { Local, Food, Order, OrderStatus } from "@/interface/global";
 import { formatPrice } from "@/utils/distance";
@@ -82,11 +82,10 @@ function EditOrderModal({ order, localId, onClose, onSaved }: { order: Order; lo
   const [showMenu, setShowMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const localSlug = user?.workplaces?.find((w) => w.id === localId)?.slug;
   const { data: response } = useQuery({
-    queryKey: ["local", localSlug],
-    queryFn: () => getLocalBySlug(localSlug as string),
-    enabled: !!localSlug && showMenu,
+    queryKey: ["local", localId],
+    queryFn: () => getLocalById(localId),
+    enabled: !!localId && showMenu,
   });
   const localData = response?.data as Local | undefined;
 
@@ -411,11 +410,10 @@ export function NewOrderTab({ localId, onOrderCreated, qrPayload }: { localId: s
   const [notes, setNotes] = useState("");
   const [loadedQrPayload, setLoadedQrPayload] = useState<string | null>(null);
 
-  const localSlug = user?.workplaces?.find((w) => w.id === localId)?.slug;
   const { data: response, isLoading } = useQuery({
-    queryKey: ["local", localSlug],
-    queryFn: () => getLocalBySlug(localSlug as string),
-    enabled: !!localSlug,
+    queryKey: ["local", localId],
+    queryFn: () => getLocalById(localId),
+    enabled: !!localId,
   });
   const localData = response?.data as Local | undefined;
   const router = useRouter();

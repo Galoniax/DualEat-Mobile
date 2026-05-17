@@ -18,8 +18,8 @@ export function useRedirecter() {
         return;
       } else {
         return mode === "in"
-          ? router.replace(ROUTES.USER.DASHBOARD_IN)
-          : router.replace(ROUTES.USER.DASHBOARD_OUT);
+          ? router.replace(ROUTES.USER.DASHBOARD_IN as any)
+          : router.replace(ROUTES.USER.DASHBOARD_OUT as any);
       }
     }
     return router.replace(ROUTES.PUBLIC.HOME);

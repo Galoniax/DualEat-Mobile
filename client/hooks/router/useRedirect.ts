@@ -61,9 +61,9 @@ export function useRedirect() {
       (inAuthGroup || inLocalGroup || inStaffGroup || currentModeSegment !== "(out)");
 
     if (needsRedirectIn) {
-      router.replace(ROUTES.USER.DASHBOARD_IN);
+      router.replace(ROUTES.USER.DASHBOARD_IN as any);
     } else if (needsRedirectOut) {
-      router.replace(ROUTES.USER.DASHBOARD_OUT);
+      router.replace(ROUTES.USER.DASHBOARD_OUT as any);
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
