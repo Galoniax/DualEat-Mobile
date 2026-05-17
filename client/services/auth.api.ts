@@ -21,12 +21,14 @@ export const login = async (
         remember: r,
         recaptcha: rt,
         deviceId: d,
+        platform: 'mobile',
       },
       { withCredentials: true },
     );
 
     return response.data as AuthResponse;
   } catch (err: unknown) {
+    console.log("Login API Error:", JSON.stringify(err, null, 2));
     if (isAxiosError(err)) {
       showToast(
         "error",
@@ -134,5 +136,37 @@ export const getMe = async () => {
       console.log(err.response?.data?.message);
     }
     throw err;
+  }
+};
+
+// --- 6. ACTUALIZAR PERFIL DE USUARIO ---
+// ===================================
+export const updateUserProfile = async (
+  name?: string,
+  currentPassword?: string,
+  newPassword?: string
+) => {
+  try {
+    const response = await axiosInterceptor.put("/auth/me", {
+      name,
+      currentPassword,
+      newPassword,
+    });
+    return {
+      success: response.data.success ?? true,
+      message: response.data.message || "Perfil actualizado correctamente.",
+      data: response.data.data
+    };
+  } catch (err: any) {
+    if (isAxiosError(err)) {
+      return {
+        success: false,
+        message: err.response?.data?.message || "Error al actualizar perfil.",
+      };
+    }
+    return {
+      success: false,
+      message: "Error inesperado al actualizar perfil.",
+    };
   }
 };

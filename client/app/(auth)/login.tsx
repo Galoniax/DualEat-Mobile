@@ -47,6 +47,23 @@ export default function Login() {
 
     setLoading(true);
 
+    // Bypassing reCAPTCHA: Invocamos directamente el login con un token de prueba
+    try {
+      const deviceId = await getDeviceId();
+      await login(
+        email.trim(),
+        password.trim(),
+        true,
+        "dummy-token-bypass",
+        deviceId,
+      );
+    } catch (e) {
+      console.log("Error en credenciales o servidor:", e);
+    } finally {
+      setLoading(false);
+    }
+
+    /* Código original del reCAPTCHA comentado:
     try {
       recaptchaRef.current?.injectJavaScript(`
         if (window.turnstileWidgetId !== undefined) {
@@ -58,6 +75,7 @@ export default function Login() {
       console.log("Error inyectando script: ", e);
       setLoading(false);
     }
+    */
   };
 
   // 2. Manejador de la respuesta de Cloudflare

@@ -121,3 +121,150 @@ export const getOrderById = async (id: string): Promise<Response> => {
     };
   }
 };
+
+// --- 4. CREAR ORDEN MANUAL (STAFF) ---
+// ===================================
+export const createManualOrder = async (
+  local_id: string,
+  items: { food_id: string; quantity: number }[],
+  notes?: string
+): Promise<Response> => {
+  try {
+    const response = await axiosInterceptor.post(`/order/locals/${local_id}/orders/manual`, {
+      items,
+      notes,
+    });
+
+    return {
+      success: response.data.success ?? true,
+      status: response.status,
+      data: response.data.data,
+    };
+  } catch (err: any) {
+    if (isAxiosError(err)) {
+      console.log("Axios error:", err.response?.data || err.message);
+
+      if (err.response) {
+        return {
+          success: err.response.data.success ?? false,
+          status: err.response.status,
+          message: err.response.data.message || "Error procesando la solicitud.",
+        };
+      }
+    }
+    return {
+      success: false,
+      status: 500,
+      message: "Error inesperado creando la orden manual.",
+    };
+  }
+};
+
+// --- 5. OBTENER ÓRDENES DE UN LOCAL (STAFF) ---
+// ===================================
+export const getLocalOrders = async (
+  local_id: string,
+): Promise<Response<Order[]>> => {
+  try {
+    const response = await axiosInterceptor.get(`/order/locals/${local_id}/orders`);
+
+    return {
+      success: true,
+      status: response.status,
+      data: response.data as Order[],
+    };
+  } catch (err: any) {
+    if (isAxiosError(err)) {
+      console.log("Axios error:", err.response?.data || err.message);
+
+      if (err.response) {
+        return {
+          success: err.response.data.success ?? false,
+          status: err.response.status,
+          message: err.response.data.message || "Error procesando la solicitud.",
+        };
+      }
+    }
+    return {
+      success: false,
+      status: 500,
+      message: "Error inesperado obteniendo las órdenes.",
+    };
+  }
+};
+
+// --- 6. ACTUALIZAR ESTADO DE ORDEN (STAFF) ---
+// ===================================
+export const updateOrderStatus = async (
+  local_id: string,
+  order_id: string,
+  status: string,
+): Promise<Response> => {
+  try {
+    const response = await axiosInterceptor.patch(
+      `/order/locals/${local_id}/orders/${order_id}/status`,
+      { status }
+    );
+
+    return {
+      success: response.data.success ?? true,
+      status: response.status,
+      data: response.data.data,
+    };
+  } catch (err: any) {
+    if (isAxiosError(err)) {
+      console.log("Axios error:", err.response?.data || err.message);
+
+      if (err.response) {
+        return {
+          success: err.response.data.success ?? false,
+          status: err.response.status,
+          message: err.response.data.message || "Error procesando la solicitud.",
+        };
+      }
+    }
+    return {
+      success: false,
+      status: 500,
+      message: "Error inesperado actualizando el estado de la orden.",
+    };
+  }
+};
+
+// --- 7. ACTUALIZAR ITEMS DE ORDEN (STAFF) ---
+// ===================================
+export const updateOrderItems = async (
+  local_id: string,
+  order_id: string,
+  items: { food_id: string; quantity: number }[],
+): Promise<Response> => {
+  try {
+    const response = await axiosInterceptor.put(
+      `/order/locals/${local_id}/orders/${order_id}/items`,
+      { items }
+    );
+
+    return {
+      success: response.data.success ?? true,
+      status: response.status,
+      data: response.data.data,
+    };
+  } catch (err: any) {
+    if (isAxiosError(err)) {
+      console.log("Axios error:", err.response?.data || err.message);
+
+      if (err.response) {
+        return {
+          success: err.response.data.success ?? false,
+          status: err.response.status,
+          message: err.response.data.message || "Error procesando la solicitud.",
+        };
+      }
+    }
+    return {
+      success: false,
+      status: 500,
+      message: "Error inesperado actualizando los items de la orden.",
+    };
+  }
+};

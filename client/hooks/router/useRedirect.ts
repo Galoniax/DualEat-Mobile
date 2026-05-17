@@ -21,6 +21,7 @@ export function useRedirect() {
     const rootSegment = segments[0];
     const inAuthGroup = rootSegment === "(auth)";
     const inLocalGroup = rootSegment === "(local)";
+    const inStaffGroup = rootSegment === "(staff)";
     const currentModeSegment = segments[1];
 
     // --- ESCENARIO 1: NO LOGUEADO ---
@@ -34,23 +35,30 @@ export function useRedirect() {
     // --- ESCENARIO 2: USUARIO BUSINESS ---
     if (user.isBusiness) {
       if (!inLocalGroup) {
-        // Solo reemplaza si no estás ya en la sección local
         // router.replace(ROUTES.LOCAL.DASHBOARD);
       }
       return;
     }
 
-    // --- ESCENARIO 3: CAMBIO DE MODO (El corazón del switchMode) ---
+    // --- ESCENARIO 3: USUARIO STAFF / ADMIN LOCAL ---
+    // Si el usuario tiene lugares de trabajo, es parte del staff o admin de un local.
+    const hasWorkplaces = (user.workplaces && user.workplaces.length > 0) || (user.role as string) === 'staff';
 
-    // Si estamos en una ruta de auth o local pero somos usuario normal,
-    // o si el segmento de modo no coincide con el estado actual:
+    if (hasWorkplaces && !user.isBusiness) {
+      console.log("Redirecting to Staff Dashboard (hasWorkplaces)");
+      if (!inStaffGroup) {
+        router.replace(ROUTES.STAFF.DASHBOARD as any);
+      }
+      return;
+    }
+
 
     const needsRedirectIn =
       mode === "in" &&
-      (inAuthGroup || inLocalGroup || currentModeSegment !== "(in)");
+      (inAuthGroup || inLocalGroup || inStaffGroup || currentModeSegment !== "(in)");
     const needsRedirectOut =
       mode === "out" &&
-      (inAuthGroup || inLocalGroup || currentModeSegment !== "(out)");
+      (inAuthGroup || inLocalGroup || inStaffGroup || currentModeSegment !== "(out)");
 
     if (needsRedirectIn) {
       router.replace(ROUTES.USER.DASHBOARD_IN);

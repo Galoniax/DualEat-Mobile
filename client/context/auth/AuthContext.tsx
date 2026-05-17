@@ -65,8 +65,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setType("global");
 
       const token = await SecureStore.getItemAsync(TOKEN_KEY);
-
-      console.log("Token encontrado en SecureStore:", token);
       if (token) {
         axiosInterceptor.defaults.headers.Authorization = `Bearer ${token}`;
         const userData = await getMe();
@@ -121,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const userData = await getMe();
       setUser(userData);
 
-      console.log("Usuario cargado:", userData);
+      console.log("Usuario cargado en Context:", JSON.stringify(userData, null, 2));
 
       setType(null);
 
@@ -146,18 +144,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       setType("minimal");
       const response = await authLogin(e, p, r, t, d);
-      console.log(e, p, r, t, d);
-
+      
       if (response && response.success && response.token) {
-        let msg = response.message;
-        if (!msg) {
-          msg = "Inicio de sesión exitoso";
-        }
+        let msg = response.message || "Inicio de sesión exitoso";
         showToast("success", msg, "Éxito");
         await setToken(response.token);
+      } else {
+        const errorMsg = response?.message || "Credenciales incorrectas o cuenta no autorizada";
+        showToast("error", errorMsg, "Error de inicio de sesión");
       }
-
-      setType(null);
       return response;
     } catch (e) {
       setType(null);

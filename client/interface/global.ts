@@ -1,6 +1,6 @@
 import { JSX } from "react/jsx-runtime";
 
-type Role = "user" | "admin";
+type Role = "user" | "admin" | "staff";
 
 type SuscriptionStatus = "active" | "inactive" | "trial" | "canceled";
 
@@ -135,7 +135,7 @@ export type OrderStatus =
   | "PENDING"
   | "PAID"
   | "COMPLETED"
-  | "CANCELED"
+  | "CANCELLED"
   | "READY";
 
 export interface Order {

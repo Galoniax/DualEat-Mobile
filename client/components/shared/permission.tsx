@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type PermissionType = "QR";
+type PermissionType = "QR" | "QR_STAFF";
 
 
 interface PermissionViewProps {
@@ -38,13 +38,18 @@ const PermissionView = ({ type, permission, requestPermission }: PermissionViewP
       </View>
 
       <Text className="text-white text-[28px] font-dosis-bold px-5 mb-3">
-        Escanea, explora y <Text className="text-[#ec3f2b]">disfruta</Text>
+        {type === "QR_STAFF" ? (
+          <>Escanea pedidos <Text className="text-[#ec3f2b]">rápido</Text></>
+        ) : (
+          <>Escanea, explora y <Text className="text-[#ec3f2b]">disfruta</Text></>
+        )}
       </Text>
 
       <View className="items-center px-8">
         <Text className="text-text-2 text-start text-[15px] font-dosis-light">
-          Para que puedas descubrir los menús de tus locales favoritos en
-          DualEat, necesitamos acceso a tu cámara.
+          {type === "QR_STAFF"
+            ? "Para que puedas escanear el QR de los clientes y cargar sus órdenes de forma inmediata, necesitamos acceso a tu cámara."
+            : "Para que puedas descubrir los menús de tus locales favoritos en DualEat, necesitamos acceso a tu cámara."}
         </Text>
 
         <View className="flex-row justify-start w-full gap-2 mt-4">

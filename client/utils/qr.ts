@@ -8,15 +8,16 @@ export function useQRParser() {
 
   const parseQR = (qrValue: string) => {
     try {
-      // TODO:
-      // qrValue: string
-      //const decompressed = LZString.decompressFromEncodedURIComponent(qrValue);
+      const decompressed = LZString.decompressFromEncodedURIComponent(qrValue);
+      
+      if (!decompressed) {
+        throw new Error("No se pudo descomprimir el QR");
+      }
 
-      //const parsedData = JSON.parse(decompressed) as QRData;
+      console.log("qrValue comprimido:", qrValue);
+      console.log("qrValue descomprimido:", decompressed);
 
-      console.log("qrValue", qrValue);
-
-      const parsedData = JSON.parse(qrValue) as QRData;
+      const parsedData = JSON.parse(decompressed) as QRData;
 
       const userWorkplaceIds = user?.workplaces.map((w) => w.id) || [];
 
@@ -25,19 +26,14 @@ export function useQRParser() {
         // CASO 1: ORDEN (Restringido para usuarios regulares)
         // ==========================================
         case "order":
-          console.log("ENTRO");
-          if (!user?.isBusiness) {
-            return {
-              success: false,
-              error:
-                "Acceso denegado: Solo el personal del local puede escanear órdenes.",
-            };
-          }
-
+          console.log("ENTRO a procesar orden:", parsedData);
+          
+          // Verificamos si el usuario pertenece al local para el cual es la orden
+          // Esto cubre tanto a dueños (isBusiness) como a staff regular
           if (!userWorkplaceIds.includes(parsedData.l)) {
             return {
               success: false,
-              error: "Esta orden pertenece a otro restaurante.",
+              error: "Acceso denegado: Esta orden pertenece a otro restaurante o no eres staff de este local.",
             };
           }
 

@@ -11,6 +11,10 @@ export const ROUTES = {
     ONBOARDING: "/(auth)/onboarding",
     RESET_PASSWORD: "/(auth)/password_recovery",
   },
+  STAFF: {
+    DASHBOARD: "/(staff)",
+    LOCAL: "/(staff)/local/[local_id]",
+  },
   USER: {
     DASHBOARD_OUT: "/(client)/(out)/(tabs)",
     DASHBOARD_IN: "/(client)/(in)/(home)/(tabs)",

@@ -15,6 +15,7 @@ interface ScannerViewProps {
   onScan: (data: string) => void;
   onClose: () => void;
   isScanningEnabled: boolean;
+  permissionType?: "QR" | "QR_STAFF";
   children: React.ReactNode;
 }
 
@@ -22,6 +23,7 @@ function ScannerView({
   onScan,
   onClose,
   isScanningEnabled,
+  permissionType = "QR",
   children,
 }: ScannerViewProps) {
   // =========================================================
@@ -51,7 +53,7 @@ function ScannerView({
   if (!permission.granted) {
     return (
       <PermissionView
-        type="QR"
+        type={permissionType}
         permission={permission}
         requestPermission={requestPermission}
       />
