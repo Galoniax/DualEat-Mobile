@@ -8,25 +8,27 @@ import {
   TouchableOpacity,
   Animated,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { getBySlug } from "@/services/community.api";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Community, Post, ResponseWithPagination } from "@/interface/global";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { FlashList } from "@shopify/flash-list";
 import PostCard from "@/components/features/post/PostCard";
 import { useJoinLeave } from "@/hooks/api/useMyCommunities";
 import { getCommunityPosts } from "@/services/post.api";
-import { Entypo, Feather } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import { ROUTES } from "@/constants/constants";
 import { useRecentsStore } from "@/context/store/useRecents";
 
 export default function CommunityScreen() {
-  const headerHeight = useHeaderHeight();
   const { community_slug } = useLocalSearchParams();
   const router = useRouter();
+
+  const insets = useSafeAreaInsets();
 
   const { mutate: joinLeave } = useJoinLeave();
   const { setCommunity } = useRecentsStore();
@@ -116,201 +118,240 @@ export default function CommunityScreen() {
     return community?.isMember || false;
   }, [community]);
 
-  const CommunityHeader = ({ scrollY }: { scrollY: Animated.Value }) => {
+  const Header = ({
+    scrollY,
+    type,
+  }: {
+    scrollY: Animated.Value;
+    type: "Banner" | "Community";
+  }) => {
     if (!community) return null;
 
     const blurOpacity = scrollY.interpolate({
-      inputRange: [0, 100],
+      inputRange: [10, 50],
       outputRange: [0, 1],
       extrapolate: "clamp",
     });
 
-    const titleOpacity = scrollY.interpolate({
-      inputRange: [50, 120],
-      outputRange: [0, 1],
+    const buttonBgOpacity = scrollY.interpolate({
+      inputRange: [0, 50],
+      outputRange: [0.5, 0],
       extrapolate: "clamp",
     });
 
-    return (
-      <View className="mb-4 flex-col gap-y-4 pb-4">
-        <View className="relative overflow-hidden" style={{ height: 120 }}>
-          {/* 1. Imagen Base (Nítida) */}
-          <Animated.Image
-            source={{ uri: community.banner_url || "https://placehold.co/100x100" }}
-            style={[{ height: 120, width: "100%", position: "absolute" }]}
-            resizeMode="cover"
-          />
-
-          {/* 2. Imagen Borrosa */}
-          <Animated.Image
-            source={{ uri: community.banner_url || "https://placehold.co/100x100" }}
-            blurRadius={20}
-            style={[
-              { height: 120, width: "100%", position: "absolute" },
-              { opacity: blurOpacity },
-            ]}
-            resizeMode="cover"
-          />
-
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              {
-                position: "absolute",
-                inset: 0,
-                justifyContent: "center",
-                alignItems: "center",
-                backgroundColor: "rgba(0,0,0,0.3)",
-                zIndex: 5,
-              },
-              { opacity: titleOpacity },
-            ]}
-          >
-            <Text className="text-[22px] font-dosis-bold text-white tracking-wide">
-              {community.name}
-            </Text>
-          </Animated.View>
-
-          <View
-            className="absolute top-1/2 bottom-0 px-4 w-full flex-row justify-between items-center z-10"
-            style={{ transform: [{ translateY: -20 }] }}
-          >
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={{ height: 40, width: 40 }}
-              className="bg-black/60 rounded-full items-center justify-center"
-            >
-              <Entypo name="chevron-small-left" size={32} color="#fff" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                setCommunity(community);
-                router.push(ROUTES.USER.COMMUNITY_SEARCH)
-              }}
-              style={{ height: 40, width: 40 }}
-              className="bg-black/60 rounded-full items-center justify-center"
-            >
-              <Feather name="search" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View className="flex-row px-4 gap-x-2 items-center justify-between">
-          <View className="flex-row gap-x-2 items-center">
-            <Image
+    switch (type) {
+      case "Banner":
+        return (
+          <View className="relative overflow-hidden" style={{ height: 100 }}>
+            <Animated.Image
               source={{
-                uri: community.image_url,
+                uri: community.banner_url || "https://placehold.co/100x100",
               }}
-              style={{ width: 50, height: 50 }}
-              className="rounded-full"
+              style={[{ height: "100%", width: "100%", position: "absolute" }]}
               resizeMode="cover"
             />
 
-            <View className="flex-col">
-              <Text
-                numberOfLines={1}
-                ellipsizeMode="tail"
-                className="text-[18px] font-dosis-bold text-text-3 truncate"
+            <Animated.Image
+              source={{
+                uri: community.banner_url || "https://placehold.co/100x100",
+              }}
+              blurRadius={20}
+              style={[
+                { height: "100%", width: "100%", position: "absolute" },
+                { opacity: blurOpacity },
+              ]}
+              resizeMode="cover"
+            />
+
+            <View
+              style={{
+                paddingTop: insets.top / 2,
+                paddingHorizontal: insets.left + insets.right + 12,
+              }}
+              className="flex-1 flex-row justify-between items-center z-10"
+            >
+              <View className="flex-row items-center gap-x-4">
+                <TouchableOpacity
+                  onPress={() => router.back()}
+                  className="rounded-full p-1.5 items-center justify-center overflow-hidden"
+                >
+                  <Animated.View
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      backgroundColor: "black",
+                      opacity: buttonBgOpacity,
+                    }}
+                  />
+                  <Feather name="arrow-left" size={24} color="#fff" />
+                </TouchableOpacity>
+
+                <Animated.View
+                  pointerEvents="none"
+                  style={[{ opacity: blurOpacity }]}
+                >
+                  <Text className="text-[16px] font-dosis-bold text-text-1">
+                    {community.name}
+                  </Text>
+
+                  <Text className="text-[12px] text-text-1 font-dosis-regular">
+                    {community.total_members} miembros
+                  </Text>
+                </Animated.View>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => {
+                  setCommunity(community);
+                  router.push(ROUTES.USER.COMMUNITY_SEARCH);
+                }}
+                className="rounded-full p-1.5 items-center justify-center overflow-hidden"
               >
-                {community.name}
-              </Text>
-              <Text className="text-[13px] text-text-4 font-dosis-regular">
-                {community.total_members} miembros
-              </Text>
+                <Animated.View
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    backgroundColor: "black",
+                    opacity: buttonBgOpacity,
+                  }}
+                />
+                <Feather name="search" size={24} color="#fff" />
+              </TouchableOpacity>
             </View>
           </View>
+        );
 
-          <View className="flex-row items-center justify-center">
-            <TouchableOpacity
-              style={{ borderRadius: 999 }}
-              onPress={() =>
-                joinLeave({
-                  community: community as Community,
-                  join: !isMember,
-                })
-              }
-              disabled={isFetching || isLoading}
-              className={`flex-row items-center px-3 py-1 justify-center gap-x-2 ${isMember ? "bg-bg-semi-white" : "bg-bg-blue-black"}`}
+      case "Community":
+        return (
+          <View className="flex-col gap-y-4">
+            <View className="flex-row gap-x-2 items-center justify-between">
+              <View className="flex-row gap-x-3 items-center">
+                <Image
+                  source={{
+                    uri: community.image_url,
+                  }}
+                  style={{ width: 46, height: 46 }}
+                  className="rounded-full"
+                  resizeMode="cover"
+                />
+
+                <View className="flex-col">
+                  <Text
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    className="text-[18px] font-dosis-bold text-text-3 truncate"
+                  >
+                    {community.name}
+                  </Text>
+                  <Text className="text-[14px] text-text-4 font-dosis-regular">
+                    {community.total_members} miembros
+                  </Text>
+                </View>
+              </View>
+
+              <View className="flex-row items-center justify-center">
+                <TouchableOpacity
+                  onPress={() =>
+                    joinLeave({
+                      community,
+                      join: !isMember,
+                    })
+                  }
+                  className="ml-auto"
+                >
+                  <Text
+                    className={`text-[13px] rounded-full px-2.5 py-1.5 tracking-tighter font-dosis-bold 
+                            ${
+                              isMember
+                                ? "bg-bg-semi-white text-text-3 border border-gray-600"
+                                : "bg-bg-semi-black text-text-1"
+                            }`}
+                  >
+                    {isMember ? "Te uniste" : "Unirse"}
+                  </Text>
+                </TouchableOpacity>
+
+                {isMember && (
+                  <TouchableOpacity className="flex-row items-center justify-center gap-x-2">
+                    <Text className="text-[14px] text-text-5 font-dosis-regular leading-6">
+                      Notificaciones
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            <Pressable
+              onPress={() => setIsExpanded(!isExpanded)}
+              className="flex-row gap-x-2"
             >
               <Text
-                className={`text-[14px] font-dosis-semibold leading-6 ${isMember ? "text-text-5" : "text-text-1"}`}
+                numberOfLines={isExpanded ? undefined : 1}
+                className="text-[14px] text-text-5 font-dosis-regular leading-6"
               >
-                {isMember ? "Te uniste" : "Unirse"}
+                {community.description}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            {isMember && (
-              <TouchableOpacity className="flex-row items-center justify-center gap-x-2">
-                <Text className="text-[14px] text-text-5 font-dosis-regular leading-6">
-                  Notificaciones
-                </Text>
-              </TouchableOpacity>
+            {community.tags.length > 0 && (
+              <View className="flex-row gap-x-2">
+                {community.tags.map((tag) => (
+                  <TouchableOpacity
+                    key={tag.id}
+                    className="px-2 py-1 rounded-[5px] border border-gray-200"
+                  >
+                    <Text className="text-[14px] text-text-5 font-dosis-regular">
+                      {tag.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             )}
           </View>
-        </View>
+        );
 
-        <Pressable
-          onPress={() => setIsExpanded(!isExpanded)}
-          className="flex-row px-8 gap-x-2"
-        >
-          <Text
-            numberOfLines={isExpanded ? undefined : 1}
-            className="text-[14px] text-text-5 font-dosis-regular leading-6"
-          >
-            {community.description}
-          </Text>
-        </Pressable>
-
-        {community.tags.length > 0 && (
-          <View className="flex-row px-8 gap-x-2">
-            {community.tags.map((tag) => (
-              <TouchableOpacity
-                key={tag.id}
-                className="px-2 py-1 rounded-[5px] border border-gray-200"
-              >
-                <Text className="text-[14px] text-text-5 font-dosis-regular">
-                  {tag.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </View>
-    );
+      default:
+        return null;
+    }
   };
 
+  const renderItem = useCallback(
+    ({ item }: { item: Post }) => (
+      <View className="py-4">
+        <PostCard post={item} type="COMMUNITY" />
+      </View>
+    ),
+    [],
+  );
+
   return (
-    <>
-      <SafeAreaView
-        edges={["left", "right"]}
-        style={{ paddingTop: headerHeight }}
-        className="flex-1 bg-bg-semi-white"
-      >
-        {isLoading ? (
-          <View className="flex-1 mt-10 items-center justify-center">
-            <ActivityIndicator size={32} color="#3578e4" />
-          </View>
-        ) : (
-          <FlashList
+    <SafeAreaView
+      edges={["left", "right", "bottom"]}
+      className="flex-1 bg-bg-semi-white"
+    >
+      {isLoading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#e5a657" />
+        </View>
+      ) : (
+        <>
+          <Header scrollY={scrollY} type="Banner" />
+          <Animated.FlatList
             data={posts}
-            keyExtractor={(item) => item.id}
-            style={{ flex: 1, flexGrow: 1 }}
-            scrollEnabled={true}
-            horizontal={false}
+            keyExtractor={(item: Post) => item.id}
+            style={{
+              flex: 1,
+              paddingHorizontal: insets.left + insets.right + 12,
+            }}
             onScroll={Animated.event(
               [{ nativeEvent: { contentOffset: { y: scrollY } } }],
               { useNativeDriver: true },
-            )}
-            scrollEventThrottle={16}
-            showsVerticalScrollIndicator={false}
-            stickyHeaderIndices={[0]}
-            ListHeaderComponent={<CommunityHeader scrollY={scrollY} />}
-            contentContainerStyle={{ paddingBottom: 100 }}
-            renderItem={({ item }) => (
-              <View className="flex-1 px-6">
-                <PostCard post={item} type="COMMUNITY" />
-              </View>
             )}
             refreshControl={
               <RefreshControl
@@ -319,6 +360,18 @@ export default function CommunityScreen() {
                 colors={["#e5a657"]}
               />
             }
+            ListHeaderComponent={
+              <View className="py-4">
+                <Header scrollY={scrollY} type="Community" />
+              </View>
+            }
+            scrollEventThrottle={16}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 100 }}
+            renderItem={renderItem}
+            ItemSeparatorComponent={() => (
+              <View className="border-t border-gray-200" />
+            )}
             onEndReached={() => {
               if (hasNextPage && !isFetchingNextPage) {
                 fetchNextPage();
@@ -333,8 +386,8 @@ export default function CommunityScreen() {
               ) : null
             }
           />
-        )}
-      </SafeAreaView>
-    </>
+        </>
+      )}
+    </SafeAreaView>
   );
 }

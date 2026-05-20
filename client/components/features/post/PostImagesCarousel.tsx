@@ -16,8 +16,8 @@ interface PostImagesCarouselProps {
 }
 
 const { height: screenHeight } = Dimensions.get("window");
-const MIN_HEIGHT = screenHeight * 0.30; 
-const MAX_HEIGHT = screenHeight * 0.30;
+const MIN_HEIGHT = screenHeight * 0.2; 
+const MAX_HEIGHT = screenHeight * 0.4;
 
 const CarouselImageItem = ({
   uri,
@@ -104,7 +104,7 @@ const PostImagesCarousel: React.FC<PostImagesCarouselProps> = ({
 
   return (
     <View
-      className="mt-3 rounded-[15px] overflow-hidden border border-gray-200 w-full relative"
+      className="rounded-[15px] overflow-hidden border border-gray-100 w-full relative"
       onLayout={(event) => setContainerWidth(event.nativeEvent.layout.width)}
     >
       {containerWidth > 0 && (

@@ -5,7 +5,20 @@ import { getShortTimeAgo } from "@/utils/date";
 import { useMemo, useState } from "react";
 import { useReplies } from "@/hooks/api/post/usePost";
 
-export default function CommentItem({ item }: { item: PostComment }) {
+type Comment = Pick<
+  PostComment,
+  | "post_id"
+  | "parent_comment_id"
+  | "reply_to_user_id"
+  | "reply_to_user"
+  | "content"
+>;
+interface CommentItemProps {
+  item: PostComment;
+  setComment: React.Dispatch<React.SetStateAction<Comment>>;
+}
+
+export default function CommentItem({ item, setComment }: CommentItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const isFather = item.parent_comment_id === null;
 
@@ -36,82 +49,70 @@ export default function CommentItem({ item }: { item: PostComment }) {
     );
   }, [repliesData]);
 
-  console.log(JSON.stringify(replies, null, 2));
-
-  const duplicatedReplies = useMemo(() => {
-    return [
-      ...replies,
-      ...replies,
-      ...replies,
-      ...replies,
-      ...(isFetchingNextPage ? Array(5).fill(null) : []),
-    ];
-  }, [replies, isFetchingNextPage]);
-
   return (
     <View
       style={{ paddingLeft: isFather ? 0 : 30, marginTop: isFather ? 0 : 16 }}
       className="w-full"
-      collapsable={false}
     >
-      <View className="flex-row gap-x-3">
+      <View className="flex-row gap-x-4">
         <Image
           source={{
             uri:
               item.user?.avatar_url ||
               "https://ohhvldagwoycuifwhgtc.supabase.co/storage/v1/object/public/assets/DefaultProfile.png",
           }}
-          className={`rounded-full z-10 mt-1 ${isFather ? "w-9 h-9" : "w-7 h-7"}`}
+          className={`rounded-full z-10 mt-1 ${isFather ? "w-9 h-9" : "w-8 h-8"}`}
           resizeMode="cover"
         />
 
         <View className="flex-col gap-y-1.5 flex-1">
           <View className="flex-row items-center gap-x-2">
-            <Text className="font-dosis-bold text-text-3 text-[16px]">
+            <Text className="font-dosis-semibold text-text-3 text-[14px]">
               {item.user?.name}
-            </Text>
-            <Text
-              numberOfLines={1}
-              className="font-dosis-regular text-text-4 text-[16px] truncate"
-            >
-              @{item.user?.slug}
             </Text>
             <Text className="text-[12px] font-dosis-regular text-text-4">
               {getShortTimeAgo(item.created_at)}
             </Text>
           </View>
 
-          {item.parent_comment && (
-            <TouchableOpacity>
-              <Text className="text-[15px] text-text-5 font-dosis-regular leading-5">
-                En respuesta a{" "}
-                <Text className="text-[15px] text-bg-blue font-dosis-regular leading-5">
-                  @{item.parent_comment.user?.slug}
-                </Text>
-              </Text>
-            </TouchableOpacity>
-          )}
-
           <Text className="text-[15px] text-text-3 font-dosis-regular leading-5">
-            {item.content}
+            {item.reply_to_user_id ? (
+              <Text>
+                <Text className="text-[15px] text-primary-5 font-dosis-bold leading-5">
+                  {item.reply_to_user?.name}{" "}
+                </Text>
+                {item.content}
+              </Text>
+            ) : (
+              item.content
+            )}
           </Text>
 
-          <TouchableOpacity>
-            <Text className="text-[13px] font-dosis-semibold text-text-5">
-              Responder
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View className="flex justify-center">
-          <PostActions content={item} type="COMMENT" />
+          <View className="flex-row gap-x-4">
+            <TouchableOpacity
+              onPress={() => {
+                setComment({
+                  post_id: item.post_id,
+                  parent_comment_id: item.parent_comment_id || item.id,
+                  reply_to_user_id: item.user_id,
+                  reply_to_user: item.user,
+                  content: "",
+                });
+              }}
+            >
+              <Text className="text-[13px] font-dosis-semibold text-text-5">
+                Responder
+              </Text>
+            </TouchableOpacity>
+            <PostActions content={item} type="COMMENT" />
+          </View>
         </View>
       </View>
 
-      {replies.length > 0 && (
-        <View style={{ display: isExpanded ? "flex" : "none" }}>
+      {isExpanded && replies.length > 0 && (
+        <View>
           {replies.map((reply) => (
-            <CommentItem key={reply.id} item={reply} />
+            <CommentItem key={reply.id} item={reply} setComment={setComment} />
           ))}
         </View>
       )}
@@ -128,11 +129,10 @@ export default function CommentItem({ item }: { item: PostComment }) {
             }
           }}
           disabled={isFetchingNextPage}
-          style={{ paddingLeft: 30, marginTop: 10 }}
+          style={{ paddingLeft: 40, marginTop: 10 }}
           className="flex-row gap-x-2 items-center"
         >
-          <View className="w-4 h-[1px] bg-[#4A4947]" />
-          <Text className="text-[13px] font-dosis-semibold text-text-5">
+          <Text className="text-[13px] font-dosis-medium text-text-5">
             {isFetchingNextPage
               ? "Cargando..."
               : isExpanded

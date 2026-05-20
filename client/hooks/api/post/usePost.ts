@@ -1,11 +1,10 @@
-import { Post, PostComment, ResponseWithPagination } from "@/interface/global";
+import { Post, PostComment, ResponseWithPagination, User } from "@/interface/global";
 import { PostCommentDTO } from "@/interface/global.dto";
 import { createComment, getComments, getPostById, getReplies } from "@/services/post.api";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as Crypto from "expo-crypto";
 
-//==============================================
 // usePostById (GET)
 //==============================================
 export const usePostById = (post_id: string) => {
@@ -26,10 +25,9 @@ export const usePostById = (post_id: string) => {
   });
 };
 
-//==============================================
 // useComment (GET)
 //==============================================
-export const useComment = (post_id: string, enabled: boolean) => {
+export const useComment = (post_id: string) => {
   return useInfiniteQuery<ResponseWithPagination<PostComment[]>>({
     queryKey: ["comments", post_id],
 
@@ -54,7 +52,7 @@ export const useComment = (post_id: string, enabled: boolean) => {
     },
     initialPageParam: 1,
 
-    enabled: !!post_id && enabled,
+    enabled: !!post_id,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     staleTime: 5 * 60 * 1000,
@@ -64,7 +62,6 @@ export const useComment = (post_id: string, enabled: boolean) => {
   });
 };
 
-//==============================================
 // useReplies (GET)
 //==============================================
 export const useReplies = (comment_id: string, enabled: boolean) => {
@@ -103,7 +100,9 @@ export const useReplies = (comment_id: string, enabled: boolean) => {
 };
 
 
-export const useCreateComment = (currentUser: any) => { 
+// useCreateComment (POST)
+//==============================================
+export const useCreateComment = (currentUser: User) => { 
   const queryClient = useQueryClient();
 
   return useMutation({
