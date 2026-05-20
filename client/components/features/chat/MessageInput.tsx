@@ -66,8 +66,8 @@ export default function MessageInput({
         numberOfLines={8}
         style={{ minHeight: 50 }}
         className="text-text-3 font-dosis-medium text-[15px] w-full"
-        placeholder="Pregunta cualquier cosa..."
-        placeholderTextColor="#4A4947"
+        placeholder="¿Qué quieres cocinar hoy?"
+        placeholderTextColor="#2F2F2F"
         textAlignVertical="top"
         value={message}
         onChangeText={setMessage}

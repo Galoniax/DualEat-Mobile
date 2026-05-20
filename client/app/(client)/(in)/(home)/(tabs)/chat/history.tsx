@@ -1,4 +1,4 @@
-import { AntDesign, EvilIcons } from "@expo/vector-icons";
+import { AntDesign, Entypo, EvilIcons } from "@expo/vector-icons";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -26,31 +26,36 @@ import { router, useFocusEffect } from "expo-router";
 import { ROUTES } from "@/constants/constants";
 import HistoryModal from "@/components/features/chat/HistoryModal";
 
+type PartialChatHistory = Pick<ChatHistory, "chat_id" | "title">;
+
 export default function ChatHistoryScreen() {
   const insets = useSafeAreaInsets();
 
   const sheetRef = useRef<BottomSheetModal>(null);
 
-  // 1. React Query
-  // ==============================================
+  const [search, setSearch] = useState("");
   const [submitSearch, setSubmitSearch] = useState("");
+
   const { data: history, isFetching, refetch } = useHistory(submitSearch);
 
   const { mutate: deleteChat, isPending: isDeleting } = useDeleteChat();
   const { mutate: renameChat, isPending: isRenaming } = useRenameChat();
 
-  // 2. Estados Locales
-  // ==============================================
-  const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<ChatHistory | null>(null);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
+  const [selected, setSelected] = useState<PartialChatHistory | null>({
+    chat_id: "",
+    title: "",
+  });
 
-  // 3. Efectos
-  // ==============================================
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [newTitle, setNewTitle] = useState(selected?.title || "");
+
   useFocusEffect(
     useCallback(() => {
       refetch();
+
+      return () => {
+        sheetRef.current?.dismiss();
+      };
     }, [refetch]),
   );
 
@@ -58,8 +63,8 @@ export default function ChatHistoryScreen() {
     const keyboardDidHideListener = Keyboard.addListener(
       "keyboardDidHide",
       () => {
-        setEditing(null);
-        setTitle("");
+        setIsEditing(false);
+        setNewTitle("");
       },
     );
 
@@ -68,8 +73,7 @@ export default function ChatHistoryScreen() {
     };
   }, []);
 
-  // 4. Handlers (Funciones de acción)
-  // ==============================================
+  // Handlers
   const handleDelete = () => {
     if (isDeleting || !selected) return;
 
@@ -80,35 +84,34 @@ export default function ChatHistoryScreen() {
   const handleStartRename = () => {
     if (!selected) return;
 
-    const chatId = selected.chat_id;
-    const currentTitle = selected.title;
+    const current = selected.title;
 
     sheetRef.current?.dismiss();
-    setEditing(chatId);
-    setTitle(currentTitle);
+    setIsEditing(true);
+    setNewTitle(current);
   };
 
   const handleSaveRename = useCallback(() => {
-    if (!title.trim() || !editing) {
-      setEditing(null);
+    if (!newTitle.trim() || !isEditing) {
+      setIsEditing(false);
       return;
     }
 
     if (isRenaming) return;
 
-    renameChat({ id: editing, title });
-    setEditing(null);
-    setTitle("");
-  }, [title, editing, renameChat, isRenaming]);
+    renameChat(
+      { id: selected?.chat_id as string, title: newTitle },
+      {
+        onSettled: () => {
+          setSelected(null);
+          setNewTitle("");
+          setIsEditing(false);
+        },
+      },
+    );
+  }, [newTitle, selected, renameChat, isRenaming, isEditing]);
 
-  // 5. Sub-Renders
-  // ==============================================
-  const header = () => (
-    <View className="py-4 mt-4">
-      <Text className="text-[18px] font-dosis-regular">Conversaciones</Text>
-    </View>
-  );
-
+  // Render
   const renderItem = useCallback(
     ({ item }: { item: ChatHistory }) => {
       const isLast = item.chat_id === history?.[history.length - 1]?.chat_id;
@@ -116,14 +119,14 @@ export default function ChatHistoryScreen() {
       return (
         <TouchableOpacity
           onPress={() => {
-            if (!editing) {
+            if (!isEditing) {
               router.replace({
                 pathname: ROUTES.USER.CHAT,
                 params: { chat_id: item.chat_id },
               });
             }
           }}
-          activeOpacity={editing ? 1 : 0.2}
+          activeOpacity={isEditing ? 1 : 0.2}
           style={{
             borderBottomWidth: isLast ? 0 : 1,
             borderBottomColor: "#f5f5f5",
@@ -131,20 +134,20 @@ export default function ChatHistoryScreen() {
           className="items-center py-3 justify-between flex-row"
         >
           <View className="flex-col gap-y-1 flex-1">
-            {editing === item.chat_id ? (
+            {isEditing && selected?.chat_id === item.chat_id ? (
               <TextInput
-                value={title}
-                onChangeText={setTitle}
+                value={newTitle}
+                onChangeText={setNewTitle}
                 autoFocus={true}
                 onSubmitEditing={handleSaveRename}
                 returnKeyType="done"
-                className="text-[18px] font-dosis-regular text-text-5 border-b border-gray-300 py-0"
+                className="text-[18px] font-dosis-regular text-text-5 border-b border-gray-300"
                 style={{ padding: 0, margin: 0 }}
               />
             ) : (
               <Text
                 numberOfLines={1}
-                className="text-[18px] font-dosis-regular tracking-tight truncate"
+                className="text-[16px] text-text-3 font-dosis-regular tracking-tight truncate"
               >
                 {item.title}
               </Text>
@@ -155,11 +158,14 @@ export default function ChatHistoryScreen() {
             </Text>
           </View>
 
-          {!editing && (
+          {!isEditing && (
             <TouchableOpacity
               hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
               onPress={() => {
-                setSelected(item);
+                setSelected({
+                  chat_id: item.chat_id,
+                  title: item.title,
+                });
                 sheetRef.current?.present();
               }}
             >
@@ -174,38 +180,62 @@ export default function ChatHistoryScreen() {
         </TouchableOpacity>
       );
     },
-    [history, editing, title, handleSaveRename],
+    [history, isEditing, newTitle, handleSaveRename, selected?.chat_id],
   );
 
   return (
     <SafeAreaView
       edges={["left", "right", "top"]}
-      className="flex-1 bg-bg-semi-white"
+      style={{ paddingHorizontal: insets.left + insets.right + 12 }}
+      className="flex-1 bg-bg-semi-white flex-col gap-y-4"
     >
+      {/** HEADER */}
       <View
-        style={{ marginTop: insets.top - 10 }}
-        className="items-center mx-6 px-4 py-0.5 justify-start flex-row border border-gray-200 rounded-full"
+        style={{
+          paddingHorizontal: insets.left + insets.right + 12,
+          paddingVertical: insets.top / 2,
+        }}
+        className=" flex-row items-center justify-center w-full"
       >
-        <EvilIcons name="search" size={26} color="#4A4947" />
-        <TextInput
-          className="flex-1 ml-2 text-[16px] text-text-5 font-dosis-regular py-2"
-          onSubmitEditing={() => {
-            setSubmitSearch(search);
+        <TouchableOpacity
+          onPress={() => router.back()}
+          hitSlop={{
+            top: 10,
+            bottom: 10,
+            left: 10,
+            right: 10,
           }}
-          returnKeyType="search"
-          placeholder="Historial de conversaciones"
-          placeholderTextColor={"#4A4947"}
-          value={search}
-          onChangeText={(text) => {
-            setSearch(text);
-            if (text.trim() === "") {
-              setSubmitSearch("");
-            }
-          }}
-        />
+          className="h-10 w-10 flex items-center justify-center absolute left-0 top-1/2"
+        >
+          <Entypo name="chevron-small-left" size={32} color="#2F2F2F" />
+        </TouchableOpacity>
+        <Text className="font-dosis-bold text-[16px] text-text-3">
+          Conversaciones
+        </Text>
       </View>
 
-      <View className="border-t mt-4 border-gray-200" />
+      {/** SEARCH BAR */}
+      <View className="border-b border-gray-200 pb-4">
+        <View className="items-center px-4 py-0.5 justify-start flex-row border border-gray-200 rounded-full">
+          <EvilIcons name="search" size={26} color="#4A4947" />
+          <TextInput
+            className="flex-1 ml-2 text-[16px] text-text-5 font-dosis-regular py-2"
+            onSubmitEditing={() => {
+              setSubmitSearch(search);
+            }}
+            returnKeyType="search"
+            placeholder="Historial de conversaciones"
+            placeholderTextColor={"#4A4947"}
+            value={search}
+            onChangeText={(text) => {
+              setSearch(text);
+              if (text.trim() === "") {
+                setSubmitSearch("");
+              }
+            }}
+          />
+        </View>
+      </View>
 
       {isFetching ? (
         <View className="flex-1 items-center justify-center">
@@ -225,17 +255,16 @@ export default function ChatHistoryScreen() {
           data={history}
           showsVerticalScrollIndicator={false}
           scrollEnabled={true}
-          ListHeaderComponent={header}
           renderItem={renderItem}
-          className="flex-1 mx-6"
+          className="flex-1 mx-2"
           keyExtractor={(item) => item.chat_id}
           keyboardShouldPersistTaps="handled"
         />
       )}
 
+      {/** MODAL **/}
       <HistoryModal
         sheetRef={sheetRef as React.RefObject<BottomSheetModal>}
-        setSelected={setSelected}
         handleDelete={handleDelete}
         handleStartRename={handleStartRename}
       />

@@ -8,7 +8,6 @@ export type ChatHistory = Pick<
   "chat_id" | "title" | "createdAt" | "lastActivity"
 >;
 
-//==============================================
 // useHistory (GET)
 //==============================================
 export const useHistory = (search?: string) => {
@@ -38,7 +37,6 @@ export const useHistory = (search?: string) => {
   });
 };
 
-//==============================================
 // useRenameChat (PUT)
 //==============================================
 export const useRenameChat = () => {
@@ -46,23 +44,38 @@ export const useRenameChat = () => {
 
   return useMutation({
     mutationFn: async ({ id, title }: { id: string; title: string }) => {
+      console.log("id", id);
+      console.log("title", title);
       const response = await editTitle(id, title);
       if (!response.success) {
         throw new Error(response.message || "Error al editar el chat");
       }
-
       return response;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["chat_history"] });
+
+    onMutate: async ({ id, title }) => {
+      await queryClient.cancelQueries({ queryKey: ["chat_history"] });
+
+      
+      queryClient.setQueriesData(
+        { queryKey: ["chat_history"] },
+        (old: ChatHistory[] | undefined) => {
+          
+          if (!old) return old;
+
+          return old.map((chat) =>
+            chat.chat_id === id ? { ...chat, title } : chat
+          );
+        }
+      );
     },
-    onError: (e: any) => {
-      console.log("Hubo un error al editar:", e);
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat_history"] });
     },
   });
 };
 
-//==============================================
 // useDeleteChat (DELETE)
 //==============================================
 export const useDeleteChat = () => {
@@ -76,11 +89,22 @@ export const useDeleteChat = () => {
       }
       return response;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["chat_history"] });
+
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ["chat_history"] });
+
+      queryClient.setQueriesData(
+        { queryKey: ["chat_history"] },
+        (old: ChatHistory[] | undefined) => {
+          if (!old) return old;
+
+          return old.filter((chat) => chat.chat_id !== id);
+        }
+      );
     },
-    onError: (e: any) => {
-      console.log("Hubo un error al eliminar:", e);
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat_history"] });
     },
   });
 };
