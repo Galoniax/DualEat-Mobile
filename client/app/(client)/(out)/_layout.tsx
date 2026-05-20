@@ -12,6 +12,7 @@ export default function OutStackLayout() {
         options={{ animation: "fade_from_bottom" }}
       />
       <Stack.Screen name="cart" />
+      <Stack.Screen name="notifications" />
     </Stack>
   );
 }

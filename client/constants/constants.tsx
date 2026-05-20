@@ -1,4 +1,6 @@
-// =========================================================
+import { AppMode } from "@/context/app/AppModeContext";
+import { Href } from "expo-router";
+
 // 1. RUTAS
 // =========================================================
 export const ROUTES = {
@@ -16,32 +18,39 @@ export const ROUTES = {
     LOCAL: "/(staff)/local/[local_id]",
   },
   USER: {
-    DASHBOARD_OUT: "/(client)/(out)/(home)/(tabs)",
-    DASHBOARD_IN: "/(client)/(in)/(home)/(tabs)",
+    // RUTAS DINÁMICAS
+    DASHBOARD: (mode: AppMode) => `/(client)/(${mode})/(home)/(tabs)` as Href,
+    NOTIFICATIONS: (mode: AppMode) =>
+      `/(client)/(${mode})/notifications` as Href,
+    PROFILE: (mode: AppMode) =>
+      `/(client)/(${mode})/(home)/(tabs)/profile` as Href,
+
+    // OUT
+    MAPS: "/(client)/(out)/(home)/(tabs)/maps",
     LOCAL: "/(client)/(out)/l/[local_id]/[local_slug]",
     CART: "/(client)/(out)/cart",
-    QR: "/(client)/(out)/(tabs)/qr",
-
+    QR: "/(client)/(out)/(home)/(tabs)/qr",
+    ORDERS: "/(client)/(out)/(home)/(tabs)/orders",
     ORDER_INFO: "/(client)/(out)/order_info/[order_id]",
 
+    // IN
     COMMUNITY: "/(client)/(in)/c/[community_slug]",
     POST: "/(client)/(in)/c/[community_slug]/p/[post_id]/[post_slug]",
     RECIPE: "/(client)/(in)/c/[community_slug]/r/[recipe_id]/[recipe_slug]",
     CREATE: "/(client)/(in)/(home)/(tabs)/create/index",
     CREATE_RECIPE: "/(client)/(in)/(home)/(tabs)/create/recipe",
     CREATE_COMMUNITY: "/(client)/(in)/create-community",
-    
+
     CHAT_HISTORY: "/(client)/(in)/(home)/(tabs)/chat/history",
     CHAT: "/(client)/(in)/(home)/(tabs)/chat/[chat_id]",
 
-   
-
+    EXPLORE: "/(client)/(in)/(home)/(tabs)/explore/",
     EXPLORE_SEARCH: "/(client)/(in)/(home)/(tabs)/explore/search",
-
     COMMUNITY_SEARCH: "/(client)/(in)/c/[community_slug]/search",
-    
+
     EXPLORE_TAG: "/(client)/(in)/(tabs)/explore/[tag_id]",
-    EXPLORE_CATEGORY: "/(client)/(in)/(tabs)/explore/[category_id]/[category_slug]",
+    EXPLORE_CATEGORY:
+      "/(client)/(in)/(tabs)/explore/[category_id]/[category_slug]",
   },
 
   SHARED: {
@@ -49,7 +58,6 @@ export const ROUTES = {
   },
 } as const;
 
-// =========================================================
 // 2. TIPOS Y CONSTANTES
 // =========================================================
 export const LOCAL_TYPES = [
@@ -86,11 +94,8 @@ export type LocalType = (typeof LOCAL_TYPES)[number];
 
 export const QR_TYPES = ["order", "menu", "user"];
 
-// =========================================================
 // 3. MAPAS
 // =========================================================
-
-// JSON DE GOOGLE MAPS
 export const mapStyle = [
   {
     featureType: "all",

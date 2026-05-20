@@ -68,6 +68,29 @@ export interface Workplace {
   role: "admin" | "staff";
 }
 
+interface NotificationMetadata {
+  title: string | null; // Titulo del post o comunidad
+  slug: string | null; // Slug
+  image_urls: string[] | null; // Imagenes URL
+  target_name: string | null; // Nombre del objetivo para una acción (ej. Nombre del restaurante)
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  content_type: NotificationContentType;
+  content_id?: string;
+
+  metadata: NotificationMetadata;
+
+  message: string;
+  read: boolean;
+  deleted: boolean;
+  created_at: string;
+
+  user: User;
+}
+
 export interface Local {
   id: string;
   slug: string;
@@ -257,6 +280,13 @@ export interface CommunityMember {
 
 export type NotificationFrequency = "ALWAYS" | "NONE";
 
+export type NotificationContentType =
+  | "POST"
+  | "COMMENT"
+  | "LOCAL"
+  | "ORDER"
+  | "COMMUNITY";
+
 export type ContentType = "POST" | "COMMENT";
 
 export type VoteType = "UP" | "DOWN";
@@ -357,6 +387,8 @@ export interface Recipe {
 
   votes_up?: number;
   votes_down?: number;
+
+  _count?: { ingredients?: number; steps?: number };
 }
 
 export interface RecipeStep {
