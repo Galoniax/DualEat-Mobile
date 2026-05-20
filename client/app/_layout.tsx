@@ -115,11 +115,11 @@ export default function RootLayout() {
             <AuthProvider>
               <AppModeProvider>
                 <LocationProvider>
-                  <OrderingProvider>
-                    <BottomSheetModalProvider>
+                  <BottomSheetModalProvider>
+                    <OrderingProvider>
                       <RootNavigation />
-                    </BottomSheetModalProvider>
-                  </OrderingProvider>
+                    </OrderingProvider>
+                  </BottomSheetModalProvider>
                 </LocationProvider>
               </AppModeProvider>
             </AuthProvider>

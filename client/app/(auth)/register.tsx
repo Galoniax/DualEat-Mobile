@@ -33,7 +33,7 @@ export default function Register() {
   const { register } = useAuth();
   const { handleGoogleLogin } = useGoogleAuth();
 
-  const Logo = require("@/assets/icon//LogoDualEat.png");
+  const Logo = require("@/assets/icon/LogoDualEat.png");
 
   const handleRegister = async () => {
     const deviceId = await getDeviceId();

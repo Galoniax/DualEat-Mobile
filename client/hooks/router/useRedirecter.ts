@@ -17,9 +17,7 @@ export function useRedirecter() {
       if (isLocal) {
         return;
       } else {
-        return mode === "in"
-          ? router.replace(ROUTES.USER.DASHBOARD_IN as any)
-          : router.replace(ROUTES.USER.DASHBOARD_OUT as any);
+        return router.replace(ROUTES.USER.DASHBOARD(mode));
       }
     }
     return router.replace(ROUTES.PUBLIC.HOME);

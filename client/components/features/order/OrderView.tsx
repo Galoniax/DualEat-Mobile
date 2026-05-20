@@ -253,9 +253,7 @@ export default function OrderView({
             e.stopPropagation();
             router.push({
               pathname: ROUTES.USER.LOCAL,
-              params: {
-                slug: order.local?.slug,
-              },
+              params: { local_id: order.local.id, local_slug: order.local.slug},
             });
           }}
         >
@@ -346,15 +344,15 @@ export default function OrderView({
                 }}
               />
               <View className="flex-col flex-1 justify-between">
-                <Text className="text-text-3 text-[14.5px] font-dosis-semibold">
+                <Text className="text-text-3 text-[15px] font-dosis-semibold">
                   {item.food.name}
                 </Text>
 
-                <Text className="text-text-3 text-[15.5px] font-dosis-bold mb-1">
+                <Text className="text-text-3 text-[15px] font-dosis-bold mb-1">
                   {formatPrice(item.unit_price)}
                 </Text>
                 <Text
-                  className="text-text-4 text-[12.5px] font-dosis-regular"
+                  className="text-text-4 text-[13px] font-dosis-regular"
                   ellipsizeMode="tail"
                   numberOfLines={1}
                 >

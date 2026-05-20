@@ -26,7 +26,7 @@ import {
 } from "@gorhom/bottom-sheet";
 import { useQuery } from "@tanstack/react-query";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ImageBackground,
   Text,
@@ -148,10 +148,15 @@ export default function ClientLocalMenuScreen() {
     [location, local],
   );
 
-  const views: Record<"Menu" | "Info" | "Reviews", JSX.Element> = {
-    Menu: <MenuView local={local as MenuLocal} insets={insets} />,
-    Info: <MenuInfo local={local as MenuLocal} insets={insets} />,
-    Reviews: <MenuReviews local={local as MenuLocal} insets={insets} />,
+  const renderViews = () => {
+    switch (tab) {
+      case "Menu":
+        return <MenuView local={local as MenuLocal} insets={insets} />;
+      case "Info":
+        return <MenuInfo local={local as MenuLocal} insets={insets} />;
+      case "Reviews":
+        return <MenuReviews local={local as MenuLocal} insets={insets} />;
+    }
   };
 
   useFocusEffect(
@@ -301,7 +306,7 @@ export default function ClientLocalMenuScreen() {
           <ActivityIndicator size="large" color="#B53325" />
         </View>
       ) : (
-        views[tab]
+        renderViews()
       )}
 
       {/* MODAL */}

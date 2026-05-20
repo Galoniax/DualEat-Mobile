@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useMemo,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-} from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -16,7 +10,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter, useNavigation } from "expo-router";
+import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -48,8 +42,6 @@ export default function SearchScreen() {
     null,
   );
 
-  const navigation = useNavigation();
-
   const CARD_WIDTH = width * 0.85;
 
   const { data } = useQuery({
@@ -78,21 +70,6 @@ export default function SearchScreen() {
     },
     staleTime: 1000 * 60 * 20,
   });
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <View style={{ gap: 16 }} className="flex-row items-center">
-          <TouchableOpacity
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            onPress={() => router.push(ROUTES.USER.EXPLORE_SEARCH)}
-          >
-            <Feather name="search" size={22} color="#2F2F2F" />
-          </TouchableOpacity>
-        </View>
-      ),
-    });
-  }, [navigation, router]);
 
   const extendedData = useMemo(() => {
     if (!data) return [TODO_CATEGORY];
@@ -162,6 +139,21 @@ export default function SearchScreen() {
       style={{ paddingTop: headerHeight }}
       className="flex-1 flex-col gap-y-2 bg-bg-semi-white px-4"
     >
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <View style={{ gap: 16 }} className="flex-row items-center">
+              <TouchableOpacity
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                onPress={() => router.push(ROUTES.USER.EXPLORE_SEARCH)}
+              >
+                <Feather name="search" size={22} color="#2F2F2F" />
+              </TouchableOpacity>
+            </View>
+          ),
+        }}
+      />
+
       <FlatList
         data={categoriesWithCommunities}
         keyExtractor={(category) => `category-${category.id}`}

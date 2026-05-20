@@ -9,7 +9,10 @@ import { FlatList } from "react-native-gesture-handler";
 import PostCard from "@/components/features/post/PostCard";
 
 import { useHeaderHeight } from "@react-navigation/elements";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 export default function HomeScreen() {
   const headerHeight = useHeaderHeight();
@@ -20,8 +23,6 @@ export default function HomeScreen() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isError,
-    error,
     refetch,
     isLoading,
   } = useInfiniteQuery<ResponseWithPagination<Post>>({
@@ -64,8 +65,8 @@ export default function HomeScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: Post }) => (
-      <View className="flex-1 px-6">
-        <PostCard post={item} />
+      <View className="py-4">
+        <PostCard post={item} type="HOME" />
       </View>
     ),
     [],
@@ -78,7 +79,7 @@ export default function HomeScreen() {
       className="flex-1 bg-bg-semi-white"
     >
       {isLoading ? (
-        <ActivityIndicator size={24} color="#3578e4" className="mt-10" />
+        <ActivityIndicator size={24} color="#e5a657" className="mt-10" />
       ) : (
         <FlatList
           data={posts}
@@ -92,8 +93,14 @@ export default function HomeScreen() {
               colors={["#e5a657"]}
             />
           }
-          contentContainerStyle={{ paddingTop: insets.top - 10, paddingBottom: insets.bottom + 20 }}
-          renderItem={({ item }) => renderItem({ item })}
+          contentContainerStyle={{
+            paddingHorizontal: (insets.left + insets.right) + 16,
+            paddingBottom: insets.bottom + 20,
+          }}
+          renderItem={(item) => renderItem(item)}
+          ItemSeparatorComponent={() => (
+            <View className="border-t border-gray-200" />
+          )}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={

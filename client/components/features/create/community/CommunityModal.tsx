@@ -71,6 +71,7 @@ export default function CommunityModal({ ref, setCommunity }: Props) {
           setCommunity(item.community);
           ref.current?.dismiss();
         }}
+        key={item.id}
         className="flex-row items-center justify-between px-6 py-3 border-b border-gray-200 gap-x-4"
       >
         {item.community.image_url ? (

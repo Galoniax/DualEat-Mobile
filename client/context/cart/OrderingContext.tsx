@@ -1,7 +1,15 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { Modal, Pressable, Text, TouchableOpacity } from "react-native";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
+import OrderingModal from "./OrderingModal";
 
 const CART_KEY = process.env.CART_KEY || "dualeat_cart";
 
@@ -36,18 +44,33 @@ export const useOrdering = () => {
 export const OrderingProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
   const router = useRouter();
 
-  // -- ESTADOS PARA MODALS Y CONFLICTOS --
-  const [showEmptyCart, setShowEmptyCart] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [items, setItems] = useState<CartItem[]>([]);
+
+  const [modals, setModals] = useState({
+    empty: false,
+    conflict: false,
+  });
+
+  const cartRef = useRef<BottomSheetModal>(null);
+
+  useEffect(() => {
+    if (modals.empty || modals.conflict) {
+      cartRef.current?.present();
+    } else {
+      cartRef.current?.dismiss();
+    }
+  }, [modals]);
 
   const open = () => {
     if (items.length > 0) {
       router.push("/(client)/(out)/cart");
     } else {
-      setShowEmptyCart(true);
+      setModals((prev) => ({
+        ...prev,
+        empty: true,
+      }));
     }
   };
 
@@ -56,33 +79,41 @@ export const OrderingProvider: React.FC<{ children: React.ReactNode }> = ({
     AsyncStorage.removeItem(CART_KEY);
   };
 
-  // -- ITEM EN CONFLICTO --
   const [conflict, setConflict] = useState<CartItem | null>(null);
 
+  const [isLoaded, setIsLoaded] = useState(false);
+
   useEffect(() => {
-    const response = async () => {
-      await AsyncStorage.getItem(CART_KEY).then((res) => {
-        if (res) {
-          setItems(JSON.parse(res));
-        }
-      });
+    const loadInitialData = async () => {
+      const saved = await AsyncStorage.getItem(CART_KEY);
+      if (saved) {
+        setItems(JSON.parse(saved));
+      }
+      setIsLoaded(true);
     };
-    response();
+    loadInitialData();
   }, []);
 
   useEffect(() => {
-    if (items.length > 0) {
-      AsyncStorage.setItem(CART_KEY, JSON.stringify(items));
-    } else {
-      AsyncStorage.removeItem(CART_KEY);
-    }
-  }, [items]);
+    if (!isLoaded) return;
+
+    const syncData = async () => {
+      if (items.length > 0) {
+        await AsyncStorage.setItem(CART_KEY, JSON.stringify(items));
+      } else {
+        await AsyncStorage.removeItem(CART_KEY);
+      }
+    };
+    syncData();
+  }, [items, isLoaded]);
 
   const addItem = (newItem: CartItem) => {
     if (items.length > 0 && items[0].local.id !== newItem.local.id) {
       setConflict(newItem);
-      setShowModal(true);
-
+      setModals((prev) => ({
+        ...prev,
+        conflict: true,
+      }));
       return;
     }
 
@@ -108,18 +139,22 @@ export const OrderingProvider: React.FC<{ children: React.ReactNode }> = ({
     return items.find((item) => item.food_id === item_id) || null;
   };
 
-  const handleReplaceCart = () => {
-    if (conflict) {
-      setItems([conflict]);
+  const handleCart = (action: "keep" | "replace") => {
+    if (action === "replace") {
+      if (conflict) {
+        setItems([conflict]);
+      }
     }
-    setShowModal(false);
+    setModals((prev) => ({
+      ...prev,
+      conflict: false,
+    }));
     setConflict(null);
   };
 
-  const handleKeepCart = () => {
-    setShowModal(false);
-    setConflict(null);
-  };
+  const snapPoints = useMemo(() => {
+    return modals.empty ? ["30%"] : ["35%"];
+  }, [modals]);
 
   return (
     <OrderingContext.Provider
@@ -133,61 +168,46 @@ export const OrderingProvider: React.FC<{ children: React.ReactNode }> = ({
     >
       {children}
 
-      <Modal visible={showModal} transparent={true} animationType="fade">
-        <Pressable
-          onPress={handleKeepCart}
-          className="flex-1 justify-center items-center bg-black/50"
-        >
-          <Pressable
-            onPress={(e) => {
-              e.stopPropagation();
-            }}
-            style={{
-              width: "80%",
-              paddingVertical: 28,
-              paddingHorizontal: 22,
-              gap: 10,
-              boxShadow: "0px 4px 4px rgba(0, 0, 0, 0.25)",
-            }}
-            className="bg-white flex-col items-center py-[30px] px-4 rounded-[10px]"
-          >
-            <Text className="text-center text-text-3 text-[22px] font-dosis-bold">
-              ¿Querés crear un nuevo pedido?
-            </Text>
-
-            <Text className="text-center text-text-5 text-[15px] font-dosis-regular mb-6">
-              Para hacerlo tenemos que eliminar los productos que agregaste
-              anteriormente de{" "}
-              <Text className="font-dosis-bold text-black">
-                {items[0]?.local.name}
-              </Text>
-              .
-            </Text>
-
-            {/* BOTÓN: REEMPLAZAR */}
-            <TouchableOpacity
-              onPress={handleReplaceCart}
-              style={{ borderRadius: 80 }}
-              className="bg-bg-semi-black w-full py-3.5 items-center"
-            >
-              <Text className="text-white text-[15px] font-dosis-bold">
-                Crear carrito nuevo
-              </Text>
-            </TouchableOpacity>
-
-            {/* BOTÓN: CANCELAR */}
-            <TouchableOpacity
-              onPress={handleKeepCart}
-              style={{ borderRadius: 80 }}
-              className="w-full py-3.5 items-center"
-            >
-              <Text className="text-text-3 text-[15px] font-dosis-bold">
-                Mantener mi pedido actual
-              </Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <BottomSheetModal
+        ref={cartRef}
+        snapPoints={snapPoints}
+        enablePanDownToClose={true}
+        enableOverDrag={false}
+        enableDynamicSizing={false}
+        onDismiss={() =>
+          setModals((prev) => ({
+            ...prev,
+            empty: false,
+            conflict: false,
+          }))
+        }
+        index={0}
+        handleIndicatorStyle={{
+          backgroundColor: "#2F2F2F",
+          marginTop: 8,
+          marginBottom: 16,
+        }}
+        backgroundStyle={{
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          backgroundColor: "#fefefe",
+        }}
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop
+            {...props}
+            disappearsOnIndex={-1}
+            appearsOnIndex={0}
+            opacity={0.6}
+            pressBehavior="close"
+          />
+        )}
+      >
+        <OrderingModal
+          type={modals.empty ? "empty" : "conflict"}
+          items={items}
+          handleCart={handleCart}
+        />
+      </BottomSheetModal>
     </OrderingContext.Provider>
   );
 };

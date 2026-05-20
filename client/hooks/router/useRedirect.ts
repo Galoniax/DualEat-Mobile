@@ -39,31 +39,24 @@ export function useRedirect() {
       }
       return;
     }
+    
+    const currentModeMismatch = currentModeSegment !== `(${mode})`;
 
     // --- ESCENARIO 3: USUARIO STAFF / ADMIN LOCAL ---
     // Si el usuario tiene lugares de trabajo, es parte del staff o admin de un local.
     const hasWorkplaces = (user.workplaces && user.workplaces.length > 0) || (user.role as string) === 'staff';
 
     if (hasWorkplaces && !user.isBusiness) {
-      console.log("Redirecting to Staff Dashboard (hasWorkplaces)");
       if (!inStaffGroup) {
         router.replace(ROUTES.STAFF.DASHBOARD as any);
       }
       return;
     }
 
+    const needsRedirect = inAuthGroup || inStaffGroup || currentModeMismatch;
 
-    const needsRedirectIn =
-      mode === "in" &&
-      (inAuthGroup || inLocalGroup || inStaffGroup || currentModeSegment !== "(in)");
-    const needsRedirectOut =
-      mode === "out" &&
-      (inAuthGroup || inLocalGroup || inStaffGroup || currentModeSegment !== "(out)");
-
-    if (needsRedirectIn) {
-      router.replace(ROUTES.USER.DASHBOARD_IN as any);
-    } else if (needsRedirectOut) {
-      router.replace(ROUTES.USER.DASHBOARD_OUT as any);
+    if (needsRedirect) {
+      router.replace(ROUTES.USER.DASHBOARD(mode));
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -201,9 +201,7 @@ export default function DraftOrderView({ tempOrder, insets }: Props) {
             e.stopPropagation();
             router.push({
               pathname: ROUTES.USER.LOCAL,
-              params: {
-                slug: order?.local.slug,
-              },
+              params: { local_id: order.local.id, local_slug: order.local.slug},
             });
           }}
         >

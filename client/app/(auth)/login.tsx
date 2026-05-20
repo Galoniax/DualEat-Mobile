@@ -23,12 +23,10 @@ import { useAuth } from "@/context/auth/AuthContext";
 import { showToast } from "@/utils/toast";
 
 export default function Login() {
-  // --- ESTADOS LOCALES ---
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // --- HOOKS ---
   const router = useRouter();
 
   const { login } = useAuth();
