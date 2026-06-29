@@ -64,7 +64,7 @@ const PinMarker = ({ loc, onCaptured }: Props) => {
           loc.promotions[0].discount_pct && (
             <View className="absolute top-[5px] z-10 flex items-center justify-center">
               <View className="bg-bg-semi-white border-2 border-bg-red rounded-t-[7px] h-8 px-1 pb-[2px] pt-[1px] min-w-[24px] flex items-center justify-center">
-                <Text className="text-[12px] font-dosis-bold text-center text-[#B53325]">
+                <Text className="text-[12px] font-outfit-bold text-center text-[#B53325]">
                   -{loc.promotions[0].discount_pct}%
                 </Text>
               </View>
@@ -73,7 +73,7 @@ const PinMarker = ({ loc, onCaptured }: Props) => {
 
         {/** ICON/RATING */}
         <View
-        style={{ minWidth: 40, borderWidth: 1, borderColor: "#707070" }}
+          style={{ minWidth: 40, borderWidth: 1, borderColor: "#707070" }}
           className={`flex-row bg-bg-gray py-[4px] rounded-full items-center z-20 gap-1 px-[12px]
           ${rating ? "justify-between" : "justify-center"}
         `}
@@ -93,7 +93,7 @@ const PinMarker = ({ loc, onCaptured }: Props) => {
             />
           </View>
           {rating ? (
-            <Text className="text-[14px] font-dosis-bold text-text-3">
+            <Text className="text-[14px] font-outfit-bold text-text-3">
               {rating}
             </Text>
           ) : null}
@@ -102,7 +102,7 @@ const PinMarker = ({ loc, onCaptured }: Props) => {
         {/** NOMBRE DEL LOCAL */}
         <Text
           style={{ maxWidth: 100 }}
-          className="text-[13px] text-center font-dosis-bold text-text-3 mt-1"
+          className="text-[13px] text-center font-outfit-bold text-text-3 mt-1"
           numberOfLines={2}
           ellipsizeMode="tail"
         >

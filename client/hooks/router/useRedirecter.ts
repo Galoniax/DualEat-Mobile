@@ -13,7 +13,7 @@ export function useRedirecter() {
 
   const redirect = useCallback(() => {
     if (user) {
-      const isLocal = user.isBusiness;
+      const isLocal = user.is_business;
       if (isLocal) {
         return;
       } else {

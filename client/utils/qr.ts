@@ -22,14 +22,13 @@ export function useQRParser() {
       const userWorkplaceIds = user?.workplaces.map((w) => w.id) || [];
 
       switch (parsedData.t) {
-        // ==========================================
         // CASO 1: ORDEN (Restringido para usuarios regulares)
         // ==========================================
         case "order":
           console.log("ENTRO a procesar orden:", parsedData);
           
           // Verificamos si el usuario pertenece al local para el cual es la orden
-          // Esto cubre tanto a dueños (isBusiness) como a staff regular
+          // Esto cubre tanto a dueños (is_business) como a staff regular
           if (!userWorkplaceIds.includes(parsedData.l)) {
             return {
               success: false,
@@ -43,7 +42,6 @@ export function useQRParser() {
             data: parsedData,
           };
 
-        // ==========================================
         // CASO 2: USUARIO
         // ==========================================
         case "user":
@@ -53,7 +51,6 @@ export function useQRParser() {
             data: parsedData,
           };
 
-        // ==========================================
         // CASO 3: LOCAL
         // ==========================================
         case "local":
@@ -63,7 +60,6 @@ export function useQRParser() {
             data: parsedData,
           };
 
-        // ==========================================
         // DEFAULT
         // ==========================================
         default:

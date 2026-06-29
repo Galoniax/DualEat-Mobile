@@ -10,15 +10,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 type PermissionType = "QR" | "QR_STAFF";
 
-
 interface PermissionViewProps {
   type: PermissionType;
   permission?: { granted: boolean };
   requestPermission: () => void;
 }
 
-
-const PermissionView = ({ type, permission, requestPermission }: PermissionViewProps) => {
+const PermissionView = ({
+  type,
+  permission,
+  requestPermission,
+}: PermissionViewProps) => {
   const steps = [1, 2, 3];
   const Logo = require("@/assets/icon/LogoDualEat.png");
 
@@ -34,14 +36,18 @@ const PermissionView = ({ type, permission, requestPermission }: PermissionViewP
 
       <View className="flex px-5 flex-row items-center gap-3 mb-3">
         <Image source={Logo} className="w-6 h-6" />
-        <Text className="text-white text-[14px] font-dosis-bold">DualEat</Text>
+        <Text className="text-white text-[14px] font-outfit-bold">DualEat</Text>
       </View>
 
-      <Text className="text-white text-[28px] font-dosis-bold px-5 mb-3">
+      <Text className="text-white text-[28px] font-outfit-bold px-5 mb-3">
         {type === "QR_STAFF" ? (
-          <>Escanea pedidos <Text className="text-[#ec3f2b]">rápido</Text></>
+          <>
+            Escanea pedidos <Text className="text-[#ec3f2b]">rápido</Text>
+          </>
         ) : (
-          <>Escanea, explora y <Text className="text-[#ec3f2b]">disfruta</Text></>
+          <>
+            Escanea, explora y <Text className="text-[#ec3f2b]">disfruta</Text>
+          </>
         )}
       </Text>
 
@@ -70,7 +76,7 @@ const PermissionView = ({ type, permission, requestPermission }: PermissionViewP
           onPress={requestPermission}
           className="bg-bg-red py-3.5 w-full rounded-[10px] mt-[60px] items-center justify-center"
         >
-          <Text className="text-white font-dosis-bold text-md">
+          <Text className="text-white font-outfit-bold text-md">
             Conceder permiso
           </Text>
         </TouchableOpacity>
@@ -78,7 +84,7 @@ const PermissionView = ({ type, permission, requestPermission }: PermissionViewP
           onPress={() => router.back()}
           className="mt-5 items-center py-3.5 w-full justify-center"
         >
-          <Text className="text-white font-dosis-bold text-md">Cerrar</Text>
+          <Text className="text-white font-outfit-bold text-md">Cerrar</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

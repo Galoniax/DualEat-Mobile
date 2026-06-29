@@ -1,6 +1,7 @@
 import { CommunityTag } from "@/interface/global";
 import { CommunityDTO } from "@/interface/global.dto";
 import { getTags } from "@/services/category.api";
+import { globalToast as toast } from "@/utils/toast";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
@@ -68,10 +69,10 @@ export default function StepOne({ community, setCommunity }: StepProps) {
 
   return (
     <View className="flex-col flex-1 px-5 py-4 gap-y-6">
-      <Text className="font-dosis-bold text-[22px] text-text-3">
+      <Text className="font-outfit-bold text-[22px] text-text-3">
         ¿De qué se trata tu comunidad?
       </Text>
-      <Text className="font-dosis-regular text-[16px] text-text-5 leading-7">
+      <Text className="font-outfit-light text-[16px] text-text-5 leading-7">
         Selecciona las categorías principales de tu comunidad para que los
         usuarios puedan identificar de qué se trata
       </Text>
@@ -87,7 +88,7 @@ export default function StepOne({ community, setCommunity }: StepProps) {
           showsVerticalScrollIndicator={false}
           renderItem={({ item }: { item: GroupedTags }) => (
             <View className="w-full mb-6">
-              <Text className="font-dosis-bold text-[16px] text-text-3 mb-3">
+              <Text className="font-outfit-bold text-[16px] text-text-3 mb-3">
                 {item.title}
               </Text>
 
@@ -99,8 +100,11 @@ export default function StepOne({ community, setCommunity }: StepProps) {
                     <TouchableOpacity
                       key={tag.id}
                       onPress={() => {
-                        // TODO: Toast
                         if (community.tags.length >= 3 && !isSelected) {
+                          toast.error(
+                            "Error",
+                            "Solo se pueden seleccionar 3 categorías",
+                          );
                           return;
                         }
                         setCommunity((prev: CommunityDTO) => {
@@ -124,7 +128,7 @@ export default function StepOne({ community, setCommunity }: StepProps) {
                       }`}
                     >
                       <Text
-                        className={`font-dosis-regular text-[14px] ${
+                        className={`font-outfit-light text-[14px] ${
                           isSelected ? "text-white" : "text-text-4"
                         }`}
                       >

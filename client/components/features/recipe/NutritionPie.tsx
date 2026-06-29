@@ -35,97 +35,97 @@ export default function NutritionPie({
       : macro;
 
   return (
-    <View className="bg-bg-gray py-4 px-3 rounded-[5px] border border-gray-200 w-full">
-      <View className="flex-row items-center justify-between flex-1">
-        <View
-          style={{ flex: 1 }}
-          className="relative items-center justify-center"
-        >
-          <View style={{ width: "100%", height: "100%", minHeight: 110 }}>
-            <PolarChart
-              data={chartData}
-              colorKey="color"
-              valueKey="value"
-              labelKey="label"
-            >
-              <Pie.Chart size={80} innerRadius={30} />
-            </PolarChart>
-          </View>
+    <View className="flex-col gap-y-4 flex-1">
+      <Text className="font-outfit-bold text-lg text-text-3">
+        Información Nutricional Aproximada
+      </Text>
 
-          {/* Texto central (kcal) */}
+      <View className="p-4 grow rounded-[10px] flex-col gap-y-3 border border-dashed border-gray-400 w-full">
+        <View className="flex-row items-center justify-between flex-1 gap-4">
           <View
-            style={{
-              position: "absolute",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-            pointerEvents="none"
+            style={{ width: 110, height: 110 }}
+            className="items-center justify-center relative"
           >
-            {nutrition.total_ingredients === 0 ? (
-              <Text className="font-dosis-regular text-[12px] text-text-4 text-center">
-                Sin datos
-              </Text>
-            ) : (
-              <View className="items-center">
-                <Text className="font-dosis-bold text-[18px] text-text-3">
-                  {nutrition.avg_calories.toFixed(0)}
+            {/* Gráfico */}
+            <View style={{ width: "100%", height: "100%" }}>
+              <PolarChart
+                data={chartData}
+                colorKey="color"
+                valueKey="value"
+                labelKey="label"
+              >
+                <Pie.Chart size={90} innerRadius={30}>
+                  {() => (
+                    <>
+                      <Pie.Slice />
+                      <Pie.SliceAngularInset
+                        angularInset={{
+                          angularStrokeWidth: 5,
+                          angularStrokeColor: "#f5f5f5",
+                        }}
+                      />
+                    </>
+                  )}
+                </Pie.Chart>
+              </PolarChart>
+            </View>
+
+            {/* Texto central */}
+            <View
+              style={{ position: "absolute" }}
+              className="items-center justify-center"
+              pointerEvents="none"
+            >
+              {nutrition.total_ingredients === 0 ? (
+                <Text className="font-outfit-light text-[12px] text-text-4 text-center">
+                  Sin datos
                 </Text>
-                <Text className="font-dosis-regular text-[12px] text-text-4">
-                  kcal
+              ) : (
+                <View className="items-center">
+                  <Text className="font-outfit-bold text-xl text-text-3">
+                    {nutrition.avg_calories.toFixed(0)}
+                  </Text>
+                  <Text className="font-outfit-light text-sm text-text-4">
+                    Cals
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Leyenda */}
+          <View
+            style={{ flex: 2, flexDirection: "row", gap: 8, flexWrap: "wrap" }}
+          >
+            {macro.map((item) => (
+              <View
+                key={item.key}
+                className="flex-1 flex-col items-start gap-y-2"
+              >
+                <Text className="font-outfit-bold text-base text-text-3">
+                  {item.value.toFixed(1)}g
                 </Text>
+
+                <Text className="font-outfit-light text-sm text-text-4">
+                  {item.label}
+                </Text>
+                <View
+                  style={{
+                    width: "100%",
+                    backgroundColor: item.color,
+                    height: 4,
+                    borderRadius: 999,
+                  }}
+                />
               </View>
-            )}
+            ))}
           </View>
         </View>
-
-        {/* Leyenda */}
-        <View
-          style={{ flex: 2, flexDirection: "row", gap: 8, flexWrap: "wrap" }}
-        >
-          {macro.map((item) => (
-            <View key={item.key} className="flex-col items-start gap-y-1.5">
-              <Text className="font-dosis-bold text-[14px] text-text-5">
-                {item.value.toFixed(1)}g
-              </Text>
-
-              <Text className="font-dosis-regular text-[12px] text-text-4">
-                {item.label}
-              </Text>
-              <View
-                style={{
-                  width: "100%",
-                  backgroundColor: item.color,
-                  height: 3,
-                  marginTop: 8,
-                }}
-              />
-            </View>
-          ))}
-        </View>
-      </View>
-      {/** Información adicional */}
-      <View className="flex-col items-start justify-between mt-4 gap-y-1">
-        <Text className="font-dosis-regular text-[12px] text-text-4">
+        <Text className="font-outfit-light text-sm text-text-4">
           Este tipo de visualización nutricional se representa el aporte
           relativo de carbohidratos, grasas y proteínas en términos de calorías
           de la receta.
         </Text>
-        <View className="flex-row gap-x-2 items-center">
-          <View
-            style={{
-              width: 4,
-              height: 4,
-              backgroundColor: "#3578e4",
-              borderRadius: 999,
-            }}
-          />
-          <Text className="font-dosis-semibold text-[12px] text-text-4 underline">
-            Ingredientes analizados:
-          </Text>
-          <Text className="font-dosis-regular text-[12px] text-text-4">
-            {nutrition.total_ingredients}
-          </Text>
-        </View>
       </View>
     </View>
   );

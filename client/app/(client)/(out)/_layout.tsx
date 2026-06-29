@@ -7,12 +7,13 @@ export default function OutStackLayout() {
 
       <Stack.Screen name="order_info/[order_id]" />
 
+      <Stack.Screen name="review/[order_id]" />
+
       <Stack.Screen
-        name="l/[local_id]/[local_slug]"
+        name="local/[local_id]"
         options={{ animation: "fade_from_bottom" }}
       />
       <Stack.Screen name="cart" />
-      <Stack.Screen name="notifications" />
     </Stack>
   );
 }

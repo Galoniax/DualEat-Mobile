@@ -5,7 +5,7 @@ import {
   MaterialIcons,
   Octicons,
 } from "@expo/vector-icons";
-import { forwardRef, useCallback, useState, useImperativeHandle } from "react";
+import { useCallback, useState } from "react";
 import {
   KeyboardAvoidingView,
   ScrollView,
@@ -14,23 +14,14 @@ import {
 } from "react-native";
 
 import { UploadableFile } from "@/interface/global.dto";
-import { pickMedia } from "@/utils/media";
-
-export interface EditorToolbarRef {
-  handleAddImage: () => Promise<void>;
-}
 
 interface Props {
   editor: EditorBridge;
-  images: UploadableFile[];
-  video: UploadableFile | null;
-
-  setImages: React.Dispatch<React.SetStateAction<UploadableFile[]>>;
-  setVideo: React.Dispatch<React.SetStateAction<UploadableFile | null>>;
+  imageUrls: UploadableFile[];
+  handleFiles?: (type: "image" | "video") => void;
 }
 
-const EditorToolbar = forwardRef<EditorToolbarRef, Props>(
-  ({ editor, images, video, setImages, setVideo }, ref) => {
+const EditorToolbar = ({ editor, imageUrls, handleFiles }: Props) => {
     const [openTypo, setOpenTypo] = useState(false);
 
     const editorState = useBridgeState(editor);
@@ -43,7 +34,6 @@ const EditorToolbar = forwardRef<EditorToolbarRef, Props>(
 
     const isBulletList = editorState.isBulletListActive;
     const isOrderedList = editorState.isOrderedListActive;
-    const isLink = editorState.isLinkActive;
 
     const toggleBold = useCallback(() => editor.toggleBold(), [editor]);
     const toggleStrike = useCallback(() => editor.toggleStrike(), [editor]);
@@ -61,47 +51,18 @@ const EditorToolbar = forwardRef<EditorToolbarRef, Props>(
       () => editor.toggleOrderedList(),
       [editor],
     );
-    const toggleLink = useCallback(() => {
-      editor.setLink("https://ejemplo.com");
-    }, [editor]);
 
     const size = 22;
 
-    const handleAddImage = async () => {
-      // TODO: Toast
-      if (images.length > 10) {
-        return;
-      }
+    const video = imageUrls.find((item) => {
+      return item.type?.startsWith("video/") || item.uri?.endsWith(".mp4") || item.uri?.endsWith(".mov");
+    }) || null;
 
-      const valid = await pickMedia({
-        mediaType: "Images",
-        allowsMultipleSelection: true,
-        allowsEditing: true,
-        selectionLimit: 10,
-      });
+    const onlyImages = imageUrls.filter((item) => {
+      return !(item.type?.startsWith("video/") || item.uri?.endsWith(".mp4") || item.uri?.endsWith(".mov"));
+    });
 
-      setImages(valid);
-    };
-
-    const handleAddVideo = async () => {
-      // TODO: Toast
-      if (video !== null) {
-        return;
-      }
-
-      const valid = await pickMedia({
-        mediaType: "Videos",
-        allowsMultipleSelection: false,
-        allowsEditing: false,
-        selectionLimit: 1,
-      });
-
-      setVideo(valid[0]);
-    };
-
-    useImperativeHandle(ref, () => ({
-      handleAddImage,
-    }));
+    const isEdit = handleFiles !== undefined;
 
     return (
       <KeyboardAvoidingView behavior={"padding"}>
@@ -186,41 +147,32 @@ const EditorToolbar = forwardRef<EditorToolbarRef, Props>(
             </>
           )}
 
-          {/* BOTÓN DE ENLACE */}
-          <TouchableOpacity onPress={toggleLink} className="p-1.5 rounded-full">
-            <MaterialIcons
-              name="link"
-              size={size}
-              color={isLink ? "#e5a657" : "#4A4947"}
-            />
-          </TouchableOpacity>
-
           {/* BOTÓN DE IMAGEN */}
           <TouchableOpacity
-            onPress={handleAddImage}
+            onPress={isEdit ? () => handleFiles("image") : undefined}
             className="p-1.5 rounded-full"
-            disabled={images.length > 0 || video !== null}
+            disabled={onlyImages.length >= 10 || video !== null}
           >
             <Ionicons
               name="image-outline"
               size={22}
               color={
-                images.length > 0 || video !== null ? "#dbdbdb" : "#4A4947"
+                onlyImages.length >= 10 || video !== null ? "#dbdbdb" : "#4A4947"
               }
             />
           </TouchableOpacity>
 
           {/* BOTÓN DE VIDEO */}
           <TouchableOpacity
-            onPress={handleAddVideo}
+            onPress={isEdit ? () => handleFiles("video") : undefined}
             className="p-1.5 rounded-full"
-            disabled={images.length > 0 || video !== null}
+            disabled={onlyImages.length > 0 || video !== null}
           >
             <Octicons
               name="video"
               size={20}
               color={
-                images.length > 0 || video !== null ? "#dbdbdb" : "#4A4947"
+                onlyImages.length > 0 || video !== null ? "#dbdbdb" : "#4A4947"
               }
             />
           </TouchableOpacity>
@@ -251,9 +203,6 @@ const EditorToolbar = forwardRef<EditorToolbarRef, Props>(
         </ScrollView>
       </KeyboardAvoidingView>
     );
-  },
-);
-
-EditorToolbar.displayName = "EditorToolbar";
+}
 
 export default EditorToolbar;

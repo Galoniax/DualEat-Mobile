@@ -217,7 +217,7 @@ export default function MapScreen() {
           onPress={() => {
             router.push({
               pathname: ROUTES.USER.LOCAL,
-              params: { local_id: item.id, local_slug: item.slug },
+              params: { local_id: item.id },
             });
           }}
         >
@@ -231,23 +231,23 @@ export default function MapScreen() {
           />
           <View className="flex-row items-center mt-2 px-2">
             <View className="flex-1 flex-row items-center gap-2">
-              <Text className="text-text-3 text-[13.5px] font-dosis-bold">
+              <Text className="text-text-3 text-[13.5px] font-outfit-bold">
                 {item.name}
               </Text>
-              <Text className="text-text-4 text-[13.5px] font-dosis-regular">
+              <Text className="text-text-4 text-[13.5px] font-outfit-light">
                 <Text className="text-text-6">-</Text> {item.address}
               </Text>
             </View>
             <View className="flex-row items-center gap-2">
               <FontAwesome5 name="walking" size={14} color="#2F2F2F" />
-              <Text className="text-text-3 text-[12px]  font-dosis-bold">
+              <Text className="text-text-3 text-[12px]  font-outfit-bold">
                 {displayDistance}
               </Text>
             </View>
           </View>
           <View className="flex-row items-center gap-x-1 mt-1 px-2">
             <FontAwesome name="star" size={12} color="#2F2F2F" />
-            <Text className="text-[12px] font-dosis-bold text-text-5">
+            <Text className="text-[12px] font-outfit-bold text-text-5">
               {item.average_rating === 0
                 ? "Sin reseñas"
                 : item.average_rating.toFixed(1) +
@@ -381,7 +381,7 @@ export default function MapScreen() {
             </View>
 
             <TextInput
-              className="flex-[1] ps-14 h-full rounded-[40px] font-dosis-medium placeholder:text-text-5"
+              className="flex-[1] ps-14 h-full rounded-[40px] font-outfit-regular placeholder:text-text-5"
               placeholder={`Buscá en ${
                 address?.region?.split("Provincia de ")[1] || "tu zona"
               }`}
@@ -481,7 +481,7 @@ export default function MapScreen() {
             {!isLoading && locales.length === 0 ? (
               <View className="flex-row justify-center items-center py-2 gap-2 border-y border-dashed border-gray-300">
                 <Ionicons name="restaurant" size={16} color="#B53325" />
-                <Text className="text-text-3 text-[14px] font-dosis-regular">
+                <Text className="text-text-3 text-[14px] font-outfit-light">
                   No hay locales cerca
                 </Text>
               </View>

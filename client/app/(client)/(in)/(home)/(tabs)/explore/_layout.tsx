@@ -21,23 +21,12 @@ export default function ExploreLayout() {
       />
 
       <Stack.Screen
-        name="search"
-        options={{
-          title: "Buscar",
-          headerShown: false,
-          presentation: "containedModal",
-          animation: "simple_push",
-        }}
-      />
-
-      <Stack.Screen
         name="[tag_id]"
         options={{
           title: "Comunidades por tag",
           headerShown: false,
         }}
       />
-      
     </Stack>
   );
 }

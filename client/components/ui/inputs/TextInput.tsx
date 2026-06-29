@@ -1,5 +1,10 @@
 import { ReactNode, useState } from "react";
-import { Text, View, TextInput as RNTextInput, TouchableOpacity } from "react-native";
+import {
+  Text,
+  View,
+  TextInput as RNTextInput,
+  TouchableOpacity,
+} from "react-native";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
 
@@ -15,7 +20,6 @@ interface TextInputProps {
     | "visible-password";
   isPassword?: boolean;
   icon?: ReactNode;
-
 }
 
 export default function TextInput({
@@ -31,11 +35,10 @@ export default function TextInput({
 
   const [showPassword, setShowPassword] = useState(false);
 
-  
   return (
     <View className="w-[80%] relative mt-4">
       <View className="absolute -top-2.5 left-10 z-10 px-1">
-        <Text className="text-text-1 text-xs font-dosis-bold">{title}</Text>
+        <Text className="text-text-1 text-xs font-outfit-bold">{title}</Text>
       </View>
 
       {/* 2. CONTENEDOR (El que tiene el borde) */}
@@ -52,7 +55,7 @@ export default function TextInput({
         ) : isPassword ? (
           <Ionicons name="lock-closed-outline" size={18} color="#fff" />
         ) : icon ? (
-          icon 
+          icon
         ) : null}
 
         {/* Input Real (Sin bordes, llena el espacio restante) */}
@@ -69,7 +72,7 @@ export default function TextInput({
           autoCapitalize="none"
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          className="flex-1 ml-2 text-text-1 font-dosis-regular text-base"
+          className="flex-1 ml-2 text-text-1 font-outfit-light text-base"
         />
 
         {isPassword && (

@@ -1,6 +1,13 @@
-import React, { useState, useEffect, createContext, useContext, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  useMemo,
+  useCallback,
+} from "react";
 import * as SecureStore from "expo-secure-store";
-import { Route, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 
 import axiosInterceptor from "@/api/client";
 
@@ -10,36 +17,61 @@ import {
   register as authRegister,
   completeProfile as authCompleteProfile,
   logout as authLogout,
+  logoutAll as authLogoutAll,
 } from "@/services/auth.api";
 
-import type { AuthResponse, User } from "@/interface/global";
+import type { NotificationFrequency, Role, User, Workplace } from "@/interface/global";
 
 import { useLoader } from "../app/LoadingContext";
 import { ROUTES } from "@/constants/constants";
-import { showToast } from "@/utils/toast";
+
+import { globalToast as toast } from "@/utils/toast";
 
 const TOKEN_KEY = process.env.TOKEN_KEY || "dualeat_session_token";
 
+export interface UserSessionData {
+  id: string;
+  name: string;
+  email: string;
+  slug: string;
+  role: Role;
+  provider: string;
+  is_business: boolean;
+  active: boolean;
+  subscription_status: string;
+  trial_ends_at: Date | null;
+  avatar_url: string;
+  verified: boolean;
+  notificationsPref: NotificationFrequency;
+  workplaces?: Workplace[]; 
+
+  loginAt?: Date;
+  lastActivity?: Date;
+  deviceId?: string;
+}
+
+
 // INTERFAZ
 interface AuthContextType {
-  user: User | null;
+  user: UserSessionData | null;
   authReady: boolean;
-  setToken: (token: string) => Promise<AuthResponse | null>;
+  setToken: (token: string | null) => Promise<void>;
   login: (
     e: string,
     p: string,
     r: boolean,
     rt: string | null,
     d: string,
-  ) => Promise<AuthResponse | null>;
-  register: (e: string, p: string, d: string) => Promise<AuthResponse | null>;
+  ) => Promise<void>;
+  register: (e: string, p: string, d: string) => Promise<void>;
   completeProfile: (
     n: string,
-    fPreferences: number[],
-    cPreferences: number[],
+    fPreferences: string[],
+    cPreferences: string[],
     tt: string,
-  ) => Promise<AuthResponse | null>;
+  ) => Promise<void>;
   logout: () => Promise<void>;
+  logoutAll: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -51,9 +83,7 @@ export const useAuth = () => {
   return context;
 };
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
 
@@ -68,10 +98,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (token) {
         axiosInterceptor.defaults.headers.Authorization = `Bearer ${token}`;
         const userData = await getMe();
+
         setUser(userData);
       }
     } catch (error: any) {
-
       console.log("Error en init auth:");
       let status: number | undefined;
       if (error && error.response) {
@@ -94,6 +124,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setType(null);
   };
 
+  // TODO: TOAST
+
   // --- 1. CARGA DE SESIÓN ---
   // ===========================================
   useEffect(() => {
@@ -101,169 +133,149 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // --- Helper: Limpieza al cerrar sesión ---
+  // ===========================================
+  const handleLogoutCleanup = useCallback(async () => {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    delete axiosInterceptor.defaults.headers.common["Authorization"];
+    setUser(null);
+  }, []);
+
   // --- 2. FUNCIONES DE AUTENTICACIÓN ---
   // ===========================================
-  const setToken = async (isToken?: string) => {
-    try {
-      setType("global");
+  const setToken = useCallback(
+    async (isToken: string | null) => {
+      try {
+        let token: string | null;
+        if (isToken) {
+          token = isToken;
+          await SecureStore.setItemAsync(TOKEN_KEY, isToken);
+        } else {
+          token = await SecureStore.getItemAsync(TOKEN_KEY);
+        }
 
-      let token: string | null;
-      if (isToken) {
-        token = isToken;
-        await SecureStore.setItemAsync(TOKEN_KEY, isToken);
-      } else {
-        token = await SecureStore.getItemAsync(TOKEN_KEY);
+        axiosInterceptor.defaults.headers.common["Authorization"] =
+          `Bearer ${token}`;
+
+        const userData = await getMe();
+        
+        setUser(userData);
+      } catch (e: any) {
+        console.log(e);
+        await handleLogoutCleanup();
       }
-
-      axiosInterceptor.defaults.headers.common["Authorization"] =
-        `Bearer ${token}`;
-
-      const userData = await getMe();
-      setUser(userData);
-
-      console.log("Usuario cargado en Context:", JSON.stringify(userData, null, 2));
-
-      setType(null);
-
-      return { success: true, message: "Token establecido correctamente" };
-    } catch (e) {
-      console.log("Error al establecer el token:", e);
-      await handleLogoutCleanup();
-      setType(null);
-      return { success: false, message: "Error al establecer el token" };
-    }
-  };
+    },
+    [handleLogoutCleanup],
+  );
 
   // --- 3. LOGIN (Email, Password, RememberMe, RecaptchaToken, DeviceId) ---
   // ===========================================
-  const login = async (
-    e: string,
-    p: string,
-    r: boolean,
-    t: string | null,
-    d: string,
-  ) => {
-    try {
-      setType("minimal");
-      const response = await authLogin(e, p, r, t, d);
-      
-      if (response && response.success && response.token) {
-        let msg = response.message || "Inicio de sesión exitoso";
-        showToast("success", msg, "Éxito");
-        await setToken(response.token);
-      } else {
-        const errorMsg = response?.message || "Credenciales incorrectas o cuenta no autorizada";
-        showToast("error", errorMsg, "Error de inicio de sesión");
+  const login = useCallback(
+    async (e: string, p: string, r: boolean, t: string | null, d: string) => {
+      try {
+        setType("minimal");
+        const response = await authLogin(e, p, r, t, d);
+
+        if (response && response.token) {
+          await setToken(response.token);
+        }
+      } catch (e: any) {
+        throw e;
+      } finally {
+        setType(null);
       }
-      return response;
-    } catch (e) {
-      setType(null);
-      showToast("error", "Error al iniciar sesión", "Error");
-      throw e;
-    }
-  };
+    },
+    [setType, setToken],
+  );
 
   // --- 4. REGISTER (Email, Password, DeviceId) ---
   // ===========================================
-  const register = async (e: string, p: string, d: string) => {
-    try {
-      setType("minimal");
-      const response = await authRegister(e, p, d);
+  const register = useCallback(
+    async (e: string, p: string, d: string) => {
+      try {
+        setType("minimal");
+        const response = await authRegister(e, p, d);
 
-      if (response && response.success && response.next_step) {
-        let msg = response.message;
-        if (!msg) {
-          msg = "Registro exitoso";
+        if (response && response.token) {
+          router.push({
+            pathname: ROUTES.AUTH.ONBOARDING,
+            params: { tempToken: response.token },
+          });
         }
-        showToast("success", msg, "Éxito");
-        const url = `${ROUTES.AUTH.ONBOARDING}${response.next_step}`;
-        
-        router.push(url as Route);
-
+      } catch (e: any) {
+        console.log(e);
+      } finally {
         setType(null);
-        return response;
       }
-
-      setType(null);
-      return null;
-    } catch (e) {
-      console.log(e);
-      setType(null);
-      showToast("error", "Error al registrarse", "Error");
-      return null;
-    }
-  };
+    },
+    [setType, router],
+  );
 
   // --- 5. COMPLETE PROFILE (Name, FoodPreferences, CommunityPreferences, TempToken) ---
   // ===========================================
-  const completeProfile = async (
-    n: string,
-    f: number[],
-    c: number[],
-    t: string,
-  ) => {
-    try {
-      setType("minimal");
-      const response = await authCompleteProfile(n, f, c, t);
-      if (response && response.success && response.token) {
-        let msg = response.message;
-        if (!msg) {
-          msg = "Perfil completado";
+  const completeProfile = useCallback(
+    async (n: string, f: string[], c: string[], t: string) => {
+      try {
+        setType("minimal");
+        const response = await authCompleteProfile(n, f, c, t);
+        if (response && response.token) {
+          await setToken(response.token);
         }
-        showToast("success", msg, "Éxito");
-        await setToken(response.token);
+      } catch (e: any) {
+        throw e;
+      } finally {
+        setType(null);
       }
-
-      setType(null);
-      return response;
-    } catch (e) {
-      setType(null);
-      showToast("error", "Error al completar el perfil", "Error");
-      throw e;
-    }
-  };
+    },
+    [setType, setToken],
+  );
 
   // --- 6. LOGOUT ---
   // ===========================================
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       setType("global");
       await authLogout();
       await handleLogoutCleanup();
       router.replace(ROUTES.PUBLIC.HOME);
-
-      setType(null);
-    } catch (e) {
-      setType(null);
-      showToast("error", "Error al cerrar sesión", "Error");
+    } catch (e: any) {
+      toast.error("Error al cerrar sesión", e.message || "Error de red");
       throw e;
+    } finally {
+      setType(null);
     }
-  };
+  }, [setType, handleLogoutCleanup, router]);
 
-  // --- Helper: Limpieza al cerrar sesión ---
-  // ===========================================
-  const handleLogoutCleanup = async () => {
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
-    delete axiosInterceptor.defaults.headers.common["Authorization"];
-    setUser(null);
-  };
+  const logoutAll = useCallback(async () => {
+    try {
+      setType("global");
+      await authLogoutAll();
+      await handleLogoutCleanup();
+      router.replace(ROUTES.PUBLIC.HOME);
+    } catch (e: any) {
+      toast.error("Error al cerrar todas las sesiones", e.message || "Error de red");
+      throw e;
+    } finally {
+      setType(null);
+    }
+  }, [setType, handleLogoutCleanup, router]);
 
-  const contextValue = useMemo(() => ({
-    user,
-    authReady,
-    setToken,
-    login,
-    register,
-    completeProfile,
-    logout,
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [user, authReady]);
+  
+  const contextValue = useMemo(
+    () => ({
+      user,
+      authReady,
+      setToken,
+      login,
+      register,
+      completeProfile,
+      logout,
+      logoutAll,
+    }),
+    [user, authReady, setToken, login, register, completeProfile, logout, logoutAll],
+  );
 
   return (
-    <AuthContext.Provider
-      value={contextValue}
-    >
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 };

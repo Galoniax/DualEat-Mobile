@@ -10,16 +10,17 @@ import "@/app/global.css";
 import { useFonts } from "expo-font";
 import { AuthProvider, useAuth } from "@/context/auth/AuthContext";
 import { LocationProvider } from "@/context/extension/LocationContext";
-import { configureNotifications } from "@/utils/notifications";
-import * as Location from "expo-location";
-import "../tasks/locationTask";
-import { useRedirect } from "@/hooks/router/useRedirect";
 import LoadingScreen from "@/components/ui/feedback/LoadingScreen";
 import { LoaderProvider, useLoader } from "@/context/app/LoadingContext";
 import { OrderingProvider } from "@/context/cart/OrderingContext";
 import { AppModeProvider, useAppMode } from "@/context/app/AppModeContext";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SocketProvider } from "@/context/other/SocketContext";
+import { NotificationProvider } from "@/context/other/NotificationsProvider";
+
+import Toast from "react-native-toast-message";
+import { toastConfig } from "@/toast-config";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -27,8 +28,6 @@ function RootNavigation() {
   const { loading, type } = useLoader();
   const { authReady } = useAuth();
   const { mode } = useAppMode();
-
-  useRedirect();
 
   if (!authReady || mode === null) {
     return <LoadingScreen type="global" />;
@@ -51,39 +50,14 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    "Dosis-Bold": require("@/assets/fonts/Dosis-Bold.ttf"),
-    "Dosis-Regular": require("@/assets/fonts/Dosis-Regular.ttf"),
-    "Dosis-Light": require("@/assets/fonts/Dosis-Light.ttf"),
-    "Dosis-Medium": require("@/assets/fonts/Dosis-Medium.ttf"),
-    "Dosis-SemiBold": require("@/assets/fonts/Dosis-SemiBold.ttf"),
+    "Outfit-Thin": require("@/assets/fonts/Outfit-Thin.ttf"),
+    "Outfit-ExtraLight": require("@/assets/fonts/Outfit-ExtraLight.ttf"),
+    "Outfit-Light": require("@/assets/fonts/Outfit-Light.ttf"),
+    "Outfit-Regular": require("@/assets/fonts/Outfit-Regular.ttf"),
+    "Outfit-Medium": require("@/assets/fonts/Outfit-Medium.ttf"),
+    "Outfit-Bold": require("@/assets/fonts/Outfit-Bold.ttf"),
+    "Outfit-ExtraBold": require("@/assets/fonts/Outfit-ExtraBold.ttf"),
   });
-
-  useEffect(() => {
-    const setupBackgroundLocation = async () => {
-      try {
-        const { status } = await Location.requestBackgroundPermissionsAsync();
-        if (status !== "granted") return;
-        const isTaskStarted = await Location.hasStartedLocationUpdatesAsync(
-          "background-location-task",
-        );
-        if (isTaskStarted) return;
-        await Location.startLocationUpdatesAsync("background-location-task", {
-          accuracy: Location.Accuracy.High,
-          distanceInterval: 50,
-          deferredUpdatesInterval: 60000,
-          showsBackgroundLocationIndicator: true,
-          foregroundService: {
-            notificationTitle: "Seguimiento de ubicación",
-            notificationBody: "Detectando proximidad a locales",
-          },
-        });
-      } catch (e) {
-        console.log("Error al configurar la ubicación en segundo plano", e);
-      }
-    };
-    setupBackgroundLocation();
-    configureNotifications();
-  }, []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -108,27 +82,33 @@ export default function RootLayout() {
   });
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={client}>
-        <ThemeProvider value={DefaultTheme}>
-          <LoaderProvider>
-            <AuthProvider>
-              <AppModeProvider>
-                <LocationProvider>
-                  <BottomSheetModalProvider>
-                    <OrderingProvider>
-                      <RootNavigation />
-                    </OrderingProvider>
-                  </BottomSheetModalProvider>
-                </LocationProvider>
-              </AppModeProvider>
-            </AuthProvider>
-          </LoaderProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <QueryClientProvider client={client}>
+          <ThemeProvider value={DefaultTheme}>
+            <LoaderProvider>
+              <AuthProvider>
+                <AppModeProvider>
+                  <SocketProvider>
+                    <NotificationProvider>
+                      <LocationProvider>
+                        <BottomSheetModalProvider>
+                          <OrderingProvider>
+                            <RootNavigation />
+                          </OrderingProvider>
+                        </BottomSheetModalProvider>
+                      </LocationProvider>
+                    </NotificationProvider>
+                  </SocketProvider>
+                </AppModeProvider>
+              </AuthProvider>
+            </LoaderProvider>
+             <Toast config={toastConfig} />
 
-          <StatusBar style="inverted" animated />
-        </ThemeProvider>
-      </QueryClientProvider>
-    </GestureHandlerRootView>
+            <StatusBar style="inverted" animated />
+          </ThemeProvider>
+        </QueryClientProvider>
+      </GestureHandlerRootView>
+
   );
 }
 
@@ -138,5 +118,7 @@ const styles = StyleSheet.create({
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
+    zIndex: 9999,
   },
 });
+

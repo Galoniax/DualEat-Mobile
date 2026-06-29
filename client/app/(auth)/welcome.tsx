@@ -26,7 +26,7 @@ export default function Welcome() {
       />
 
       <View className="flex-[0.9] px-4 pt-3 flex flex-col justify-end items-center">
-        <Text className="text-text-1 text-[26px] font-dosis-bold">
+        <Text className="text-text-1 text-[26px] font-outfit-bold">
           Bienvenido/a a DualEat
         </Text>
         <Text className="text-[#bdbdbd] text-[15px] text-center font-dosis-light mt-3 leading-6">
@@ -45,7 +45,7 @@ export default function Welcome() {
             style={{ width: 20, height: 20 }}
             accessibilityLabel="Google logo"
           />
-          <Text className="text-white text-[14px] font-dosis-bold">
+          <Text className="text-white text-[14px] font-outfit-bold">
             Iniciar Sesión con Google
           </Text>
         </TouchableOpacity>
@@ -57,14 +57,14 @@ export default function Welcome() {
           className="mt-5 bg-bg-red w-full py-4 rounded-[40px] items-center flex-row justify-center gap-2"
         >
           <MaterialIcons name="email" size={19} color="#fff" />
-          <Text className="text-white text-[14px] font-dosis-bold">
+          <Text className="text-white text-[14px] font-outfit-bold">
             Iniciar Sesión con email
           </Text>
         </TouchableOpacity>
         <Text className="text-center text-[14px] text-[#bdbdbd] font-dosis-light mt-6">
           Todavía no tienes una cuenta?{" "}
           <Text
-            className="text-text-1 font-dosis-bold"
+            className="text-text-1 font-outfit-bold"
             onPress={() => {
               router.push(ROUTES.AUTH.REGISTER);
             }}

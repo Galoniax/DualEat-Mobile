@@ -1,9 +1,27 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, FlatList, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform, Alert } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useGlobalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { getNotes, createNote, deleteNote, StaffNote } from "@/services/notes.service";
+import {
+  getNotes,
+  createNote,
+  deleteNote,
+  StaffNote,
+} from "@/services/notes.service";
 
 export default function StaffNotesScreen() {
   const insets = useSafeAreaInsets();
@@ -14,7 +32,10 @@ export default function StaffNotesScreen() {
   const [notes, setNotes] = useState<StaffNote[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [noteToDelete, setNoteToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [noteToDelete, setNoteToDelete] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +49,7 @@ export default function StaffNotesScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchNotes();
-    }, [localIdStr])
+    }, [localIdStr]),
   );
 
   const handleCreateNote = async () => {
@@ -41,7 +62,7 @@ export default function StaffNotesScreen() {
       while (titleExists) {
         finalTitle = `Nota ${counter}`;
         // eslint-disable-next-line no-loop-func
-        titleExists = notes.some(n => n.title === finalTitle);
+        titleExists = notes.some((n) => n.title === finalTitle);
         if (titleExists) counter++;
       }
     }
@@ -51,7 +72,10 @@ export default function StaffNotesScreen() {
     setNewTitle("");
 
     if (createdNote) {
-      router.push({ pathname: "/(staff)/note/[note_id]" as any, params: { note_id: createdNote.id, local_id: localIdStr } });
+      router.push({
+        pathname: "/(staff)/note/[note_id]" as any,
+        params: { note_id: createdNote.id, local_id: localIdStr },
+      });
     } else {
       Alert.alert("Error", "No se pudo crear la nota.");
     }
@@ -73,27 +97,39 @@ export default function StaffNotesScreen() {
 
   const renderNote = ({ item }: { item: StaffNote }) => {
     const date = new Date(item.updated_at);
-    const formattedDate = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+    const formattedDate = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, "0")}`;
 
-    let contentPreview = item.content.replace(/<[^>]+>/g, '').trim();
+    let contentPreview = item.content.replace(/<[^>]+>/g, "").trim();
     if (contentPreview) {
-      contentPreview = contentPreview.split(/\s+/)[0] + '...';
+      contentPreview = contentPreview.split(/\s+/)[0] + "...";
     }
 
     return (
       <TouchableOpacity
         className="bg-white rounded-2xl mb-4 p-5 shadow-sm border border-gray-100 flex-row items-center"
         activeOpacity={0.7}
-        onPress={() => router.push({ pathname: "/(staff)/note/[note_id]" as any, params: { note_id: item.id, local_id: localIdStr } })}
+        onPress={() =>
+          router.push({
+            pathname: "/(staff)/note/[note_id]" as any,
+            params: { note_id: item.id, local_id: localIdStr },
+          })
+        }
       >
         <View className="flex-1">
-          <Text className="text-[18px] font-dosis-bold text-text-3 mb-1">{item.title}</Text>
-          <Text className="text-[14px] font-dosis-medium text-text-5 mb-2" numberOfLines={1}>
+          <Text className="text-[18px] font-outfit-bold text-text-3 mb-1">
+            {item.title}
+          </Text>
+          <Text
+            className="text-[14px] font-outfit-regular text-text-5 mb-2"
+            numberOfLines={1}
+          >
             {contentPreview || "Sin contenido..."}
           </Text>
           <View className="flex-row items-center">
             <Ionicons name="time-outline" size={14} color="#9CA3AF" />
-            <Text className="text-[12px] font-dosis-medium text-text-6 ml-1">{formattedDate}</Text>
+            <Text className="text-[12px] font-outfit-regular text-text-6 ml-1">
+              {formattedDate}
+            </Text>
           </View>
         </View>
 
@@ -112,8 +148,10 @@ export default function StaffNotesScreen() {
       {/* HEADER */}
       <View className="px-6 pt-6 pb-6 bg-white border-b border-gray-100 shadow-sm z-10 flex-row items-center justify-between">
         <View>
-          <Text className="text-[28px] font-dosis-bold text-text-3">Bloc de Notas</Text>
-          <Text className="text-[15px] font-dosis-medium text-text-5">
+          <Text className="text-[28px] font-outfit-bold text-text-3">
+            Bloc de Notas
+          </Text>
+          <Text className="text-[15px] font-outfit-regular text-text-5">
             Anotaciones rápidas.
           </Text>
         </View>
@@ -124,23 +162,25 @@ export default function StaffNotesScreen() {
 
       <FlatList
         data={notes}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         renderItem={renderNote}
         contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
-        ListEmptyComponent={!loading ? (
-          <View className="items-center justify-center mt-20 px-6">
-            <View className="w-24 h-24 bg-gray-200 rounded-full justify-center items-center mb-6">
-              <Ionicons name="create-outline" size={48} color="#9CA3AF" />
+        ListEmptyComponent={
+          !loading ? (
+            <View className="items-center justify-center mt-20 px-6">
+              <View className="w-24 h-24 bg-gray-200 rounded-full justify-center items-center mb-6">
+                <Ionicons name="create-outline" size={48} color="#9CA3AF" />
+              </View>
+              <Text className="text-[20px] font-outfit-bold text-text-3 text-center mb-2">
+                No hay notas
+              </Text>
+              <Text className="text-[15px] font-outfit-regular text-text-5 text-center">
+                Presiona el botón "+" abajo para crear tu primera nota.
+              </Text>
             </View>
-            <Text className="text-[20px] font-dosis-bold text-text-3 text-center mb-2">
-              No hay notas
-            </Text>
-            <Text className="text-[15px] font-dosis-medium text-text-5 text-center">
-              Presiona el botón "+" abajo para crear tu primera nota.
-            </Text>
-          </View>
-        ) : null}
+          ) : null
+        }
       />
 
       {/* FAB BUTTON */}
@@ -166,18 +206,20 @@ export default function StaffNotesScreen() {
         >
           <View className="bg-white w-full rounded-3xl p-6 shadow-lg">
             <View className="flex-row items-center justify-between mb-4">
-              <Text className="text-[20px] font-dosis-bold text-text-3">Nueva Nota</Text>
+              <Text className="text-[20px] font-outfit-bold text-text-3">
+                Nueva Nota
+              </Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <Ionicons name="close" size={24} color="#9CA3AF" />
               </TouchableOpacity>
             </View>
 
-            <Text className="text-[14px] font-dosis-medium text-text-5 mb-2">
+            <Text className="text-[14px] font-outfit-regular text-text-5 mb-2">
               Ingresa un título para la nota (opcional):
             </Text>
 
             <TextInput
-              className="bg-bg-gray border border-gray-200 rounded-xl px-4 py-3 font-dosis-semibold text-[16px] text-text-3 mb-6"
+              className="bg-bg-gray border border-gray-200 rounded-xl px-4 py-3 font-outfit-medium text-[16px] text-text-3 mb-6"
               placeholder="Ej: Compras pendientes"
               placeholderTextColor="#9CA3AF"
               value={newTitle}
@@ -189,7 +231,9 @@ export default function StaffNotesScreen() {
               className="bg-bg-blue py-3 rounded-xl items-center"
               onPress={handleCreateNote}
             >
-              <Text className="text-white font-dosis-bold text-[16px]">Crear y Editar</Text>
+              <Text className="text-white font-outfit-bold text-[16px]">
+                Crear y Editar
+              </Text>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -206,28 +250,33 @@ export default function StaffNotesScreen() {
             <View className="w-16 h-16 bg-red-50 rounded-full items-center justify-center mb-4">
               <Ionicons name="trash" size={32} color="#B53325" />
             </View>
-            
-            <Text className="text-[22px] font-dosis-bold text-text-3 text-center mb-2">
+
+            <Text className="text-[22px] font-outfit-bold text-text-3 text-center mb-2">
               Eliminar Nota
             </Text>
-            
-            <Text className="text-[15px] font-dosis-medium text-text-5 text-center mb-6">
-              ¿Estás seguro de que deseas eliminar la nota "{noteToDelete?.title}"? Esta acción no se puede deshacer.
+
+            <Text className="text-[15px] font-outfit-regular text-text-5 text-center mb-6">
+              ¿Estás seguro de que deseas eliminar la nota "
+              {noteToDelete?.title}"? Esta acción no se puede deshacer.
             </Text>
-            
+
             <View className="flex-row w-full gap-x-4">
-              <TouchableOpacity 
+              <TouchableOpacity
                 className="flex-1 bg-gray-100 py-3 rounded-xl items-center"
                 onPress={() => setDeleteModalVisible(false)}
               >
-                <Text className="text-text-4 font-dosis-bold text-[16px]">Cancelar</Text>
+                <Text className="text-text-4 font-outfit-bold text-[16px]">
+                  Cancelar
+                </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 className="flex-1 bg-[#B53325] py-3 rounded-xl items-center"
                 onPress={executeDelete}
               >
-                <Text className="text-white font-dosis-bold text-[16px]">Eliminar</Text>
+                <Text className="text-white font-outfit-bold text-[16px]">
+                  Eliminar
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

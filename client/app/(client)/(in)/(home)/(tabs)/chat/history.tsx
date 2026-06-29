@@ -25,6 +25,7 @@ import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { router, useFocusEffect } from "expo-router";
 import { ROUTES } from "@/constants/constants";
 import HistoryModal from "@/components/features/chat/HistoryModal";
+import { globalToast as toast } from "@/utils/toast";
 
 type PartialChatHistory = Pick<ChatHistory, "chat_id" | "title">;
 
@@ -41,10 +42,7 @@ export default function ChatHistoryScreen() {
   const { mutate: deleteChat, isPending: isDeleting } = useDeleteChat();
   const { mutate: renameChat, isPending: isRenaming } = useRenameChat();
 
-  const [selected, setSelected] = useState<PartialChatHistory | null>({
-    chat_id: "",
-    title: "",
-  });
+  const [selected, setSelected] = useState<PartialChatHistory | null>(null);
 
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [newTitle, setNewTitle] = useState(selected?.title || "");
@@ -77,8 +75,22 @@ export default function ChatHistoryScreen() {
   const handleDelete = () => {
     if (isDeleting || !selected) return;
 
-    deleteChat(selected.chat_id);
-    sheetRef.current?.dismiss();
+    deleteChat(selected.chat_id, {
+      onSuccess: (data) => {
+        toast.success(
+          data.message ?? "Conversación eliminada",
+          "La conversación fue eliminada correctamente",
+        );
+        setSelected(null);
+        sheetRef.current?.dismiss();
+      },
+      onError: (err: any) => {
+        toast.error(
+          err.message ?? "Error desconocido",
+          "La conversación no se pudo eliminar, intentalo de nuevo",
+        );
+      },
+    });
   };
 
   const handleStartRename = () => {
@@ -102,10 +114,21 @@ export default function ChatHistoryScreen() {
     renameChat(
       { id: selected?.chat_id as string, title: newTitle },
       {
-        onSettled: () => {
+        onSuccess: (data) => {
+          toast.success(
+            data.message ?? "Conversación renombrada",
+            "La conversación fue renombrada correctamente",
+          );
           setSelected(null);
           setNewTitle("");
           setIsEditing(false);
+        },
+
+        onError: (err: any) => {
+          toast.error(
+            err.message ?? "Error desconocido",
+            "La conversación no se pudo renombrar, intentalo de nuevo",
+          );
         },
       },
     );
@@ -141,13 +164,13 @@ export default function ChatHistoryScreen() {
                 autoFocus={true}
                 onSubmitEditing={handleSaveRename}
                 returnKeyType="done"
-                className="text-[18px] font-dosis-regular text-text-5 border-b border-gray-300"
+                className="text-[18px] font-outfit-light text-text-5 border-b border-gray-300"
                 style={{ padding: 0, margin: 0 }}
               />
             ) : (
               <Text
                 numberOfLines={1}
-                className="text-[16px] text-text-3 font-dosis-regular tracking-tight truncate"
+                className="text-[16px] text-text-3 font-outfit-light tracking-tight truncate"
               >
                 {item.title}
               </Text>
@@ -209,7 +232,7 @@ export default function ChatHistoryScreen() {
         >
           <Entypo name="chevron-small-left" size={32} color="#2F2F2F" />
         </TouchableOpacity>
-        <Text className="font-dosis-bold text-[16px] text-text-3">
+        <Text className="font-outfit-bold text-base text-text-3">
           Conversaciones
         </Text>
       </View>
@@ -219,7 +242,7 @@ export default function ChatHistoryScreen() {
         <View className="items-center px-4 py-0.5 justify-start flex-row border border-gray-200 rounded-full">
           <EvilIcons name="search" size={26} color="#4A4947" />
           <TextInput
-            className="flex-1 ml-2 text-[16px] text-text-5 font-dosis-regular py-2"
+            className="flex-1 ml-2 text-base text-text-5 font-outfit-light py-2"
             onSubmitEditing={() => {
               setSubmitSearch(search);
             }}
@@ -243,10 +266,10 @@ export default function ChatHistoryScreen() {
         </View>
       ) : history?.length === 0 && !isFetching ? (
         <View className="flex-1 items-center justify-center flex-col gap-y-2">
-          <Text className="text-[20px] font-dosis-bold text-text-3">
+          <Text className="text-xl font-outfit-bold text-text-3">
             No se encontraron conversaciones
           </Text>
-          <Text className="text-[16px] font-dosis-regular text-text-6">
+          <Text className="text-lg font-outfit-light text-text-6">
             Intenta buscar otra cosa.
           </Text>
         </View>

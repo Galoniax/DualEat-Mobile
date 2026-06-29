@@ -1,12 +1,9 @@
 import { Recipe, RecipeStep } from "@/interface/global";
-import { getMimeTypeFromUrl } from "@/utils/normalize";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { BottomSheetFlatList, BottomSheetModal } from "@gorhom/bottom-sheet";
 
 import { useCallback, useMemo, useState } from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
-
-import * as ScreenOrientation from "expo-screen-orientation";
+import { Text, TouchableOpacity, View } from "react-native";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -38,33 +35,16 @@ export default function StepsModal({ stepsRef, recipe }: StepsModalProps) {
     setIndex((prev) => prev - 1);
   }, [index, stepsRef]);
 
-  /*const handleFullscreenUpdate = async ({ fullscreenUpdate }: { fullscreenUpdate: VideoFullscreenUpdate }) => {
-  switch (fullscreenUpdate) {
-    case VideoFullscreenUpdate.PLAYER_DID_PRESENT:
-      // Al entrar a pantalla completa, permitimos todas las orientaciones
-      await ScreenOrientation.unlockAsync();
-      break;
-    case VideoFullscreenUpdate.PLAYER_DID_DISMISS:
-      // Al salir, bloqueamos de nuevo a vertical (Portrait)
-      await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-      break;
-  }
-};*/
-
   const renderItem = useCallback(
     ({ item }: { item: RecipeStep }) => {
       const isCurrentStep = index === item.step_number;
-
-      const mediaType = item.image_url
-        ? getMimeTypeFromUrl(item.image_url)
-        : null;
 
       return (
         <View className="flex-col items-start gap-x-3 mb-6 w-full">
           {isCurrentStep ? (
             <View className="py-3 w-full flex-col gap-y-2">
-              <Text className={`font-dosis-bold text-white text-[22px]`}>
-                {isCurrentStep ? "Paso " + item.step_number : ""}
+              <Text className={`font-outfit-bold text-white text-xl`}>
+                {isCurrentStep && "Paso " + item.step_number}
               </Text>
               <View
                 style={{
@@ -76,7 +56,7 @@ export default function StepsModal({ stepsRef, recipe }: StepsModalProps) {
             </View>
           ) : (
             <View className="flex-row items-center gap-x-2 opacity-50">
-              <Text className="font-dosis-bold text-white text-[16px]">
+              <Text className="font-outfit-bold text-white text-base">
                 {item.step_number}
               </Text>
               <View
@@ -93,25 +73,10 @@ export default function StepsModal({ stepsRef, recipe }: StepsModalProps) {
 
           {(isCurrentStep || item.step_number < index) && (
             <Text
-              className={`font-dosis-regular text-[16px] text-[#f5f5f5] leading-7 tracking-tight mt-2 ${isCurrentStep ? "" : "opacity-50"}`}
+              className={`font-outfit-light text-base text-text-1 leading-7 tracking-tight mt-2 ${isCurrentStep ? "" : "opacity-50"}`}
             >
               {item.description}
             </Text>
-          )}
-
-          {item.image_url && (
-            <View className="mt-2 w-full">
-              {mediaType === "video" ? (
-                <View></View>
-              ) : mediaType === "image" ? (
-                <Image
-                  source={{ uri: item.image_url }}
-                  className="w-full h-30 rounded-lg"
-                  style={{ display: isCurrentStep ? "flex" : "none" }}
-                  resizeMode="cover"
-                />
-              ) : null}
-            </View>
           )}
 
           {item.estimated_time &&
@@ -124,7 +89,7 @@ export default function StepsModal({ stepsRef, recipe }: StepsModalProps) {
                 size={14}
                 color="#fff"
               />
-              <Text className="font-dosis-bold text-[12px] text-[#f5f5f5]">
+              <Text className="font-outfit-bold text-[12px] text-[#f5f5f5]">
                 {item.estimated_time}min
               </Text>
             </View>
@@ -133,6 +98,11 @@ export default function StepsModal({ stepsRef, recipe }: StepsModalProps) {
       );
     },
     [index],
+  );
+
+  const sortedSteps = useMemo(
+    () => recipe?.steps?.sort((a, b) => a.step_number - b.step_number) || [],
+    [recipe?.steps],
   );
 
   return (
@@ -147,7 +117,7 @@ export default function StepsModal({ stepsRef, recipe }: StepsModalProps) {
       handleComponent={null}
     >
       <BottomSheetFlatList
-        data={recipe?.steps}
+        data={sortedSteps}
         keyExtractor={(item: RecipeStep) => item.id}
         extraData={index}
         showsVerticalScrollIndicator={false}
@@ -158,7 +128,7 @@ export default function StepsModal({ stepsRef, recipe }: StepsModalProps) {
         contentContainerStyle={{
           paddingTop: insets.top + 20,
           paddingBottom: insets.bottom + 40,
-          paddingHorizontal: insets.left + insets.right + 30,
+          paddingHorizontal: insets.left + insets.right + 12,
         }}
         ListHeaderComponent={
           <View style={{ marginBottom: 10 }}>
@@ -167,7 +137,7 @@ export default function StepsModal({ stepsRef, recipe }: StepsModalProps) {
                 <View
                   key={step.id}
                   style={{ height: 4, borderRadius: 999 }}
-                  className={`flex-1 bg-bg-semi-white ${index !== step.step_number ? "opacity-30" : ""}`}
+                  className={`flex-1 bg-bg-semi-white ${index !== step.step_number && "opacity-30"}`}
                 />
               ))}
             </View>
@@ -187,7 +157,7 @@ export default function StepsModal({ stepsRef, recipe }: StepsModalProps) {
               className="flex-row gap-x-2 py-3 px-6 justify-center items-center border border-bg-semi-white rounded-[8px] mx-auto mt-8"
               onPress={() => handleBack()}
             >
-              <Text className="font-dosis-semibold text-[12px] text-text-1">
+              <Text className="font-outfit-medium text-[12px] text-text-1">
                 {index !== 1 ? "Paso anterior" : "Volver"}
               </Text>
               <Feather name="arrow-up" size={14} color="#fff" />
@@ -196,7 +166,7 @@ export default function StepsModal({ stepsRef, recipe }: StepsModalProps) {
               className="flex-row gap-x-2 py-3 px-6 justify-center items-center border border-bg-semi-white rounded-[8px] mx-auto mt-8"
               onPress={() => handleNext()}
             >
-              <Text className="font-dosis-semibold text-[12px] text-text-1">
+              <Text className="font-outfit-medium text-[12px] text-text-1">
                 {index !== recipe?.steps.length
                   ? "Siguiente paso"
                   : "Finalizar"}

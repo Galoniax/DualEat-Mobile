@@ -80,7 +80,9 @@ export const getLocalById = async (id: string): Promise<Response> => {
 export const getLocalReviews = async (
   local_id: string,
   page: number,
-): Promise<ResponseWithPagination<{ reviews: LocalReview[]; total: number }>> => {
+): Promise<
+  ResponseWithPagination<{ reviews: LocalReview[]; total: number }>
+> => {
   try {
     const response = await axiosInterceptor.get(
       `/local/discovery/${local_id}/reviews`,
@@ -103,7 +105,10 @@ export const getLocalReviews = async (
 
 // --- 5. OBTENER LOCAL HOME ---
 // ===================================
-export const getHomeDiscovery = async (lat: number, lng: number): Promise<Response> => {
+export const getHomeDiscovery = async (
+  lat: number,
+  lng: number,
+): Promise<Response> => {
   try {
     const response = await axiosInterceptor.get("/local/discovery/home", {
       params: {

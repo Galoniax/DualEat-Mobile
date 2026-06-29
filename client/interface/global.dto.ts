@@ -1,4 +1,4 @@
-import { Unit } from "./global";
+import { Community, Ingredient, Unit } from "./global";
 export interface preferencesDTO {
   filter: "distancia" | "descuento";
   categorias: number[];
@@ -13,17 +13,26 @@ export const initial: preferencesDTO = {
   bestSellers: false,
 };
 
+export interface ReviewDTO {
+  order_id: string;
+  rating: number;
+  comment?: string;
+  votes?: {
+    id: string;
+    type: "UP" | "DOWN";
+  }[];
+}
+
 export interface PostCommentDTO {
   post_id: string;
-  parent_comment_id?: string | null;
-  reply_to_user_id?: string | null;
+  parent_comment_id: string | null;
+  reply_to_user_id: string | null;
   content: string;
 }
 
 export interface UploadPayload {
   post_images?: UploadableFile[];
-  recipe_main_image?: UploadableFile;
-  recipe_step_images?: UploadableFile[];
+  main_image?: UploadableFile;
   image_url?: UploadableFile;
   banner_url?: UploadableFile;
 }
@@ -34,14 +43,15 @@ export interface CommunityDTO {
   image_url: UploadableFile | string;
   banner_url: UploadableFile | string;
 
-  tags: number[];
+  tags: string[];
 }
 
 export interface PostDTO {
+  id?: string;
   title: string;
   content: string;
   image_urls: string[] | UploadableFile[];
-  community_id: string | null;
+  community: Community | null;
 }
 
 export interface RecipeDTO {
@@ -58,12 +68,10 @@ export interface RecipeStepDTO {
   step_number: number;
   description: string;
   estimated_time: number | null;
-  image_url: UploadableFile | string;
 }
 
 export interface RecipeIngredientDTO {
-  ingredient_id: string;
-  name: string;
+ ingredient: Ingredient | null;
   quantity: string;
   unit: Unit;
   notes?: string;

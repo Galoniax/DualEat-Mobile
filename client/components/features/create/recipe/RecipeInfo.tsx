@@ -59,7 +59,7 @@ export default function RecipeInfo({
         onChangeText={(text) => setRecipe({ ...recipe, name: text })}
         placeholder="Nombre de la receta"
         placeholderTextColor="#999"
-        className="font-dosis-bold text-[20px] text-text-3 flex-1"
+        className="font-outfit-bold text-[20px] text-text-3 flex-1"
       />
 
       {children}
@@ -70,7 +70,7 @@ export default function RecipeInfo({
         onChangeText={(text) => setRecipe({ ...recipe, description: text })}
         placeholder="Descripción"
         placeholderTextColor="#999"
-        className="font-dosis-regular rounded-[4px] text-[14px] text-text-4 flex-1 border border-gray-200"
+        className="font-outfit-light rounded-[4px] text-[14px] text-text-4 flex-1 border border-gray-200"
         multiline={true}
         numberOfLines={3}
       />

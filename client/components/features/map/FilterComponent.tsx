@@ -94,7 +94,7 @@ const FilterComponent = forwardRef<FilterModalRef, FilterComponentProps>(
     const Sections = {
       filter: (
         <View className="mb-6">
-          <Text className="font-dosis-bold mb-3 text-lg">Ordenar por</Text>
+          <Text className="font-outfit-bold mb-3 text-lg">Ordenar por</Text>
           <View className="flex-row gap-3">
             {["distancia", "descuento"].map((type) => (
               <TouchableOpacity
@@ -111,8 +111,8 @@ const FilterComponent = forwardRef<FilterModalRef, FilterComponentProps>(
                 <Text
                   className={
                     localFilters.filter === type
-                      ? "text-white font-dosis-bold"
-                      : "text-gray-700 font-dosis-medium"
+                      ? "text-white font-outfit-bold"
+                      : "text-gray-700 font-outfit-regular"
                   }
                 >
                   {type === "distancia" ? "Distancia" : "Mayor Descuento"}
@@ -125,7 +125,7 @@ const FilterComponent = forwardRef<FilterModalRef, FilterComponentProps>(
 
       categorias: (
         <View className="mb-6">
-          <Text className="font-dosis-bold mb-3 text-lg">Categorías</Text>
+          <Text className="font-outfit-bold mb-3 text-lg">Categorías</Text>
 
           {categories.length === 0 ? (
             <Text className="text-gray-500 text-center mt-4">
@@ -164,8 +164,8 @@ const FilterComponent = forwardRef<FilterModalRef, FilterComponentProps>(
                       ellipsizeMode="tail"
                       className={
                         localFilters.categorias.includes(item.id)
-                          ? "text-white font-dosis-bold text-center px-1"
-                          : "text-gray-700 font-dosis-medium text-center px-1"
+                          ? "text-white font-outfit-bold text-center px-1"
+                          : "text-gray-700 font-outfit-regular text-center px-1"
                       }
                     >
                       {item.name}
@@ -179,7 +179,7 @@ const FilterComponent = forwardRef<FilterModalRef, FilterComponentProps>(
                 className="mb-8 mt-3 flex-row justify-center bg-bg-gray py-4 rounded-full"
               >
                 <View className="flex-row items-center gap-2">
-                  <Text className="font-dosis-bold text-md">
+                  <Text className="font-outfit-bold text-md">
                     {open ? "Ver menos categorías" : "Ver más categorías"}
                   </Text>
 
@@ -200,7 +200,7 @@ const FilterComponent = forwardRef<FilterModalRef, FilterComponentProps>(
 
       horario: (
         <View className="mb-6">
-          <Text className="font-dosis-bold mb-3 text-lg">Horario</Text>
+          <Text className="font-outfit-bold mb-3 text-lg">Horario</Text>
           <View className="flex-row gap-3">
             {[false, true].map((val) => (
               <TouchableOpacity
@@ -217,8 +217,8 @@ const FilterComponent = forwardRef<FilterModalRef, FilterComponentProps>(
                 <Text
                   className={
                     localFilters.horario === val
-                      ? "text-white font-dosis-bold"
-                      : "text-gray-700 font-dosis-medium"
+                      ? "text-white font-outfit-bold"
+                      : "text-gray-700 font-outfit-regular"
                   }
                 >
                   {val ? "Abiertos ahora" : "Todos"}
@@ -231,7 +231,7 @@ const FilterComponent = forwardRef<FilterModalRef, FilterComponentProps>(
 
       mejor: (
         <View className="mb-6">
-          <Text className="font-dosis-bold mb-3 text-lg">
+          <Text className="font-outfit-bold mb-3 text-lg">
             Mejor Calificados
           </Text>
           <View className="flex-row gap-3">
@@ -250,8 +250,8 @@ const FilterComponent = forwardRef<FilterModalRef, FilterComponentProps>(
                 <Text
                   className={
                     localFilters.bestSellers === val
-                      ? "text-white font-dosis-bold"
-                      : "text-gray-700 font-dosis-medium"
+                      ? "text-white font-outfit-bold"
+                      : "text-gray-700 font-outfit-regular"
                   }
                 >
                   {val ? "Mejores locales" : "Todos"}
@@ -280,7 +280,7 @@ const FilterComponent = forwardRef<FilterModalRef, FilterComponentProps>(
             >
               <Ionicons name="close" size={24} color="black" />
             </TouchableOpacity>
-            <Text className="text-[18px] font-dosis-bold text-text-3">
+            <Text className="text-[18px] font-outfit-bold text-text-3">
               Filtros
             </Text>
           </View>
@@ -312,7 +312,7 @@ const FilterComponent = forwardRef<FilterModalRef, FilterComponentProps>(
                 onCancel();
               }}
             >
-              <Text className="font-dosis-bold text-gray-700">Limpiar</Text>
+              <Text className="font-outfit-bold text-gray-700">Limpiar</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -322,7 +322,7 @@ const FilterComponent = forwardRef<FilterModalRef, FilterComponentProps>(
                 onCancel();
               }}
             >
-              <Text className="text-white font-dosis-bold text-base">
+              <Text className="text-white font-outfit-bold text-base">
                 Aplicar
               </Text>
             </TouchableOpacity>

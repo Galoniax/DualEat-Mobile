@@ -11,7 +11,7 @@ export default function RecipeCard({ recipe }: { recipe: Recipe }) {
 
   const steps = recipe.steps || [];
   const ingredients = recipe.ingredients || [];
-  
+
   const navigate = () => {
     router.push({
       pathname: ROUTES.USER.RECIPE,
@@ -42,7 +42,7 @@ export default function RecipeCard({ recipe }: { recipe: Recipe }) {
         <Text
           numberOfLines={1}
           ellipsizeMode="tail"
-          className="font-dosis-bold text-text-5 truncate"
+          className="font-outfit-bold text-text-5 truncate"
         >
           {recipe.name}
         </Text>
@@ -50,7 +50,7 @@ export default function RecipeCard({ recipe }: { recipe: Recipe }) {
         <View className="flex-row items-center justify-center gap-x-4">
           <View className="flex-row items-center gap-x-1.5">
             <EvilIcons name="clock" size={12} color="#707070" />
-            <Text className="font-dosis-regular text-[14px] text-text-4">
+            <Text className="font-outfit-light text-[14px] text-text-4">
               {recipe.total_time && recipe.total_time > 0
                 ? recipe.total_time + " min"
                 : "N/A"}
@@ -59,13 +59,13 @@ export default function RecipeCard({ recipe }: { recipe: Recipe }) {
 
           <View className="flex-row items-center gap-x-1.5">
             <EvilIcons name="cart" size={12} color="#707070" />
-            <Text className="font-dosis-regular text-[14px] text-text-4">
+            <Text className="font-outfit-light text-[14px] text-text-4">
               {ingredients.length || 0} ingredientes
             </Text>
           </View>
           <View className="flex-row items-center gap-x-1.5">
             <EvilIcons name="chart" size={12} color="#707070" />
-            <Text className="font-dosis-regular text-[14px] text-text-4">
+            <Text className="font-outfit-light text-[14px] text-text-4">
               {steps.length || 0} pasos
             </Text>
           </View>

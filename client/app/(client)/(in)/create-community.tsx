@@ -12,6 +12,7 @@ import { create, upload } from "@/services/community.api";
 import StepOne from "@/components/features/create/community/StepOne";
 import StepTwo from "@/components/features/create/community/StepTwo";
 import StepThree from "@/components/features/create/community/StepThree";
+import { globalToast as toast } from "@/utils/toast";
 
 export default function CreateCommunityScreen() {
   const router = useRouter();
@@ -24,11 +25,10 @@ export default function CreateCommunityScreen() {
     description: "",
     image_url: "",
     banner_url: "",
-    tags: [] as number[],
+    tags: [] as string[],
   });
 
   const handleNext = async () => {
-    // TODO: Toast
     if (step !== 3) setStep((prev) => prev + 1);
 
     if (
@@ -69,9 +69,13 @@ export default function CreateCommunityScreen() {
           throw new Error("Error al crear la comunidad");
         }
 
+        toast.success("Comunidad creada", "Comunidad creada correctamente");
         router.back();
       } catch (err: any) {
-        console.log(err);
+        toast.error(
+          err.message || "Error al crear la comunidad",
+          "La comunidad no se pudo crear, intentalo de nuevo",
+        );
       } finally {
         setIsLoadingSubmit(false);
       }
@@ -104,7 +108,7 @@ export default function CreateCommunityScreen() {
           >
             <Feather name="arrow-left" size={24} color="#2F2F2F" />
           </TouchableOpacity>
-          <Text className="font-dosis-bold text-[16px] text-text-3">{`${step} de 3`}</Text>
+          <Text className="font-outfit-bold text-[16px] text-text-3">{`${step} de 3`}</Text>
         </View>
 
         <TouchableOpacity
@@ -122,7 +126,7 @@ export default function CreateCommunityScreen() {
           {isLoadingSubmit ? (
             <ActivityIndicator size={18} color="#2F2F2F" className="py-1" />
           ) : (
-            <Text className="font-dosis-bold text-[16px] text-center text-text-5">
+            <Text className="font-outfit-bold text-[16px] text-center text-text-5">
               {step !== 3 ? "Siguiente" : "Crear comunidad"}
             </Text>
           )}

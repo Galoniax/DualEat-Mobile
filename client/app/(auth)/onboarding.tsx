@@ -1,4 +1,3 @@
-import { showToast } from "@/utils/toast";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useState } from "react";
 import {
@@ -25,6 +24,8 @@ import { getFoodCategories, getTags } from "@/services/category.api";
 import { FoodCategory, CommunityTag } from "@/interface/global";
 import { useQuery } from "@tanstack/react-query";
 
+import { globalToast as toast } from "@/utils/toast";
+
 export default function Onboarding() {
   const router = useRouter();
   const { completeProfile } = useAuth();
@@ -45,22 +46,19 @@ export default function Onboarding() {
     queryKey: ["categories", "food"],
     queryFn: async () => {
       const response = await getFoodCategories();
-      return response?.data || [];
+      return response?.data as FoodCategory[];
     },
-    staleTime: 1000 * 60 * 30, // 30 minutos
+    staleTime: 1000 * 60 * 30,
   });
 
   const { data: tagCategories = [], isLoading: loadingTags } = useQuery({
     queryKey: ["categories", "tags"],
     queryFn: async () => {
       const response = await getTags();
-      return response?.data || [];
+      return response?.data as CommunityTag[];
     },
-    staleTime: 1000 * 60 * 30, // 30 minutos
+    staleTime: 1000 * 60 * 30,
   });
-
-  const foodC: FoodCategory[] = (foodCategories as FoodCategory[]) || [];
-  const communityC: CommunityTag[] = (tagCategories as CommunityTag[]) || [];
 
   const isLoading = loadingFood || loadingTags;
 
@@ -68,65 +66,47 @@ export default function Onboarding() {
     setOpen((prev) => (prev === section ? null : section));
   };
 
-  const togglePreference = (prefName: string) => {
+  const togglePreference = (id: string) => {
     setPreferences((prev) => {
-      const isSelected = prev.includes(prefName);
-      let updated = [];
-
-      if (isSelected) {
-        updated = prev.filter((p) => p !== prefName);
+      if (prev.includes(id)) {
+        return prev.filter((p) => p !== id);
       } else {
-        updated = [...prev, prefName];
-        const existsInBoth =
-          foodC.some((c) => c.name === prefName) &&
-          communityC.some((t) => t.name === prefName);
-
-        if (existsInBoth && !updated.includes(prefName)) {
-          updated.push(prefName);
-        }
+        return [...prev, id];
       }
-      return updated;
     });
   };
 
   const handleSubmit = async () => {
     if (!name || preferences.length < 3) {
-      showToast(
-        "error",
-        "Por favor, completa todos los campos y selecciona al menos 3 preferencias.",
+      toast.error(
         "Error",
+        "Por favor, completa todos los campos y selecciona al menos 3 preferencias.",
       );
       return;
     }
 
     if (!tempToken) {
-      showToast("error", "Token temporal no encontrado.", "Error");
+      toast.error("Error", "Token temporal no encontrado.");
       router.replace(ROUTES.AUTH.LOGIN);
       return;
     }
 
-    const foodPreferenceIds = preferences
-      .map((prefName) => foodC.find((cat) => cat.name === prefName)?.id)
-      .filter((id) => id !== undefined) as number[];
-
-    const communityPreferenceIds = preferences
-      .map((prefName) => communityC.find((tag) => tag.name === prefName)?.id)
-      .filter((id) => id !== undefined) as number[];
+    const foodPreferences = preferences.filter((id) =>
+      foodCategories.some((c) => c.id === id),
+    );
+    const communityPreferences = preferences.filter((id) =>
+      tagCategories.some((t) => t.id === id),
+    );
 
     try {
       await completeProfile(
         name.trim(),
-        foodPreferenceIds,
-        communityPreferenceIds,
+        foodPreferences,
+        communityPreferences,
         tempToken,
       );
     } catch (e) {
       console.log("Error al enviar datos de completado de perfil:", e);
-      showToast(
-        "error",
-        "No se pudieron enviar los datos de completado de perfil.",
-        "Error",
-      );
     }
   };
 
@@ -156,7 +136,7 @@ export default function Onboarding() {
               className="p-2 rounded-lg "
               onPress={() => router.push(ROUTES.AUTH.LOGIN)}
             >
-              <Text className="text-text-1 text-[13px] font-dosis-bold text-center">
+              <Text className="text-text-1 text-[13px] font-outfit-bold text-center">
                 Inicia sesión
               </Text>
             </TouchableOpacity>
@@ -166,7 +146,7 @@ export default function Onboarding() {
         <View className="flex flex-row items-center justify-center gap-2">
           <Image source={Logo} className="w-[30px] h-[30px] object-contain" />
 
-          <Text className="text-white text-[26px] font-dosis-bold">
+          <Text className="text-white text-[26px] font-outfit-bold">
             DualEat
           </Text>
         </View>
@@ -175,7 +155,7 @@ export default function Onboarding() {
       <View className="flex-1 justify-end">
         <View className="w-full flex-[0.75] bg-[#1A1A1A] rounded-tr-[40px] rounded-tl-[40px] items-center pt-8">
           <View className="flex-col gap-1 items-center">
-            <Text className="text-[24px] font-dosis-bold text-text-1 mt-2 tracking-tighter">
+            <Text className="text-[24px] font-outfit-bold text-text-1 mt-2 tracking-tighter">
               Personalizar perfil
             </Text>
             <Text className="font-dosis-light text-[14px] text-text-2 mb-10">
@@ -196,7 +176,7 @@ export default function Onboarding() {
           {/* --- Divisor "o" --- */}
           <View className="flex-row items-center w-[80%] my-6">
             <View className="flex-1 h-px bg-gray-300" />
-            <Text className="mx-4 text-text-1 font-dosis-medium">**</Text>
+            <Text className="mx-4 text-text-1 font-outfit-regular">**</Text>
             <View className="flex-1 h-px bg-gray-300" />
           </View>
 
@@ -207,7 +187,7 @@ export default function Onboarding() {
               className="flex-row w-[80%] relative items-center gap-4 border border-[#e5a657] rounded-full p-3.5"
             >
               <Ionicons name="fast-food" size={20} color="#fff" />
-              <Text className="text-text-1 text-md font-dosis-medium">
+              <Text className="text-text-1 text-md font-outfit-regular">
                 Preferencias de comida
               </Text>
             </Pressable>
@@ -215,19 +195,21 @@ export default function Onboarding() {
             {/* ScrollView condicional */}
             {open === "food" && (
               <FlatList
-                data={foodC}
+                data={foodCategories}
                 keyExtractor={(item) => item.id.toString()}
                 style={{ maxHeight: 120, minWidth: "80%" }}
-                renderItem={({ item }) => (
-                  <Pressable onPress={() => togglePreference(item.name)}>
-                    <Text
-                      className={`text-white text-sm px-2 py-1  border rounded-md border-zinc-100 
-                      ${preferences.includes(item.name) ? "bg-bg-yellow" : ""}`}
-                    >
-                      {item.name}
-                    </Text>
-                  </Pressable>
-                )}
+                renderItem={({ item }) => {
+                  return (
+                    <TouchableOpacity onPress={() => togglePreference(item.id)}>
+                      <Text
+                        className={`text-white text-sm px-2 py-1  border rounded-md border-zinc-100 
+                      ${preferences.includes(item.id) ? "bg-bg-yellow" : ""}`}
+                      >
+                        {item.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                }}
                 ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
               />
             )}
@@ -242,7 +224,7 @@ export default function Onboarding() {
                 size={22}
                 color="#fff"
               />
-              <Text className="text-text-1 text-md font-dosis-medium">
+              <Text className="text-text-1 text-md font-outfit-regular">
                 Preferencias de comunidad
               </Text>
             </Pressable>
@@ -250,14 +232,14 @@ export default function Onboarding() {
             {/* ScrollView condicional */}
             {open === "community" && (
               <FlatList
-                data={communityC}
+                data={tagCategories}
                 keyExtractor={(item) => item.id.toString()}
                 style={{ maxHeight: 120, minWidth: "80%" }}
                 renderItem={({ item }) => (
-                  <Pressable onPress={() => togglePreference(item.name)}>
+                  <Pressable onPress={() => togglePreference(item.id)}>
                     <Text
                       className={`text-white text-sm px-2 py-1  border rounded-md border-zinc-100 
-                      ${preferences.includes(item.name) ? "bg-bg-yellow" : ""}`}
+                      ${preferences.includes(item.id) ? "bg-bg-yellow" : ""}`}
                     >
                       {item.name}
                     </Text>
@@ -273,7 +255,7 @@ export default function Onboarding() {
             activeOpacity={0.7}
             className="bg-bg-yellow w-[80%] p-3 rounded-full items-center mt-8"
           >
-            <Text className="text-text-1 font-dosis-bold text-[15px] tracking-tighter">
+            <Text className="text-text-1 font-outfit-bold text-[15px] tracking-tighter">
               Registrarse
             </Text>
           </TouchableOpacity>

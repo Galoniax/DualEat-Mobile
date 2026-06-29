@@ -1,5 +1,12 @@
 import React, { useCallback, useEffect } from "react";
-import { View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  Pressable,
+} from "react-native";
 import { useDrawerStatus } from "@react-navigation/drawer";
 import { Ionicons } from "@expo/vector-icons";
 import { Href, useRouter } from "expo-router";
@@ -10,8 +17,7 @@ import { useAppMode } from "@/context/app/AppModeContext";
 import { ROUTES } from "@/constants/constants";
 import { Path, Svg } from "react-native-svg";
 import { SidebarItem, UserSidebarItems } from "../ui/layout/sidebar-items";
-import { useQuery } from "@tanstack/react-query";
-import { getUnreadCount } from "@/services/notifications.api";
+import { useNotifications } from "@/hooks/api/notification/useNotifications";
 
 export const CustomSidebar = (props: any) => {
   const router = useRouter();
@@ -20,30 +26,17 @@ export const CustomSidebar = (props: any) => {
   const { user, logout } = useAuth();
   const { switchMode, mode } = useAppMode();
 
+  const { unreadCount } = useNotifications();
+
   const { data: communities, refetch } = useMyCommunities();
 
   const isDrawerOpen = useDrawerStatus() === "open";
 
-  const { data: notificationsCount, refetch: refetchNotificationsCount } =
-    useQuery({
-      queryKey: ["notifications-count"],
-      queryFn: async () => {
-        const response = await getUnreadCount();
-        return response.data as number;
-      },
-      staleTime: 1000 * 60 * 30,
-      refetchOnReconnect: true,
-      refetchOnMount: false,
-      refetchOnWindowFocus: false,
-      retry: false,
-    });
-
   useEffect(() => {
     if (isDrawerOpen) {
       refetch();
-      refetchNotificationsCount();
     }
-  }, [isDrawerOpen, refetch, refetchNotificationsCount]);
+  }, [isDrawerOpen, refetch]);
 
   const handlePress = useCallback(
     (route: Href) => {
@@ -64,29 +57,31 @@ export const CustomSidebar = (props: any) => {
       }}
       className="flex-col gap-y-2"
     >
-      <View className="flex-row items-center gap-x-4">
+      <Pressable
+        onPress={() => handlePress(ROUTES.USER.PROFILE(user?.id as string))}
+        className="flex-row items-center gap-x-4"
+      >
         <Image
           source={{ uri: user?.avatar_url }}
           className="h-10 w-10 rounded-full"
         />
         <View>
-          <Text className="font-dosis-regular text-[15px] text-text-6">
+          <Text className="font-outfit-light text-base text-text-6">
             ¡Bienvenido de nuevo!
           </Text>
 
-          <Text className="font-dosis-bold text-[18px] text-text-3">
+          <Text className="font-outfit-bold text-lg text-text-3">
             {user?.name}
           </Text>
         </View>
-      </View>
+      </Pressable>
 
       <ScrollView className="mt-4 flex-1" showsVerticalScrollIndicator={false}>
         <View style={{ rowGap: 20 }} className="flex-col">
           <TouchableOpacity
             className="flex-row items-center gap-x-4 border-y border-gray-300 border-dashed py-3"
             onPress={() => {
-              switchMode();
-              props.navigation.closeDrawer();
+              switchMode(mode === "in" ? "out" : "in");
             }}
           >
             <Svg
@@ -98,7 +93,9 @@ export const CustomSidebar = (props: any) => {
               <Path d="M416 192C486.7 192 544 249.3 544 320C544 390.7 486.7 448 416 448L224 448C153.3 448 96 390.7 96 320C96 249.3 153.3 192 224 192L416 192zM608 320C608 214 522 128 416 128L224 128C118 128 32 214 32 320C32 426 118 512 224 512L416 512C522 512 608 426 608 320zM224 400C268.2 400 304 364.2 304 320C304 275.8 268.2 240 224 240C179.8 240 144 275.8 144 320C144 364.2 179.8 400 224 400z" />
             </Svg>
 
-            <Text className="font-dosis-bold text-[15px]">Cambiar de modo</Text>
+            <Text className="font-outfit-bold text-base text-text-3">
+              Cambiar de modo
+            </Text>
           </TouchableOpacity>
 
           <SidebarItem
@@ -127,7 +124,7 @@ export const CustomSidebar = (props: any) => {
               </Svg>
             }
             onPress={() => {
-              handlePress(ROUTES.USER.PROFILE(mode));
+              handlePress(ROUTES.USER.PROFILE(user?.id as string));
             }}
             label="Perfil"
           />
@@ -147,10 +144,10 @@ export const CustomSidebar = (props: any) => {
             }}
             label="Notificaciones"
             extra={
-              notificationsCount !== undefined && notificationsCount > 0 ? (
+              unreadCount !== undefined && unreadCount > 0 ? (
                 <View className="bg-bg-blue rounded-full items-center justify-center self-center">
-                  <Text className="text-text-1 font-dosis-bold text-[10px] px-2 py-0.5">
-                    {notificationsCount}
+                  <Text className="text-text-1 font-outfit-bold text-[10px] px-2 py-0.5">
+                    {unreadCount}
                   </Text>
                 </View>
               ) : null
@@ -177,7 +174,7 @@ export const CustomSidebar = (props: any) => {
         className="p-2.5 flex-row items-center gap-x-4 border-y border-dashed border-bg-red py-3"
       >
         <Ionicons name="log-out-outline" size={size} color="#B53325" />
-        <Text className="font-dosis-bold text-[15px] text-bg-red">
+        <Text className="font-outfit-bold text-base text-bg-red">
           Cerrar Sesión
         </Text>
       </TouchableOpacity>

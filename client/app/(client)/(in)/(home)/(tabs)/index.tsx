@@ -1,11 +1,9 @@
-import { View, ActivityIndicator, RefreshControl } from "react-native";
+import { View, ActivityIndicator, RefreshControl, FlatList } from "react-native";
 
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { getAll } from "@/services/post.api";
 import { Post, ResponseWithPagination } from "@/interface/global";
-import { useFocusEffect } from "expo-router";
 import { useCallback } from "react";
-import { FlatList } from "react-native-gesture-handler";
 import PostCard from "@/components/features/post/PostCard";
 
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -25,6 +23,7 @@ export default function HomeScreen() {
     isFetchingNextPage,
     refetch,
     isLoading,
+    isFetching,
   } = useInfiniteQuery<ResponseWithPagination<Post>>({
     queryKey: ["posts"],
     queryFn: async ({ pageParam = 1 }) => {
@@ -50,12 +49,6 @@ export default function HomeScreen() {
     data?.pages
       .flatMap((page) => page?.data || [])
       .filter((post): post is Post => Boolean(post)) || [];
-
-  useFocusEffect(
-    useCallback(() => {
-      refetch();
-    }, [refetch]),
-  );
 
   const handleLoadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -88,13 +81,13 @@ export default function HomeScreen() {
           }
           refreshControl={
             <RefreshControl
-              refreshing={isLoading}
+              refreshing={isFetching && !isFetchingNextPage}
               onRefresh={refetch}
               colors={["#e5a657"]}
             />
           }
           contentContainerStyle={{
-            paddingHorizontal: (insets.left + insets.right) + 16,
+            paddingHorizontal: insets.left + insets.right + 16,
             paddingBottom: insets.bottom + 20,
           }}
           renderItem={(item) => renderItem(item)}
@@ -107,7 +100,7 @@ export default function HomeScreen() {
             isFetchingNextPage ? (
               <ActivityIndicator
                 size="small"
-                color="#3578e4"
+                color="#e5a657"
                 className="my-4"
               />
             ) : null

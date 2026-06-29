@@ -2,7 +2,6 @@ import { useAuth } from "@/context/auth/AuthContext";
 import {
   Entypo,
   FontAwesome6,
-  Ionicons,
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -12,14 +11,12 @@ import {
   View,
   Image,
   TextInput,
-  FlatList,
+  ScrollView,
 } from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-
-import { useVideoPlayer, VideoView } from "expo-video";
 
 import {
   RichText,
@@ -30,11 +27,9 @@ import {
 } from "@10play/tentap-editor";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import EditorToolbar, {
-  EditorToolbarRef,
-} from "@/components/shared/EditorToolbar";
+import EditorToolbar from "@/components/shared/EditorToolbar";
+import ImagesCarousel from "@/components/shared/ImagesCarousel";
 import { PostDTO, UploadableFile } from "@/interface/global.dto";
-import { useEvent } from "expo";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import CommunityModal from "@/components/features/create/community/CommunityModal";
 import { Community } from "@/interface/global";
@@ -42,12 +37,14 @@ import { ROUTES } from "@/constants/constants";
 import { usePostCreateStore } from "@/context/store/usePostCreate";
 import { upload, createPost } from "@/services/post.api";
 import { useHeaderHeight } from "@react-navigation/elements";
+import { pickMedia } from "@/utils/media";
+import { globalToast as toast } from "@/utils/toast";
 
 const CUSTOM_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Dosis:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 
   p {
-    font-family: 'Dosis', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-size: 16px;
     color: #2F2F2F;
     line-height: 1.5;
@@ -58,7 +55,7 @@ const CUSTOM_CSS = `
     content: attr(data-placeholder);
     color: #707070; 
     font-size: 16px;
-    font-family: 'Dosis', sans-serif;
+    font-family: 'Outfit', sans-serif;
     pointer-events: none;
     height: 0;
     float: left;
@@ -89,31 +86,19 @@ export default function CreateScreen() {
 
   const { user } = useAuth();
 
-  const { setPost } = usePostCreateStore();
+  const { post, setPost, clearPost } = usePostCreateStore();
+
+  const isEditing = useMemo(() => post.id !== "", [post.id]);
 
   const [title, setTitle] = useState("");
-  const [images, setImages] = useState<UploadableFile[]>([]);
-  const [video, setVideo] = useState<UploadableFile | null>(null);
+
+  const [image_urls, setImageUrls] = useState<UploadableFile[]>([]);
 
   const [community, setCommunity] = useState<Community | null>(null);
 
   const [withRecipe, setWithRecipe] = useState(false);
 
   const ref = useRef<BottomSheetModal>(null);
-  const toolbarRef = useRef<EditorToolbarRef>(null);
-
-  const player = useVideoPlayer(video?.uri || "", (player) => {
-    player.loop = true;
-    player.pause();
-  });
-
-  const { isPlaying } = useEvent(player, "playingChange", {
-    isPlaying: player.playing,
-  });
-
-  const { muted } = useEvent(player, "mutedChange", {
-    muted: player.muted,
-  });
 
   const editor = useEditorBridge({
     autofocus: true,
@@ -127,23 +112,20 @@ export default function CreateScreen() {
     }
   }, [editor]);
 
-  const remove = useCallback(
-    (index: number, type: "image" | "video") => {
-      if (type === "image") {
-        setImages(images.filter((_, i) => i !== index));
-      } else {
-        setVideo(null);
-      }
-    },
-    [images],
-  );
+  const remove = useCallback((index: number) => {
+    setImageUrls((prev) => prev.filter((_, i) => i !== index));
+  }, []);
 
   const handleSubmit = async () => {
     const content = await editor.getHTML();
 
-    // TODO: Toast
     if (!content || content === "<p></p>" || !title) {
-      console.log("El editor está vacío");
+      toast.error("Datos incompletos", "El título y el contenido no pueden estar vacíos")
+      return;
+    }
+
+    if (!community) {
+      toast.error("Datos incompletos", "Comunidad no seleccionada");
       return;
     }
 
@@ -151,12 +133,8 @@ export default function CreateScreen() {
       const post: PostDTO = {
         title: title,
         content: content,
-        image_urls: images
-          ? images.map((image) => image)
-          : video
-            ? [video]
-            : [],
-        community_id: community?.id || null,
+        image_urls: image_urls,
+        community: community,
       };
 
       setPost(post);
@@ -165,12 +143,10 @@ export default function CreateScreen() {
 
       router.push(ROUTES.USER.CREATE_RECIPE);
     } else {
-      const filesToUpload = images.length > 0 ? images : video ? [video] : [];
-
       let finalImageUrls: string[] = [];
 
-      if (filesToUpload.length > 0) {
-        const uploadPayload = { post_images: filesToUpload };
+      if (image_urls.length > 0) {
+        const uploadPayload = { post_images: image_urls };
 
         const response = await upload(uploadPayload);
 
@@ -183,7 +159,7 @@ export default function CreateScreen() {
         title: title,
         content: content,
         image_urls: finalImageUrls,
-        community_id: community?.id || null,
+        community: community,
       };
 
       const result = await createPost(post);
@@ -196,21 +172,55 @@ export default function CreateScreen() {
     }
   };
 
-  const Editor = useMemo(() => {
-    return (
-      <View
-        style={{
-          marginTop: 12,
-          paddingHorizontal: insets.left + insets.right + 20,
-          flex: 1,
-          flexDirection: "row",
-          alignItems: "flex-start",
-        }}
-      >
-        <RichText style={{ backgroundColor: "transparent" }} editor={editor} />
-      </View>
+  const handleFiles = async (type: "image" | "video") => {
+    let files: UploadableFile[] = [];
+
+    if (type === "image") {
+      files = await pickMedia({
+        mediaType: "Images",
+        allowsMultipleSelection: true,
+        allowsEditing: true,
+        selectionLimit: 10 - onlyImages.length,
+      });
+    } else {
+      files = await pickMedia({
+        mediaType: "Videos",
+        allowsMultipleSelection: false,
+        allowsEditing: false,
+        selectionLimit: 1,
+      });
+    }
+
+    if (files.length === 0) return;
+
+    const hasVideo = !!video;
+    const imageCount = onlyImages.length;
+
+    if (type === "image") {
+      if (imageCount >= 10 || hasVideo) return;
+      setImageUrls((prev) => [...prev, ...files]);
+    } else if (type === "video") {
+      if (imageCount > 0 || hasVideo) return;
+      setImageUrls((prev) => [...prev, files[0]]);
+    }
+  };
+
+  const video =
+    image_urls.find((item) => {
+      return (
+        item.type?.startsWith("video/") ||
+        item.uri?.endsWith(".mp4") ||
+        item.uri?.endsWith(".mov")
+      );
+    }) || null;
+
+  const onlyImages = image_urls.filter((item) => {
+    return !(
+      item.type?.startsWith("video/") ||
+      item.uri?.endsWith(".mp4") ||
+      item.uri?.endsWith(".mov")
     );
-  }, [editor, insets.left, insets.right]);
+  });
 
   return (
     <SafeAreaView
@@ -227,8 +237,8 @@ export default function CreateScreen() {
           <Entypo name="chevron-small-left" size={32} color="#2F2F2F" />
         </TouchableOpacity>
 
-        <Text className="font-dosis-bold text-center text-[16px] text-text-3 flex-1">
-          Crear Post
+        <Text className="font-outfit-bold text-center text-base text-text-3 flex-1">
+          Crear post
         </Text>
 
         <TouchableOpacity
@@ -237,145 +247,66 @@ export default function CreateScreen() {
           }}
           className="rounded-full bg-bg-semi-black py-1 px-4 items-center"
         >
-          <Text className="font-dosis-bold text-[14px] text-text-1">
-            Publicar
+          <Text className="font-outfit-bold text-sm text-text-1">
+            {withRecipe ? "Continuar" : "Publicar"}
           </Text>
         </TouchableOpacity>
       </View>
-      <View className="flex-row gap-x-4 px-6 items-center">
-        <Image
-          className="h-8 w-8 rounded-full"
-          source={{
-            uri: user?.avatar_url,
-          }}
-        />
 
-        <TextInput
-          onChangeText={setTitle}
-          value={title}
-          placeholder="Título"
-          returnKeyType="next"
-          placeholderTextColor="#2F2F2F"
-          autoCapitalize={"sentences"}
-          className="font-dosis-semibold text-[20px] flex-1"
-        />
-      </View>
-
-      {images.length > 0 && (
-        <View>
-          <FlatList
-            data={images}
-            horizontal={true}
-            keyExtractor={(item, index) => index.toString()}
-            className="mx-6 mt-4"
-            renderItem={({ item, index }) => {
-              const isLast = index === images.length - 1;
-
-              return (
-                <View
-                  key={index}
-                  style={{
-                    width: 150,
-                    height: 150,
-                    marginRight: 8,
-                    overflow: "hidden",
-                  }}
-                  className="relative"
-                >
-                  <Image
-                    className="border border-gray-200 bg-bg-semi-black"
-                    style={{
-                      flex: 1,
-                      borderRadius: 14,
-                    }}
-                    source={{ uri: item.uri }}
-                  />
-                  {/** Eliminar foto */}
-                  <TouchableOpacity
-                    onPress={() => remove(index, "image")}
-                    style={{
-                      top: 6,
-                      right: 6,
-                      opacity: 0.8,
-                    }}
-                    className="absolute bg-bg-semi-black rounded-full w-8 h-8 flex items-center justify-center"
-                  >
-                    <Entypo name="cross" size={16} color="white" />
-                  </TouchableOpacity>
-
-                  {/** Añadir foto */}
-                  {isLast && (
-                    <TouchableOpacity
-                      onPress={() => toolbarRef.current?.handleAddImage()}
-                      style={{
-                        bottom: 6,
-                        right: 6,
-                      }}
-                      className="absolute bg-bg-semi-black rounded-full px-2 py-1 flex-row items-center gap-x-2"
-                    >
-                      <MaterialCommunityIcons
-                        name="image-plus-outline"
-                        size={16}
-                        color="#fff"
-                      />
-                      <Text className="text-[13px] font-dosis-bold text-text-1">
-                        Añadir
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              );
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View className="flex-row gap-x-4 px-6 items-center">
+          <Image
+            className="h-8 w-8 rounded-full"
+            source={{
+              uri: user?.avatar_url,
             }}
           />
-        </View>
-      )}
 
-      {video && (
-        <View className="px-6 mt-4">
-          {/* CONTENEDOR PRINCIPAL DEL VIDEO (Relative) */}
-          <View className="relative w-full h-[250px] rounded-xl overflow-hidden bg-black">
-            {/* 1. EL VIDEO (Sin controles nativos) */}
-            <VideoView
-              player={player}
-              style={{ width: "100%", height: "100%" }}
-              nativeControls={false} // <--- ESTO APAGA LA UI DEL SISTEMA
-              contentFit="cover"
+          <TextInput
+            onChangeText={setTitle}
+            value={title}
+            placeholder="Título"
+            returnKeyType="next"
+            placeholderTextColor="#2F2F2F"
+            autoCapitalize={"sentences"}
+            className="font-outfit-medium text-[20px] flex-1"
+          />
+        </View>
+
+        {image_urls.length > 0 && (
+          <View className="px-6">
+            <ImagesCarousel
+              media={image_urls}
+              add={
+                isEditing
+                  ? undefined
+                  : (type: "image" | "video") => handleFiles(type)
+              }
+              remove={isEditing ? undefined : (index) => remove(index)}
             />
-
-            {/* 2. OVERLAY OSCURECIDO EN LA PARTE INFERIOR (Para que los iconos blancos resalten) */}
-            <View className="absolute bottom-0 w-full h-12 bg-black/40 flex-row items-center justify-between px-3">
-              <View className="flex-row items-center gap-x-4">
-                {/* Botón de Play/Pause */}
-                <TouchableOpacity
-                  onPress={() => (isPlaying ? player.pause() : player.play())}
-                >
-                  <Entypo
-                    name={isPlaying ? "controller-paus" : "controller-play"}
-                    size={22}
-                    color="white"
-                  />
-                </TouchableOpacity>
-
-                {/* Botón de Mute (Twitter suele mutear los videos por defecto) */}
-                <TouchableOpacity
-                  onPress={() => {
-                    player.muted = !player.muted;
-                  }}
-                >
-                  <Ionicons
-                    name={muted ? "volume-mute" : "volume-high"}
-                    size={24}
-                    color="white"
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
           </View>
-        </View>
-      )}
+        )}
 
-      {/** EDITOR DE TEXTO */}
-      <View style={{ flex: 1 }}>{Editor}</View>
+        {/** EDITOR DE TEXTO */}
+        <View
+          style={{
+            marginTop: 12,
+            paddingHorizontal: insets.left + insets.right + 20,
+            height: 380,
+            flexDirection: "row",
+            alignItems: "flex-start",
+          }}
+        >
+          <RichText
+            style={{ backgroundColor: "transparent" }}
+            editor={editor}
+          />
+        </View>
+      </ScrollView>
 
       <View className="flex-row items-center w-full border border-gray-200">
         <TouchableOpacity
@@ -394,7 +325,7 @@ export default function CreateScreen() {
               <Text
                 numberOfLines={1}
                 ellipsizeMode="tail"
-                className="text-text-3 font-dosis-regular text-[13px] truncate"
+                className="text-text-3 font-outfit-light text-[13px] truncate"
               >
                 {community.name}
               </Text>
@@ -405,7 +336,7 @@ export default function CreateScreen() {
               <Text
                 numberOfLines={1}
                 ellipsizeMode="tail"
-                className="text-text-3 font-dosis-regular text-[13px] flex-shrink"
+                className="text-text-3 font-outfit-light text-sm flex-shrink"
               >
                 Selecciona una comunidad
               </Text>
@@ -421,7 +352,7 @@ export default function CreateScreen() {
           <View className="flex-row items-center gap-x-3">
             <Entypo name="book" size={16} color="#e5a657" />
             <Text
-              className="text-text-3 font-dosis-regular text-[13px]"
+              className="text-text-3 font-outfit-light text-sm"
               numberOfLines={1}
             >
               ¿Tiene receta?
@@ -437,12 +368,11 @@ export default function CreateScreen() {
       </View>
 
       <EditorToolbar
-        ref={toolbarRef}
         editor={editor}
-        images={images}
-        video={video}
-        setImages={setImages}
-        setVideo={setVideo}
+        imageUrls={image_urls}
+        handleFiles={
+          isEditing ? undefined : (type: "image" | "video") => handleFiles(type)
+        }
       />
 
       <CommunityModal ref={ref} setCommunity={setCommunity} />

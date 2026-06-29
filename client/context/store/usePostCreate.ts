@@ -9,11 +9,12 @@ interface PostCreateState {
 
 export const usePostCreateStore = create<PostCreateState>((set) => ({
   post: {
+    id: "",
     title: "",
     content: "",
     image_urls: [],
-    community_id: null,
+    community: null,
   },
   setPost: (post) => set({ post }),
-  clearPost: () => set({ post: { title: "", content: "", image_urls: [], community_id: null } }),
+  clearPost: () => set({ post: { id: "", title: "", content: "", image_urls: [], community: null } }),
 }));

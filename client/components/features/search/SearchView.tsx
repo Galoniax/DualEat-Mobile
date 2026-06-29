@@ -140,9 +140,8 @@ export const SearchScreen = () => {
               router.push({
                 pathname: ROUTES.USER.POST,
                 params: {
-                  community_slug: post.community?.slug || "",
-                  post_id: post.id || "",
-                  post_slug: post.slug || "",
+                  post_id: post.id,
+                  post_slug: post.slug,
                 },
               });
             }}
@@ -156,24 +155,24 @@ export const SearchScreen = () => {
                   source={{ uri: post.community.image_url }}
                 />
                 <View className="flex-col">
-                  <Text className="text-[14px] font-dosis-bold text-text-3">
+                  <Text className="text-[14px] font-outfit-bold text-text-3">
                     c/{post.community?.name}
                   </Text>
                   <View className="flex-row items-center gap-2">
-                    <Text className="text-[14px] font-dosis-regular text-text-5">
+                    <Text className="text-[14px] font-outfit-light text-text-5">
                       {post.user?.name}
                     </Text>
-                    <Text className="text-[14px] font-dosis-regular text-text-4">
+                    <Text className="text-[14px] font-outfit-light text-text-4">
                       • {getShortTimeAgo(post?.created_at)}
                     </Text>
                   </View>
                 </View>
               </View>
-              <Text className="text-[16px] font-dosis-bold text-text-3">
+              <Text className="text-[16px] font-outfit-bold text-text-3">
                 {post.title}
               </Text>
               <View className="flex-row items-center gap-x-2">
-                <Text className="text-[16px] font-dosis-regular text-text-6">
+                <Text className="text-[16px] font-outfit-light text-text-6">
                   {post.total_comments} comentarios
                 </Text>
               </View>
@@ -248,7 +247,7 @@ export const SearchScreen = () => {
             value={query}
             onChangeText={setQuery}
             onFocus={() => setIsFocused(true)}
-            className="text-text-5 font-dosis-regular flex-1 tracking-wide"
+            className="text-text-5 font-outfit-light flex-1 tracking-wide"
             onSubmitEditing={() => {
               handleSearch();
             }}
@@ -275,7 +274,7 @@ export const SearchScreen = () => {
         >
           {community && (
             <View className="flex-row items-center gap-x-2">
-              <Text className="text-text-5 font-dosis-regular tracking-wide text-[12px]">
+              <Text className="text-text-5 font-outfit-light tracking-wide text-[12px]">
                 Buscando en{" "}
               </Text>
 
@@ -286,7 +285,7 @@ export const SearchScreen = () => {
                 />
                 <Text
                   numberOfLines={1}
-                  className="text-text-5 font-dosis-bold tracking-tight text-[12px]"
+                  className="text-text-5 font-outfit-bold tracking-tight text-[12px]"
                 >
                   {community.name}
                 </Text>
@@ -305,7 +304,7 @@ export const SearchScreen = () => {
 
           {recentsData.length > 0 && (
             <View className="flex-col gap-y-4">
-              <Text className="text-text-5 font-dosis-bold tracking-wide text-[12px] mt-4">
+              <Text className="text-text-5 font-outfit-bold tracking-wide text-[12px] mt-4">
                 Recientes
               </Text>
 
@@ -322,14 +321,14 @@ export const SearchScreen = () => {
                             className="w-7 h-7 rounded-full"
                             source={{ uri: recent.community.image_url }}
                           />
-                          <Text className="text-text-3 font-dosis-regular tracking-tight text-[14px]">
+                          <Text className="text-text-3 font-outfit-light tracking-tight text-[14px]">
                             {recent.community.name}
                           </Text>
                         </>
                       ) : (
                         <Octicons name="history" size={16} color="#212121" />
                       )}
-                      <Text className="text-text-4 font-dosis-regular tracking-tight text-[14px]">
+                      <Text className="text-text-4 font-outfit-light tracking-tight text-[14px]">
                         {recent.value}
                       </Text>
                     </TouchableOpacity>
@@ -371,7 +370,7 @@ export const SearchScreen = () => {
                   }}
                 >
                   <Text
-                    className={`font-dosis-bold tracking-tight text-[16px]
+                    className={`font-outfit-bold tracking-tight text-[16px]
                   ${tab === t ? "text-text-5" : "text-text-4"}`}
                   >
                     {TAB_LABELS[t]}

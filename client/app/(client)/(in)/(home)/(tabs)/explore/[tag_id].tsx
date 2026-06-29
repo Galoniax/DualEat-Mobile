@@ -12,6 +12,9 @@ export default function SearchScreen() {
     queryKey: ["categories"],
     queryFn: async () => {
       const response = await getTagCategories();
+      if (!response.success || !response.data) {
+        throw new Error(response.message || "Error al obtener categorías");
+      }
       return response.data as TagCategory[];
     },
 
@@ -29,7 +32,7 @@ export default function SearchScreen() {
       className="flex-1 bg-bg-semi-white"
     >
       <View className="flex-col gap-y-4 px-6 mt-4">
-        <Text className="text-text-3 font-dosis-bold text-[16px]">
+        <Text className="text-text-3 font-outfit-bold text-[16px]">
           Explora comunidades por tema
         </Text>
         <FlatList
@@ -40,7 +43,7 @@ export default function SearchScreen() {
           contentContainerStyle={{ gap: 12, paddingBottom: 20 }}
           renderItem={({ item }) => (
             <TouchableOpacity className="flex-1 flex-shrink items-center justify-center py-2 rounded-full border border-gray-300">
-              <Text className="text-text-5 font-dosis-regular text-[13px]">
+              <Text className="text-text-5 font-outfit-light text-[13px]">
                 {item.name}
               </Text>
             </TouchableOpacity>

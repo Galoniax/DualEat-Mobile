@@ -16,7 +16,7 @@ interface PostImagesCarouselProps {
 }
 
 const { height: screenHeight } = Dimensions.get("window");
-const MIN_HEIGHT = screenHeight * 0.2; 
+const MIN_HEIGHT = screenHeight * 0.2;
 const MAX_HEIGHT = screenHeight * 0.4;
 
 const CarouselImageItem = ({
@@ -39,7 +39,10 @@ const CarouselImageItem = ({
           const aspectRatio = height / width;
           let calculatedHeight = containerWidth * aspectRatio;
 
-          calculatedHeight = Math.max(MIN_HEIGHT, Math.min(calculatedHeight, MAX_HEIGHT));
+          calculatedHeight = Math.max(
+            MIN_HEIGHT,
+            Math.min(calculatedHeight, MAX_HEIGHT),
+          );
 
           setImgHeight(calculatedHeight);
         }
@@ -59,9 +62,7 @@ const CarouselImageItem = ({
   );
 };
 
-const PostImagesCarousel: React.FC<PostImagesCarouselProps> = ({
-  post,
-}) => {
+const PostImagesCarousel: React.FC<PostImagesCarouselProps> = ({ post }) => {
   const [containerWidth, setContainerWidth] = useState(0);
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -118,10 +119,7 @@ const PostImagesCarousel: React.FC<PostImagesCarouselProps> = ({
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
           renderItem={({ item }) => (
-            <CarouselImageItem
-              uri={item}
-              containerWidth={containerWidth}
-            />
+            <CarouselImageItem uri={item} containerWidth={containerWidth} />
           )}
         />
       )}
@@ -142,7 +140,10 @@ const PostImagesCarousel: React.FC<PostImagesCarouselProps> = ({
             ))}
           </Animated.View>
           <View className="absolute top-4 right-4 pointer-events-none bg-black/45 rounded-[10px] px-2 py-0.5">
-            <Text style={{ fontSize: 10 }} className="text-white font-dosis-regular">
+            <Text
+              style={{ fontSize: 10 }}
+              className="text-white font-outfit-light"
+            >
               {currentIndex + 1}/{totalImages}
             </Text>
           </View>

@@ -41,7 +41,6 @@ export default function RecipesModal({
     queryFn: async ({ pageParam = 1 }) => {
       const response = await getCommunityPosts(
         query as string,
-        "",
         pageParam as number,
       );
 
@@ -98,7 +97,6 @@ export default function RecipesModal({
     },
   ];
 
-  
   const { data: chat, isLoading, isFetching } = useChat(chat_id as string);
 
   const dataFlatMap = useMemo(() => {
@@ -151,7 +149,7 @@ export default function RecipesModal({
       )}
     >
       <BottomSheetFlatList
-        data={data}
+        data={[]}
         scrollEnabled={true}
         showsVerticalScrollIndicator={false}
         keyExtractor={(item: Recipe) => item.id}
@@ -180,13 +178,13 @@ export default function RecipesModal({
                   <Text
                     style={{ flexShrink: 1 }}
                     numberOfLines={2}
-                    className="font-dosis-bold text-[16px] text-text-3"
+                    className="font-outfit-bold text-[16px] text-text-3"
                   >
                     {item.name}
                   </Text>
                   <View className="flex-row items-center gap-x-1">
                     <FontAwesome name="star" size={14} color="#e5a657" />
-                    <Text className="font-dosis-bold text-[12px] text-text-3">
+                    <Text className="font-outfit-bold text-[12px] text-text-3">
                       {rating === 0 ? "N/A" : `${rating.toFixed(1)}`}
                     </Text>
                   </View>
@@ -195,20 +193,20 @@ export default function RecipesModal({
                 <View className="flex-row items-center gap-x-4">
                   <View className="flex-row items-center gap-x-1">
                     <EvilIcons name="clock" size={16} color="#707070" />
-                    <Text className="font-dosis-regular text-[12px] text-text-4">
+                    <Text className="font-outfit-light text-[12px] text-text-4">
                       {item.total_time || 0}min
                     </Text>
                   </View>
 
                   <View className="flex-row items-center gap-x-1">
                     <EvilIcons name="cart" size={20} color="#707070" />
-                    <Text className="font-dosis-regular text-[12px] text-text-4">
+                    <Text className="font-outfit-light text-[12px] text-text-4">
                       {item._count?.ingredients || 0} ingredientes
                     </Text>
                   </View>
                   <View className="flex-row items-center gap-x-1">
                     <EvilIcons name="chart" size={20} color="#707070" />
-                    <Text className="font-dosis-regular text-[12px] text-text-4">
+                    <Text className="font-outfit-light text-[12px] text-text-4">
                       {item._count?.steps || 0} pasos
                     </Text>
                   </View>
@@ -217,7 +215,7 @@ export default function RecipesModal({
                 <Text
                   numberOfLines={2}
                   ellipsizeMode="tail"
-                  className="text-text-4 text-[14px] font-dosis-regular"
+                  className="text-text-4 text-[14px] font-outfit-light"
                 >
                   {capitalize(item.description)}
                 </Text>

@@ -1,6 +1,18 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useGlobalSearchParams, useRouter } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -19,7 +31,10 @@ export default function NoteEditorScreen() {
 
   useEffect(() => {
     const fetchNote = async () => {
-      const fetchedNote = await getNoteById(local_id as string, note_id as string);
+      const fetchedNote = await getNoteById(
+        local_id as string,
+        note_id as string,
+      );
       if (fetchedNote) {
         setNote(fetchedNote);
       }
@@ -35,10 +50,24 @@ export default function NoteEditorScreen() {
     );
   }
 
-  return <EditorContent note={note} local_id={local_id as string} note_id={note_id as string} />;
+  return (
+    <EditorContent
+      note={note}
+      local_id={local_id as string}
+      note_id={note_id as string}
+    />
+  );
 }
 
-function EditorContent({ note, local_id, note_id }: { note: StaffNote; local_id: string; note_id: string }) {
+function EditorContent({
+  note,
+  local_id,
+  note_id,
+}: {
+  note: StaffNote;
+  local_id: string;
+  note_id: string;
+}) {
   const router = useRouter();
 
   const customCSS = `
@@ -101,8 +130,14 @@ function EditorContent({ note, local_id, note_id }: { note: StaffNote; local_id:
   const toggleBold = useCallback(() => editor.toggleBold(), [editor]);
   const toggleItalic = useCallback(() => editor.toggleItalic(), [editor]);
   const toggleUnderline = useCallback(() => editor.toggleUnderline(), [editor]);
-  const toggleBulletList = useCallback(() => editor.toggleBulletList(), [editor]);
-  const toggleOrderedList = useCallback(() => editor.toggleOrderedList(), [editor]);
+  const toggleBulletList = useCallback(
+    () => editor.toggleBulletList(),
+    [editor],
+  );
+  const toggleOrderedList = useCallback(
+    () => editor.toggleOrderedList(),
+    [editor],
+  );
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-white">
@@ -115,7 +150,10 @@ function EditorContent({ note, local_id, note_id }: { note: StaffNote; local_id:
           <Ionicons name="chevron-back" size={24} color="#1F2937" />
         </TouchableOpacity>
 
-        <Text className="font-dosis-bold text-center text-[18px] text-text-3 flex-1" numberOfLines={1}>
+        <Text
+          className="font-outfit-bold text-center text-[18px] text-text-3 flex-1"
+          numberOfLines={1}
+        >
           {note.title}
         </Text>
 
@@ -123,33 +161,75 @@ function EditorContent({ note, local_id, note_id }: { note: StaffNote; local_id:
           onPress={handleSave}
           className="bg-bg-blue py-2 px-4 rounded-full"
         >
-          <Text className="font-dosis-bold text-[14px] text-white">Guardar</Text>
+          <Text className="font-outfit-bold text-[14px] text-white">
+            Guardar
+          </Text>
         </TouchableOpacity>
       </View>
 
       {/* TOOLBAR SUPERIOR */}
       <View className="border-b border-gray-100 bg-gray-50 px-2 py-2">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="always" contentContainerStyle={{ gap: 8, alignItems: "center" }}>
-          <TouchableOpacity onPress={toggleBold} className={`w-10 h-10 items-center justify-center rounded-full ${isBold ? "bg-bg-blue" : "bg-white border border-gray-200"}`}>
-            <MaterialIcons name="format-bold" size={22} color={isBold ? "white" : "#4B5563"} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity onPress={toggleItalic} className={`w-10 h-10 items-center justify-center rounded-full ${isItalic ? "bg-bg-blue" : "bg-white border border-gray-200"}`}>
-            <MaterialIcons name="format-italic" size={22} color={isItalic ? "white" : "#4B5563"} />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="always"
+          contentContainerStyle={{ gap: 8, alignItems: "center" }}
+        >
+          <TouchableOpacity
+            onPress={toggleBold}
+            className={`w-10 h-10 items-center justify-center rounded-full ${isBold ? "bg-bg-blue" : "bg-white border border-gray-200"}`}
+          >
+            <MaterialIcons
+              name="format-bold"
+              size={22}
+              color={isBold ? "white" : "#4B5563"}
+            />
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={toggleUnderline} className={`w-10 h-10 items-center justify-center rounded-full ${isUnderline ? "bg-bg-blue" : "bg-white border border-gray-200"}`}>
-            <MaterialIcons name="format-underline" size={22} color={isUnderline ? "white" : "#4B5563"} />
+          <TouchableOpacity
+            onPress={toggleItalic}
+            className={`w-10 h-10 items-center justify-center rounded-full ${isItalic ? "bg-bg-blue" : "bg-white border border-gray-200"}`}
+          >
+            <MaterialIcons
+              name="format-italic"
+              size={22}
+              color={isItalic ? "white" : "#4B5563"}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={toggleUnderline}
+            className={`w-10 h-10 items-center justify-center rounded-full ${isUnderline ? "bg-bg-blue" : "bg-white border border-gray-200"}`}
+          >
+            <MaterialIcons
+              name="format-underline"
+              size={22}
+              color={isUnderline ? "white" : "#4B5563"}
+            />
           </TouchableOpacity>
 
           <View className="w-[1px] h-6 bg-gray-300 mx-1" />
 
-          <TouchableOpacity onPress={toggleBulletList} className={`w-10 h-10 items-center justify-center rounded-full ${isBulletList ? "bg-bg-blue" : "bg-white border border-gray-200"}`}>
-            <MaterialIcons name="format-list-bulleted" size={22} color={isBulletList ? "white" : "#4B5563"} />
+          <TouchableOpacity
+            onPress={toggleBulletList}
+            className={`w-10 h-10 items-center justify-center rounded-full ${isBulletList ? "bg-bg-blue" : "bg-white border border-gray-200"}`}
+          >
+            <MaterialIcons
+              name="format-list-bulleted"
+              size={22}
+              color={isBulletList ? "white" : "#4B5563"}
+            />
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={toggleOrderedList} className={`w-10 h-10 items-center justify-center rounded-full ${isOrderedList ? "bg-bg-blue" : "bg-white border border-gray-200"}`}>
-            <MaterialIcons name="format-list-numbered" size={22} color={isOrderedList ? "white" : "#4B5563"} />
+          <TouchableOpacity
+            onPress={toggleOrderedList}
+            className={`w-10 h-10 items-center justify-center rounded-full ${isOrderedList ? "bg-bg-blue" : "bg-white border border-gray-200"}`}
+          >
+            <MaterialIcons
+              name="format-list-numbered"
+              size={22}
+              color={isOrderedList ? "white" : "#4B5563"}
+            />
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -166,5 +246,5 @@ const styles = StyleSheet.create({
   richText: {
     flex: 1,
     backgroundColor: "transparent",
-  }
+  },
 });

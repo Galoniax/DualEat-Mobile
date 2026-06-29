@@ -22,12 +22,12 @@ export const SidebarItem = ({
 }) => (
   <View className="flex-row justify-between">
     <TouchableOpacity
-      className={`flex-row items-center ${onPress ? "justify-between" : ""} py-2`}
+      className={`flex-row flex-1 items-center ${onPress ? "justify-between" : ""} py-2`}
       onPress={onPress}
     >
       <View className="flex-row items-center gap-x-4">
         {icon}
-        <Text className="font-dosis-bold text-[15px] text-text-3">{label}</Text>
+        <Text className="font-outfit-bold text-base text-text-3">{label}</Text>
       </View>
       {isExpanded !== null && (
         <Ionicons
@@ -80,14 +80,16 @@ export const UserSidebarItems = ({
               />
             }
             onPress={() => {
-              open();
               props.navigation.closeDrawer();
+              setTimeout(() => {
+                open();
+              }, 300);
             }}
             label="Carrito"
             extra={
               items.length > 0 ? (
                 <View className="bg-bg-red rounded-full items-center justify-center self-center">
-                  <Text className="text-text-1 font-dosis-bold text-[10px] px-2 py-0.5">
+                  <Text className="text-text-1 font-outfit-bold text-[10px] px-2 py-0.5">
                     {items.length}
                   </Text>
                 </View>
@@ -192,42 +194,49 @@ export const UserSidebarItems = ({
             isExpanded={expanded.comunity}
           />
 
-          {expanded.comunity && communities && communities.length > 0 && (
-            <View className="pb-2">
-              {communities.map((item: CommunityMember) => (
-                <TouchableOpacity
-                  key={item.community.id}
-                  onPress={() => {
-                    router.push({
-                      pathname: ROUTES.USER.COMMUNITY,
-                      params: {
-                        community_slug: item.community.slug || "",
-                      },
-                    });
-                    props.navigation.closeDrawer();
-                  }}
-                  className="flex-row items-center py-1"
-                >
-                  {/* Avatar */}
-                  <Image
-                    source={{ uri: item.community.image_url }}
-                    className="w-6 h-6 rounded-full mr-3"
-                  />
+          {expanded.comunity &&
+            (communities && communities.length > 0 ? (
+              <View className="pb-2">
+                {communities.map((item: CommunityMember) => (
+                  <TouchableOpacity
+                    key={item.community.id}
+                    onPress={() => {
+                      router.push({
+                        pathname: ROUTES.USER.COMMUNITY,
+                        params: {
+                          community_slug: item.community.slug || "",
+                        },
+                      });
+                      props.navigation.closeDrawer();
+                    }}
+                    className="flex-row items-center py-1"
+                  >
+                    {/* Avatar */}
+                    <Image
+                      source={{ uri: item.community.image_url }}
+                      className="w-6 h-6 rounded-full mr-3"
+                    />
 
-                  {/* Community Info */}
-                  <View className="flex-1">
-                    <Text
-                      className="font-dosis-regular text-[14px] text-text-4 truncate"
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
-                    >
-                      {item.community.name}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+                    {/* Community Info */}
+                    <View className="flex-1">
+                      <Text
+                        className="font-outfit-light text-base text-text-4 truncate"
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {item.community.name}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View className="pb-2 flex-row justify-center">
+                <Text className="text-text-4 text-base font-outfit-light">
+                  No tienes comunidades
+                </Text>
+              </View>
+            ))}
 
           <SidebarItem
             icon={

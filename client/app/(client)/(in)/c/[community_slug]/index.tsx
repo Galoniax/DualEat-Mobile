@@ -73,7 +73,6 @@ export default function CommunityScreen() {
     queryFn: async ({ pageParam = 1 }) => {
       const response = await getCommunityPosts(
         community?.id as string,
-        "",
         pageParam as number,
       );
 
@@ -193,11 +192,11 @@ export default function CommunityScreen() {
                   pointerEvents="none"
                   style={[{ opacity: blurOpacity }]}
                 >
-                  <Text className="text-[16px] font-dosis-bold text-text-1">
+                  <Text className="text-base font-outfit-bold text-text-1">
                     {community.name}
                   </Text>
 
-                  <Text className="text-[12px] text-text-1 font-dosis-regular">
+                  <Text className="text-sm text-text-1 font-outfit-light">
                     {community.total_members} miembros
                   </Text>
                 </Animated.View>
@@ -245,11 +244,11 @@ export default function CommunityScreen() {
                   <Text
                     numberOfLines={1}
                     ellipsizeMode="tail"
-                    className="text-[18px] font-dosis-bold text-text-3 truncate"
+                    className="text-lg font-outfit-bold text-text-3"
                   >
                     {community.name}
                   </Text>
-                  <Text className="text-[14px] text-text-4 font-dosis-regular">
+                  <Text className="text-sm text-text-4 font-outfit-light">
                     {community.total_members} miembros
                   </Text>
                 </View>
@@ -266,12 +265,11 @@ export default function CommunityScreen() {
                   className="ml-auto"
                 >
                   <Text
-                    className={`text-[13px] rounded-full px-2.5 py-1.5 tracking-tighter font-dosis-bold 
-                            ${
-                              isMember
-                                ? "bg-bg-semi-white text-text-3 border border-gray-600"
-                                : "bg-bg-semi-black text-text-1"
-                            }`}
+                    className={`text-sm rounded-full px-2.5 py-1.5 font-outfit-bold ${
+                      isMember
+                        ? "bg-bg-semi-white text-text-3 border border-gray-600"
+                        : "bg-bg-semi-black text-text-1"
+                    }`}
                   >
                     {isMember ? "Te uniste" : "Unirse"}
                   </Text>
@@ -279,7 +277,7 @@ export default function CommunityScreen() {
 
                 {isMember && (
                   <TouchableOpacity className="flex-row items-center justify-center gap-x-2">
-                    <Text className="text-[14px] text-text-5 font-dosis-regular leading-6">
+                    <Text className="text-[14px] text-text-5 font-outfit-light leading-6">
                       Notificaciones
                     </Text>
                   </TouchableOpacity>
@@ -292,8 +290,8 @@ export default function CommunityScreen() {
               className="flex-row gap-x-2"
             >
               <Text
-                numberOfLines={isExpanded ? undefined : 1}
-                className="text-[14px] text-text-5 font-dosis-regular leading-6"
+                numberOfLines={isExpanded ? undefined : 2}
+                className="text-sm text-text-5 font-outfit-light"
               >
                 {community.description}
               </Text>
@@ -306,7 +304,7 @@ export default function CommunityScreen() {
                     key={tag.id}
                     className="px-2 py-1 rounded-[5px] border border-gray-200"
                   >
-                    <Text className="text-[14px] text-text-5 font-dosis-regular">
+                    <Text className="text-sm text-text-5 font-outfit-light">
                       {tag.name}
                     </Text>
                   </TouchableOpacity>

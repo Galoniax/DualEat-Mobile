@@ -13,42 +13,62 @@ import {
 } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Entypo, MaterialCommunityIcons, Octicons } from "@expo/vector-icons";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  deleteNotification,
-  getNotifications,
-  readAllNotifications,
-} from "@/services/notifications.api";
+
 import { Notification } from "@/interface/global";
 import { getShortTimeAgo } from "@/utils/date";
 import Swipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import { useCallback } from "react";
+import { useNotifications } from "@/hooks/api/notification/useNotifications";
 
 export default function NotificationView() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const {
-    data: notifications,
+    notifications,
+    markAsRead,
+    markAsReadSingle,
+    deleteNotification,
     isLoading,
-    isFetching,
     refetch,
-  } = useQuery({
-    queryKey: ["notifications"],
-    queryFn: async () => {
-      const response = await getNotifications();
-      return response.data as Notification[];
-    },
+  } = useNotifications();
 
-    staleTime: 1000 * 60 * 30,
-    refetchOnReconnect: true,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    retry: false,
-  });
+  console.log(notifications);
+
+  const handleNavigation = (item: Notification) => {
+    switch (item.content_type) {
+      case "ORDER":
+        //router.push(ROUTES.USER.ORDER_INFO(item.metadata.order_id));
+        break;
+      case "COMMUNITY":
+        //router.push(ROUTES.USER.COMMUNITY_SEARCH);
+        break;
+      case "POST":
+        /*router.push(ROUTES.USER.POST(
+            item.metadata.post_id,
+            item.metadata.post_slug,
+          ));*/
+        break;
+      case "COMMENT":
+        /*router.push(ROUTES.USER.RECIPE(
+            item.metadata.recipe_id,
+            item.metadata.recipe_slug,
+          ));*/
+        break;
+      case "LOCAL":
+        /*router.push(ROUTES.USER.LOCAL(
+            item.metadata.community_slug,
+            item.metadata.recipe_id,
+            item.metadata.recipe_slug,
+          ));*/
+        break;
+      default:
+        break;
+    }
+  };
 
   const EmptyHeader = () => {
-    if (isFetching) return null;
+    if (isLoading) return null;
 
     return (
       <View className="w-full justify-center items-center flex-col gap-y-6">
@@ -72,10 +92,10 @@ export default function NotificationView() {
             size={24}
             color="#2F2F2F"
           />
-          <Text className="text-center font-dosis-bold text-[16px] text-text-3">
-            &quot;Todo en Calma por Aquí&quot;
+          <Text className="text-center font-outfit-bold text-base text-text-3">
+            &quot;Todo en calma por aquí&quot;
           </Text>
-          <Text className="text-center font-dosis-regular text-[14px] text-text-4">
+          <Text className="text-center font-outfit-light text-base text-text-4">
             Tus alertas, mensajes y novedades importantes aparecerán en este
             lugar.
           </Text>
@@ -90,98 +110,15 @@ export default function NotificationView() {
     }, [refetch]),
   );
 
-  const queryClient = useQueryClient();
-
-  // TODO: Toast
-  const { mutate: deleteNotificationMutation } = useMutation({
-    mutationFn: async ({ id }: { id: string }) => {
-      const response = await deleteNotification(id);
-
-      if (!response.success || !response.data) {
-        throw new Error("Error en la respuesta del servidor");
-      }
-
-      console.log("Mensaje enviado", JSON.stringify(response.data, null, 2));
-
-      return response.data;
-    },
-
-    onMutate: async ({ id }: { id: string }) => {
-      await queryClient.cancelQueries({ queryKey: ["notifications"] });
-
-      const previous = queryClient.getQueryData([
-        "notifications",
-      ]) as Notification[];
-
-      queryClient.setQueryData(
-        ["notifications"],
-        (old: Notification[] | undefined) => {
-          if (!old) return old;
-          return old.filter((n) => n.id !== id);
-        },
-      );
-
-      return { previous, id };
-    },
-
-    onError: (err, { id }, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["notifications"], context.previous);
-      }
-    },
-
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-    },
-  });
-
-  const { mutate: readAllNotificationMutation } = useMutation({
-    mutationFn: async () => {
-      const response = await readAllNotifications();
-      if (!response.success || !response.data) {
-        throw new Error("Error en la respuesta del servidor");
-      }
-      return response.data;
-    },
-
-    onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ["notifications"] });
-
-      const previous = queryClient.getQueryData([
-        "notifications",
-      ]) as Notification[];
-
-      queryClient.setQueryData(
-        ["notifications"],
-        (old: Notification[] | undefined) => {
-          if (!old) return old;
-          return old.map((n) => ({ ...n, read: true }));
-        },
-      );
-
-      return { previous };
-    },
-
-    onError: (err, _, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["notifications"], context.previous);
-      }
-    },
-
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-    },
-  });
-
   const RightActions = (item: Notification) => (
     <TouchableOpacity
-      onPress={() => deleteNotificationMutation({ id: item.id })}
+      onPress={() => deleteNotification(item.id)}
       style={{ paddingHorizontal: 26 }}
-      className="bg-bg-red flex justify-center items-end "
+      className="bg-bg-red flex flex-1 justify-center items-end "
     >
       <View className="flex-col items-center gap-y-0.5">
         <Octicons name="trash" size={18} color="#fff" />
-        <Text className="text-text-1 font-dosis-bold text-[12px]">Borrar</Text>
+        <Text className="text-text-1 font-outfit-bold text-[12px]">Borrar</Text>
       </View>
     </TouchableOpacity>
   );
@@ -194,7 +131,7 @@ export default function NotificationView() {
       <View
         style={{
           paddingHorizontal: insets.left + insets.right + 10,
-          paddingVertical: insets.top / 2,
+          paddingTop: insets.top / 2,
         }}
         className="flex-row items-center justify-between gap-x-4 w-full"
       >
@@ -210,12 +147,12 @@ export default function NotificationView() {
         >
           <Entypo name="chevron-small-left" size={32} color="#2F2F2F" />
         </TouchableOpacity>
-        <Text className="font-dosis-bold text-[16px] text-text-3">
+        <Text className="font-outfit-bold text-base text-text-3">
           Notificaciones
         </Text>
 
         <TouchableOpacity
-          onPress={() => readAllNotificationMutation()}
+          onPress={() => markAsRead()}
           hitSlop={{
             top: 10,
             bottom: 10,
@@ -248,49 +185,43 @@ export default function NotificationView() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={<EmptyHeader />}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={{ gap: 8 }}
           renderItem={({ item }: { item: Notification }) => (
             <Swipeable
               renderRightActions={() => RightActions(item)}
               onSwipeableOpen={(direction) => {
                 if (direction === "right") {
-                  deleteNotificationMutation({ id: item.id });
+                  deleteNotification(item.id);
                 }
               }}
-              rightThreshold={40}
-              friction={2}
+              rightThreshold={10}
+              friction={1.5}
               overshootRight={false}
             >
               <TouchableOpacity
-                className={`w-full flex-row gap-x-3 px-4 py-3 justify-between items-start ${!item.read ? "bg-bg-gray" : "bg-bg-semi-white"} `}
+                onPress={() => {
+                  markAsReadSingle(item.id);
+                  handleNavigation(item);
+                }}
+                className={`w-full flex-row border-y border-dashed border-gray-200 gap-x-3 px-4 py-3 justify-between items-start ${item.read ? "bg-bg-semi-white" : "bg-bg-gray"} `}
               >
-                <Image
-                  source={{
-                    uri:
-                      item.content_type === "COMMENT"
-                        ? item.user?.avatar_url
-                        : "https://ohhvldagwoycuifwhgtc.supabase.co/storage/v1/object/public/assets/android-icon-foreground.png",
-                  }}
-                  style={{ width: 32, height: 32, borderRadius: 999 }}
-                  resizeMode="cover"
-                />
-
                 <View style={{ flex: 1 }} className="flex-col gap-y-1">
                   <Text
                     numberOfLines={1}
                     ellipsizeMode="tail"
-                    className="font-dosis-bold text-[14px] text-text-3"
+                    className="font-outfit-bold text-[14px] text-text-3"
                   >
-                    {item.metadata.title ?? ""}
+                    {item.title}
                   </Text>
                   <Text
                     numberOfLines={3}
                     ellipsizeMode="tail"
-                    className="font-dosis-regular text-[14px] text-text-5"
+                    className="font-outfit-light text-[14px] text-text-5"
                   >
                     &quot;{item.message}&quot;
                   </Text>
 
-                  <Text className="font-dosis-regular text-[12px] text-text-5">
+                  <Text className="font-outfit-light text-[12px] text-text-5">
                     {getShortTimeAgo(item.created_at)}
                   </Text>
                 </View>

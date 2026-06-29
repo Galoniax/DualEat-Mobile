@@ -1,5 +1,12 @@
 import React from "react";
-import { View, Text, TouchableOpacity, ImageBackground, ActivityIndicator, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ImageBackground,
+  ActivityIndicator,
+  ScrollView,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGlobalSearchParams, useRouter } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -15,7 +22,11 @@ export default function LocalHomeScreen() {
   const { local_id } = useGlobalSearchParams();
   const { user } = useAuth();
 
-  const { data: response, isLoading, isError } = useQuery({
+  const {
+    data: response,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["local", local_id],
     queryFn: () => getLocalById(local_id as string),
     enabled: !!local_id,
@@ -34,15 +45,20 @@ export default function LocalHomeScreen() {
   if (isError || !localData) {
     return (
       <View className="flex-1 bg-bg-gray justify-center items-center px-6">
-        <Ionicons name="alert-circle-outline" size={48} color="#707070" className="mb-4" />
-        <Text className="text-[16px] font-dosis-medium text-text-4 text-center">
+        <Ionicons
+          name="alert-circle-outline"
+          size={48}
+          color="#707070"
+          className="mb-4"
+        />
+        <Text className="text-[16px] font-outfit-regular text-text-4 text-center">
           Error al cargar los datos del local.
         </Text>
         <TouchableOpacity
           onPress={() => router.back()}
           className="mt-6 px-6 py-3 bg-bg-red rounded-full"
         >
-          <Text className="text-white font-dosis-bold">Volver atrás</Text>
+          <Text className="text-white font-outfit-bold">Volver atrás</Text>
         </TouchableOpacity>
       </View>
     );
@@ -79,9 +95,9 @@ export default function LocalHomeScreen() {
             >
               <Ionicons name="chevron-back" size={24} color="#fff" />
             </TouchableOpacity>
-            
+
             <View className="bg-bg-red px-3 py-1.5 rounded-full border border-white/20">
-              <Text className="text-[12px] font-dosis-bold text-white uppercase tracking-wider">
+              <Text className="text-[12px] font-outfit-bold text-white uppercase tracking-wider">
                 Staff
               </Text>
             </View>
@@ -89,13 +105,13 @@ export default function LocalHomeScreen() {
 
           {/* INFORMACIÓN SUPERPUESTA */}
           <View className="absolute bottom-6 left-0 right-0 px-6">
-            <Text className="text-[32px] font-dosis-bold text-white mb-2 shadow-sm">
+            <Text className="text-[32px] font-outfit-bold text-white mb-2 shadow-sm">
               {localData.name}
             </Text>
             {localData.average_rating ? (
               <View className="flex-row items-center gap-x-1.5 bg-black/40 self-start px-2.5 py-1 rounded-full">
                 <FontAwesome name="star" size={14} color="#FBBF24" />
-                <Text className="text-[14px] font-dosis-bold text-white">
+                <Text className="text-[14px] font-outfit-bold text-white">
                   {Number(localData.average_rating).toFixed(1)}
                 </Text>
               </View>
@@ -105,27 +121,34 @@ export default function LocalHomeScreen() {
 
         {/* CONTENIDO PRINCIPAL */}
         <View className="bg-bg-gray -mt-4 rounded-t-3xl px-6 pt-8 pb-10">
-          
           {localData.description ? (
             <View className="mb-6">
-              <Text className="text-[18px] font-dosis-bold text-text-3 mb-2">Acerca del local</Text>
-              <Text className="text-[15px] font-dosis-medium text-text-5 leading-6">
+              <Text className="text-[18px] font-outfit-bold text-text-3 mb-2">
+                Acerca del local
+              </Text>
+              <Text className="text-[15px] font-outfit-regular text-text-5 leading-6">
                 {localData.description}
               </Text>
             </View>
           ) : null}
 
           <View className="bg-white rounded-2xl p-5 shadow-sm mt-2">
-            <Text className="text-[16px] font-dosis-bold text-text-3 mb-4">Información de contacto</Text>
-            
+            <Text className="text-[16px] font-outfit-bold text-text-3 mb-4">
+              Información de contacto
+            </Text>
+
             {localData.address ? (
               <View className="flex-row items-center gap-4 mb-4">
                 <View className="w-10 h-10 rounded-full bg-red-50 justify-center items-center">
                   <Ionicons name="location" size={20} color="#B53325" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-[13px] font-dosis-medium text-text-6">Dirección</Text>
-                  <Text className="text-[15px] font-dosis-semibold text-text-3">{localData.address}</Text>
+                  <Text className="text-[13px] font-outfit-regular text-text-6">
+                    Dirección
+                  </Text>
+                  <Text className="text-[15px] font-outfit-medium text-text-3">
+                    {localData.address}
+                  </Text>
                 </View>
               </View>
             ) : null}
@@ -136,20 +159,28 @@ export default function LocalHomeScreen() {
                   <Ionicons name="call" size={20} color="#3578e4" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-[13px] font-dosis-medium text-text-6">Teléfono Fijo</Text>
-                  <Text className="text-[15px] font-dosis-semibold text-text-3">{localData.phone}</Text>
+                  <Text className="text-[13px] font-outfit-regular text-text-6">
+                    Teléfono Fijo
+                  </Text>
+                  <Text className="text-[15px] font-outfit-medium text-text-3">
+                    {localData.phone}
+                  </Text>
                 </View>
               </View>
             ) : null}
-            
+
             {(localData as any).cellphone ? (
               <View className="flex-row items-center gap-4 mb-4">
                 <View className="w-10 h-10 rounded-full bg-green-50 justify-center items-center">
                   <Ionicons name="logo-whatsapp" size={20} color="#16A34A" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-[13px] font-dosis-medium text-text-6">Celular / WhatsApp</Text>
-                  <Text className="text-[15px] font-dosis-semibold text-text-3">{(localData as any).cellphone}</Text>
+                  <Text className="text-[13px] font-outfit-regular text-text-6">
+                    Celular / WhatsApp
+                  </Text>
+                  <Text className="text-[15px] font-outfit-medium text-text-3">
+                    {(localData as any).cellphone}
+                  </Text>
                 </View>
               </View>
             ) : null}
@@ -160,8 +191,12 @@ export default function LocalHomeScreen() {
                   <Ionicons name="mail" size={20} color="#e5a657" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-[13px] font-dosis-medium text-text-6">Correo electrónico</Text>
-                  <Text className="text-[15px] font-dosis-semibold text-text-3">{localData.email}</Text>
+                  <Text className="text-[13px] font-outfit-regular text-text-6">
+                    Correo electrónico
+                  </Text>
+                  <Text className="text-[15px] font-outfit-medium text-text-3">
+                    {localData.email}
+                  </Text>
                 </View>
               </View>
             ) : null}

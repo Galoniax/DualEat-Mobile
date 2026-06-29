@@ -1,4 +1,4 @@
-import { MenuLocal } from "@/app/(client)/(out)/l/[local_id]/[local_slug]";
+import { MenuLocal } from "@/app/(client)/(out)/local/[local_id]";
 import { LocalReview, ResponseWithPagination } from "@/interface/global";
 import { getLocalReviews } from "@/services/discovery.api";
 import { getShortTimeAgo } from "@/utils/date";
@@ -18,9 +18,11 @@ import { Path, Svg } from "react-native-svg";
 export default function MenuReviews({
   local,
   insets,
+  ListHeaderComponent,
 }: {
   local: MenuLocal;
   insets: EdgeInsets;
+  ListHeaderComponent?: () => React.ReactNode;
 }) {
   const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage } =
     useInfiniteQuery({
@@ -103,18 +105,22 @@ export default function MenuReviews({
 
   const renderItem = useCallback(({ item }: { item: LocalReview }) => {
     return (
-      <View key={item.id} className="flex-col gap-y-3">
+      <View
+        key={item.id}
+        style={{ paddingHorizontal: insets.right + insets.left + 12 }}
+        className="flex-col gap-y-3"
+      >
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center gap-x-2">
             <Image
               source={{ uri: item?.user?.avatar_url }}
               className="w-6 h-6 rounded-full"
             />
-            <Text className="text-text-3 text-[14px] font-dosis-bold">
+            <Text className="text-text-3 text-[14px] font-outfit-bold">
               {item?.user?.name}
             </Text>
           </View>
-          <Text className="text-text-5 text-[14px] font-dosis-regular">
+          <Text className="text-text-5 text-[14px] font-outfit-light">
             {getShortTimeAgo(item?.created_at || "N/A", true)}
           </Text>
         </View>
@@ -146,11 +152,11 @@ export default function MenuReviews({
                     className="w-5 h-5 rounded-full"
                     resizeMode="cover"
                   />
-                  <Text className="text-text-5 text-[12px] font-dosis-regular">
+                  <Text className="text-text-5 text-[12px] font-outfit-light">
                     {orderItem.food.name}
                   </Text>
                   {!isLast && (
-                    <Text className="font-dosis-regular text-text-5">|</Text>
+                    <Text className="font-outfit-light text-text-5">|</Text>
                   )}
                 </View>
               );
@@ -161,7 +167,7 @@ export default function MenuReviews({
         <Text
           ellipsizeMode="tail"
           numberOfLines={2}
-          className="text-text-6 text-[14px] font-dosis-medium leading-6"
+          className="text-text-6 text-[14px] font-outfit-regular leading-6"
         >
           {item?.comment}
         </Text>
@@ -169,21 +175,27 @@ export default function MenuReviews({
     );
   }, []);
 
-  const ListHeaderComponent = () => {
+  const renderCombinedHeader = () => {
     return (
-      <View className="flex-col gap-y-0.5 my-4">
-        <View className="flex-row items-center justify-start gap-x-2">
-          <Text className="text-text-3 text-[26px] font-dosis-bold">
-            {local?.average_rating?.toFixed(2) || 0}
-          </Text>
-          <View className="flex-row items-center gap-x-1">
-            {stars(local?.average_rating || 0, 22)}
+      <View>
+        {ListHeaderComponent && ListHeaderComponent()}
+        <View
+          style={{ paddingHorizontal: insets.right + insets.left + 12 }}
+          className="flex-col gap-y-0.5 my-4"
+        >
+          <View className="flex-row items-center justify-start gap-x-2">
+            <Text className="text-text-3 text-[26px] font-outfit-bold">
+              {local?.average_rating?.toFixed(2) || 0}
+            </Text>
+            <View className="flex-row items-center gap-x-1">
+              {stars(local?.average_rating || 0, 22)}
+            </View>
           </View>
-        </View>
 
-        <Text className="text-text-5 text-[14px] font-dosis-bold mb-4">
-          {total} opiniones
-        </Text>
+          <Text className="text-text-5 text-[14px] font-outfit-bold mb-4">
+            {total} opiniones
+          </Text>
+        </View>
       </View>
     );
   };
@@ -204,10 +216,13 @@ export default function MenuReviews({
             showsVerticalScrollIndicator={false}
             renderItem={renderItem}
             keyExtractor={(item) => item.id.toString()}
-            ListHeaderComponent={ListHeaderComponent}
+            ListHeaderComponent={renderCombinedHeader}
             ListEmptyComponent={
-              <View className="flex-col items-center justify-center h-full">
-                <Text className="text-text-3 text-[15px] font-dosis-bold">
+              <View
+                style={{ paddingHorizontal: insets.right + insets.left + 12 }}
+                className="flex-col items-center justify-center h-full"
+              >
+                <Text className="text-text-3 text-[15px] font-outfit-bold">
                   No hay reseñas
                 </Text>
               </View>
@@ -223,7 +238,6 @@ export default function MenuReviews({
             }
             contentContainerStyle={{
               paddingBottom: insets.bottom + 20,
-              paddingHorizontal: insets.right + insets.left + 12,
             }}
           />
         )

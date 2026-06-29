@@ -1,9 +1,9 @@
-import { QROrderPayload } from '@/interface/global';
+import { QRData } from '@/interface/global';
 import { create } from 'zustand';
 
 interface OrderState {
-  tempOrder: QROrderPayload | null; 
-  setTempOrder: (order: QROrderPayload) => void; // Borrado automatico al resetear el state
+  tempOrder: QRData | null; 
+  setTempOrder: (order: QRData) => void;
   clearTempOrder: () => void;
 }
 
@@ -14,7 +14,6 @@ export const useOrderStore = create<OrderState>((set) => ({
 }));
 
 
-// TODO: 
 /*interface OrderState {
   tempOrder: string | null; 
   setTempOrder: (order: string) => void; // Borrado automatico al resetear el state

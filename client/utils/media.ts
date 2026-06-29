@@ -1,8 +1,9 @@
 import { UploadableFile } from "@/interface/global.dto";
+import { globalToast as toast } from "@/utils/toast";
 import * as ImagePicker from "expo-image-picker";
 
 const MAX_IMAGE_SIZE_MB = 3;
-const MAX_VIDEO_SIZE_MB = 30;
+const MAX_VIDEO_SIZE_MB = 20;
 
 const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
 const MAX_VIDEO_SIZE_BYTES = MAX_VIDEO_SIZE_MB * 1024 * 1024;
@@ -29,7 +30,7 @@ export const pickMedia = async ({
 }: PickMediaOptions = {}): Promise<UploadableFile[]> => {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== "granted") {
-    console.log("Permiso de galería denegado");
+    toast.error("Permisos denegados", "Se necesitan permisos para acceder a la galería");
     return [];
   }
 

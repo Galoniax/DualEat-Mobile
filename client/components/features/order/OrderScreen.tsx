@@ -3,15 +3,11 @@ import {
   ROUTES,
   STATUS_COLORS,
 } from "@/constants/constants";
-import { Order, ResponseWithPagination } from "@/interface/global";
+import { Order, OrderStatus, ResponseWithPagination } from "@/interface/global";
 import { getUserOrders } from "@/services/order.api";
 import { formatPrice } from "@/utils/distance";
-import { showToast } from "@/utils/toast";
-import {
-  FontAwesome,
-  Ionicons,
-  MaterialCommunityIcons,
-} from "@expo/vector-icons";
+
+import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -22,35 +18,33 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  RefreshControl,
+  ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { globalToast as toast } from "@/utils/toast";
+
+type FilterKey = OrderStatus | "REVIEW";
+
 export default function OrdersView() {
   const headerHeight = useHeaderHeight();
   const router = useRouter();
 
-  const filter = {
-    completados: false,
-    cancelados: false,
-  };
-
-  type FilterKey = keyof typeof filter;
+  const [type, setType] = useState<FilterKey | undefined>(undefined);
 
   const FILTER_OPTIONS: { name: string; key: FilterKey }[] = [
-    { name: "Completados", key: "completados" },
-    { name: "Cancelados", key: "cancelados" },
+    { name: "Pendientes", key: "PENDING" },
+    { name: "Aún no retirados", key: "PAID" },
+    { name: "Completados", key: "COMPLETED" },
+    { name: "Sin reseña", key: "REVIEW" },
   ];
 
-  const [filters, setFilters] = useState<typeof filter>(filter);
-
-  const toggleFilter = (key: keyof typeof filter) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+  const toggleFilter = (key: FilterKey) => {
+    setType((prev) => (prev === key ? undefined : key));
   };
 
   const {
@@ -59,13 +53,15 @@ export default function OrdersView() {
     hasNextPage,
     isFetchingNextPage,
     isError,
-    error,
     refetch,
     isLoading,
   } = useInfiniteQuery<ResponseWithPagination<Order>>({
-    queryKey: ["userOrders"],
+    queryKey: ["userOrders", type],
     queryFn: async ({ pageParam = 1 }) => {
-      const response = await getUserOrders(pageParam as number);
+      const response = await getUserOrders(
+        pageParam as number,
+        type as FilterKey,
+      );
 
       if (!response) throw new Error("Error obteniendo las órdenes");
       return response as ResponseWithPagination<Order>;
@@ -96,19 +92,8 @@ export default function OrdersView() {
     }
   };
 
-  let filtered = orders;
-
-  if (filters.completados) {
-    filtered = filtered.filter((order) => order.status === "COMPLETED");
-  }
-
-  if (filters.cancelados) {
-    filtered = filtered.filter((order) => order.status === "CANCELED");
-  }
-
-  const renderOrderItem = useCallback(
+  const renderItem = useCallback(
     ({ item }: { item: Order }) => {
-
       return (
         <TouchableOpacity
           onPress={() => {
@@ -119,31 +104,26 @@ export default function OrdersView() {
               },
             });
           }}
-          className="px-2 py-4 mb-2 flex-row gap-4 items-stretch border border-dashed border-gray-400 rounded-lg"
+          className="px-2 py-4 flex-row gap-x-4 border border-dashed border-gray-400 rounded-lg"
         >
-          <View className="gap-2">
-            <Image
-              source={{ uri: item.local?.image_url || undefined }}
-              className="w-12 h-12 rounded-[5px]"
-            />
-            {item.status === "PAID" && item.short_code && (
-              <TouchableOpacity
-                className={`bg-bg-semi-black py-3 rounded-[5px] items-center`}
-              >
-                <Ionicons name="qr-code-sharp" size={20} color="#fff" />
-              </TouchableOpacity>
-            )}
-          </View>
-          <View className="flex-1 flex-col gap-0.5">
+          <Image
+            source={{ uri: item.local?.image_url || undefined }}
+            className="w-8 h-full rounded-[5px]"
+            resizeMode="cover"
+          />
+
+          <View className="flex-1 flex-col gap-y-1">
             <View className="flex-row items-end gap-2">
               <Text
-                className={`text-[12px] font-dosis-bold 
-                ${STATUS_COLORS[item.status]}`}
+                style={{
+                  color: STATUS_COLORS[item.status],
+                }}
+                className={`text-xs font-outfit-bold`}
               >
                 {ORDER_STATUS_DICT[item.status] || "Desconocido"}
               </Text>
 
-              <Text className="text-text-3 text-[11px] font-dosis-medium">
+              <Text className="text-text-3 text-xs font-outfit-regular">
                 {format(
                   new Date(item?.delivery_date || item.created_at),
                   "EEE d MMM '•' HH:mm'hs'",
@@ -153,37 +133,37 @@ export default function OrdersView() {
                 )}
               </Text>
               {item.short_code && item.status === "PAID" && (
-                <Text className="text-text-3 text-[11px] font-dosis-bold">
+                <Text className="text-text-3 text-xs font-outfit-bold">
                   Código: {item.short_code || "N/A"}
                 </Text>
               )}
             </View>
             <Text
-              className="text-[16px] font-dosis-bold text-text-3 mt-1 max-w-[70%] text-ellipsis overflow-hidden"
-              numberOfLines={2}
+              className="text-lg font-outfit-bold text-text-3 text-ellipsis overflow-hidden"
+              numberOfLines={1}
             >
               {item.local?.name || "Local desconocido"}
               {item.local?.address ? ` - ${item.local.address}` : ""}
             </Text>
 
             <Text
-              className="text-[13px] font-dosis-regular text-text-3"
+              className="text-sm font-outfit-light text-text-3"
               numberOfLines={1}
             >
               {item._count?.order_items} artículos
             </Text>
 
-            <View className="flex-row items-center gap-1 mt-1">
+            <View className="flex-row items-center gap-1">
               <FontAwesome name="star" size={10} color="#2F2F2F" />
               <Text
-                className="text-[11px] font-dosis-bold text-text-3"
+                className="text-xs font-outfit-bold text-text-3"
                 numberOfLines={1}
               >
                 {item.review?.rating || "Sin calificar"}
               </Text>
             </View>
           </View>
-          <Text className="text-[17px] absolute right-4 top-1/2 -translate-y-1/2 font-dosis-bold text-text-3">
+          <Text className="text-lg absolute right-4 top-1/2 -translate-y-1/2 font-outfit-bold text-text-3">
             {formatPrice(item.total)}
           </Text>
         </TouchableOpacity>
@@ -193,30 +173,28 @@ export default function OrdersView() {
   );
 
   if (isError) {
-    showToast(
-      "error",
-      error?.message || "Error obteniendo tus pedidos",
-      "Error",
-    );
+    toast.error("Error obteniendo las órdenes");
   }
 
   return (
     <SafeAreaView
       style={{ paddingTop: headerHeight }}
       edges={["left", "right"]}
-      className="flex-1 bg-bg-semi-white"
+      className="flex-1 flex-col bg-bg-semi-white gap-y-2"
     >
-      {/** FILTROS */}
-      <View className="w-full flex-row items-center justify-center gap-4 px-4 py-2 mb-2">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 12, paddingHorizontal: 16 }}
+        className="px-4 py-2 flex-grow-0"
+      >
         <View className="flex-row items-center gap-x-3">
           <Ionicons name="options-sharp" size={16} color="black" />
-          <Text className="text-[13px] font-dosis-bold text-text-3">
-            Filtros
-          </Text>
+          <Text className="text-xs font-outfit-bold text-text-3">Filtros</Text>
         </View>
 
         {FILTER_OPTIONS.map((option) => {
-          const isActive = filters[option.key];
+          const isActive = type === option.key;
 
           return (
             <TouchableOpacity
@@ -227,8 +205,8 @@ export default function OrdersView() {
               }`}
             >
               <Text
-                className={`text-[13px] font-dosis-bold ${
-                  isActive ? "text-white" : "text-gray-700"
+                className={`text-xs font-outfit-bold ${
+                  isActive ? "text-white" : "text-text-5"
                 }`}
               >
                 {option.name}
@@ -236,46 +214,55 @@ export default function OrdersView() {
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
 
-      {/** LISTA DE ORDENES */}
-      <View className="flex-1">
-        {isLoading ? (
-          <ActivityIndicator size="large" color="#B53325" className="mt-10" />
-        ) : (
-          <FlatList
-            data={filtered}
-            keyExtractor={(item, index) =>
-              item.id ? item.id.toString() : index.toString()
-            }
-            renderItem={renderOrderItem}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={
-              isFetchingNextPage ? (
-                <ActivityIndicator
-                  size="small"
-                  color="#3578e4"
-                  className="my-4"
-                />
-              ) : null
-            }
-            ListEmptyComponent={
-              <View className="flex-1 justify-center items-center flex-row gap-x-4 mt-10">
-                <MaterialCommunityIcons
-                  name="book-remove-multiple-outline"
-                  size={18}
-                  color="#4A4947"
-                />
-                <Text className="text-text-3 text-[16px] font-dosis-medium">
-                  Aún no tienes órdenes.
-                </Text>
-              </View>
-            }
-          />
-        )}
-      </View>
+      {isLoading ? (
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size={30} color="#B53325" />
+        </View>
+      ) : (
+        <FlatList
+          data={orders}
+          keyExtractor={(item, index) =>
+            item.id ? item.id.toString() : index.toString()
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={refetch}
+              colors={["#B53325"]}
+            />
+          }
+          renderItem={renderItem}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingBottom: 20,
+            gap: 10,
+            flex: 1,
+            flexGrow: 1,
+          }}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <ActivityIndicator
+                size="small"
+                color="#3578e4"
+                className="my-4"
+              />
+            ) : null
+          }
+          ListEmptyComponent={
+            <View className="flex-1 justify-center items-center">
+              <Text className="text-text-3 text-base font-outfit-light">
+                {type === "REVIEW"
+                  ? "No hay órdenes pendientes de calificación."
+                  : "Aún no tienes órdenes."}
+              </Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }

@@ -1,23 +1,50 @@
 import Toast from "react-native-toast-message";
 
-export const showToast = (
-  type: "success" | "error" | "info",
-  message: string,
-  title?: string,
-) => {
-  Toast.show({
-    type,
-    text1:
-      title ??
-      (type === "success"
-        ? "Éxito"
-        : type === "error"
-          ? "Error"
-          : "Información"),
-    text2: message,
-    position: "top",
-    autoHide: true,
-    visibilityTime: 3000,
-    swipeable: true,
-  });
+export const globalToast = {
+  success(title: string, message?: string, duration: number = 4000) {
+    Toast.show({
+      type: 'success',
+      text1: title,
+      text2: message,
+      visibilityTime: duration,
+      autoHide: true,
+    });
+  },
+
+  error(title: string, message?: string, duration: number = 4000) {
+    Toast.show({
+      type: 'error',
+      text1: title,
+      text2: message,
+      visibilityTime: duration,
+      autoHide: true,
+    });
+  },
+
+  info(title: string, message?: string, duration: number = 4000) {
+    Toast.show({
+      type: 'info',
+      text1: title,
+      text2: message,
+      visibilityTime: duration,
+      autoHide: true,
+    });
+  },
+
+  warning(title: string, message?: string, duration: number = 4000) {
+    Toast.show({
+      type: 'warning',
+      text1: title,
+      text2: message,
+      visibilityTime: duration,
+      autoHide: true,
+    });
+  },
+
+  hide() {
+    Toast.hide();
+  }
 };
+
+export const showToast = globalToast.success;
+export default globalToast;

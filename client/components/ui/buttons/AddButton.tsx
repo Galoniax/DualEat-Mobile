@@ -43,15 +43,29 @@ const AddButton = ({
       }}
     >
       <TouchableOpacity onPress={handlePressTrash} hitSlop={10}>
-        <Feather name="trash-2" size={14} color={localQuantity > 0 ? "#fff" : "#111"} />
+        <Feather
+          name="trash-2"
+          size={14}
+          color={localQuantity > 0 ? "#fff" : "#111"}
+        />
       </TouchableOpacity>
 
-      <Text className="font-dosis-bold text-[13.5px]" style={{ marginHorizontal: 8, color: localQuantity > 0 ? "#fff" : "#111" }}>
+      <Text
+        className="font-outfit-bold text-[13.5px]"
+        style={{
+          marginHorizontal: 8,
+          color: localQuantity > 0 ? "#fff" : "#111",
+        }}
+      >
         {localQuantity}
       </Text>
 
       <TouchableOpacity onPress={handlePressAdd} hitSlop={10}>
-        <Feather name="plus" size={16} color={localQuantity > 0 ? "#fff" : "#111"} />
+        <Feather
+          name="plus"
+          size={16}
+          color={localQuantity > 0 ? "#fff" : "#111"}
+        />
       </TouchableOpacity>
     </View>
   );

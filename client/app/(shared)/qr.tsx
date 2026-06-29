@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -103,6 +103,30 @@ export default function QrScreen() {
     },
   });
 
+  const locals = useMemo(() => {
+    return [...nearbyLocals].sort((a, b) => {
+      const distanceA = location?.coords
+        ? calculateDistance(
+            location.coords.latitude,
+            location.coords.longitude,
+            a.latitude,
+            a.longitude,
+          )
+        : 0;
+
+      const distanceB = location?.coords
+        ? calculateDistance(
+            location.coords.latitude,
+            location.coords.longitude,
+            b.latitude,
+            b.longitude,
+          )
+        : 0;
+
+      return distanceA - distanceB;
+    });
+  }, [nearbyLocals, location]);
+
   useFocusEffect(
     useCallback(() => {
       refetch();
@@ -133,7 +157,7 @@ export default function QrScreen() {
             e.stopPropagation();
             router.push({
               pathname: ROUTES.USER.LOCAL,
-              params: { local_id: item.id, local_slug: item.slug},
+              params: { local_id: item.id },
             });
           }}
           className=" rounded-full flex-row items-center py-2 mr-4 border border-gray-200 justify-between px-4 border-opacity-50"
@@ -144,7 +168,7 @@ export default function QrScreen() {
           />
 
           <Text
-            className="text-text-1 font-dosis-bold text-[14px]"
+            className="text-text-1 font-outfit-bold text-[14px]"
             numberOfLines={1}
           >
             {item.name}
@@ -152,7 +176,7 @@ export default function QrScreen() {
 
           <View className="flex-row items-center gap-2">
             <FontAwesome5 name="walking" size={12} color="#fff" />
-            <Text className="text-text-1 text-[12px]  font-dosis-bold">
+            <Text className="text-text-1 text-[12px]  font-outfit-bold">
               {displayDistance}
             </Text>
           </View>
@@ -168,8 +192,6 @@ export default function QrScreen() {
     setScanned(true);
 
     console.log("QR Data: ", data);
-
-   
 
     const result = parseQR(data);
 
@@ -193,8 +215,6 @@ export default function QrScreen() {
         })),
       }; */
 
-    
-
     if (result.data?.t === "order") {
       // TODO: result.data.oi params order_id
 
@@ -202,10 +222,10 @@ export default function QrScreen() {
 
       useOrderStore.getState().setTempOrder(result.data);
 
-      router.push({
+      /*router.push({
         pathname: ROUTES.SHARED.ORDER_INFO,
         params: { order_id },
-      });
+      });*/
     } else if (result.data?.t === "user") {
     }
   };
@@ -249,7 +269,7 @@ export default function QrScreen() {
             <Ionicons name="qr-code-sharp" size={30} color="#fff" />
           </View>
 
-          <Text className="text-white text-center text-[13px] font-dosis-regular mt-4">
+          <Text className="text-white text-center text-[13px] font-outfit-light mt-4">
             -- Locales cercanos --
           </Text>
 
@@ -259,7 +279,7 @@ export default function QrScreen() {
               <ActivityIndicator size={24} color="#3578e4" className="mt-6" />
             ) : nearbyLocals?.length > 0 ? (
               <FlatList
-                data={nearbyLocals}
+                data={locals}
                 keyExtractor={(item: Local) => item.id}
                 renderItem={(e: { item: Local }) => renderLocalCard(e)}
                 horizontal={true}
@@ -271,7 +291,7 @@ export default function QrScreen() {
               />
             ) : (
               <View className="items-center justify-center mt-4">
-                <Text className="text-text-6 font-dosis-regular max-w-[80%] text-[14.5px] text-center px-4">
+                <Text className="text-text-6 font-outfit-light max-w-[80%] text-[14.5px] text-center px-4">
                   No detectamos locales a menos de 500 metros. Acércate a uno
                   para escanear.
                 </Text>
@@ -282,7 +302,7 @@ export default function QrScreen() {
                   className="py-2 px-4 w-fit bg-bg-blue rounded-full flex-row items-center justify-center mt-4"
                 >
                   <Ionicons name="reload" size={18} color="#fff" />
-                  <Text className="text-white text-[13px] font-dosis-bold ml-2">
+                  <Text className="text-white text-[13px] font-outfit-bold ml-2">
                     Actualizar
                   </Text>
                 </TouchableOpacity>

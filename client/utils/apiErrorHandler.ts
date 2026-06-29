@@ -1,12 +1,12 @@
 import { isAxiosError } from "axios";
 
-export interface ApiErrorResponse {
+export interface ApiError {
   success: boolean;
   status: number;
   message: string;
 }
 
-export const handleApiError = (err: unknown): ApiErrorResponse => {
+export const handleApiError = (err: unknown): ApiError => {
   if (isAxiosError(err)) {
     console.log("Axios error:", err.response?.data || err.message);
 

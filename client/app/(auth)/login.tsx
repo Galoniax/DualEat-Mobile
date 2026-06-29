@@ -20,7 +20,7 @@ import { ROUTES } from "@/constants/constants";
 import { useGoogleAuth } from "@/hooks/auth/useGoogleAuth";
 import { getDeviceId } from "@/utils/device";
 import { useAuth } from "@/context/auth/AuthContext";
-import { showToast } from "@/utils/toast";
+import { globalToast as toast } from "@/utils/toast";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -39,29 +39,12 @@ export default function Login() {
 
   const onPressLogin = async () => {
     if (email.trim() === "" || password.trim() === "") {
-      showToast("error", "Por favor, completa todos los campos.", "Error");
+      toast.error("Error", "Por favor, completa todos los campos.");
       return;
     }
 
     setLoading(true);
 
-    // Bypassing reCAPTCHA: Invocamos directamente el login con un token de prueba
-    try {
-      const deviceId = await getDeviceId();
-      await login(
-        email.trim(),
-        password.trim(),
-        true,
-        "dummy-token-bypass",
-        deviceId,
-      );
-    } catch (e) {
-      console.log("Error en credenciales o servidor:", e);
-    } finally {
-      setLoading(false);
-    }
-
-    /* Código original del reCAPTCHA comentado:
     try {
       recaptchaRef.current?.injectJavaScript(`
         if (window.turnstileWidgetId !== undefined) {
@@ -73,7 +56,6 @@ export default function Login() {
       console.log("Error inyectando script: ", e);
       setLoading(false);
     }
-    */
   };
 
   // 2. Manejador de la respuesta de Cloudflare
@@ -98,17 +80,15 @@ export default function Login() {
           setLoading(false);
         }
       } else if (data.type === "error") {
-        showToast(
-          "error",
-          "Por favor, completa todos los campos.",
+        toast.error(
           "Error de Seguridad",
+          "Por favor, completa todos los campos.",
         );
         setLoading(false);
       } else if (data.type === "expired") {
-        showToast(
-          "error",
-          "Por favor, vuelve a intentar iniciar sesión.",
+        toast.error(
           "Sesión Expirada",
+          "Por favor, vuelve a intentar iniciar sesión.",
         );
         setLoading(false);
       }
@@ -176,7 +156,7 @@ export default function Login() {
               className="p-2 rounded-lg "
               onPress={() => router.push(ROUTES.AUTH.REGISTER)}
             >
-              <Text className="text-text-1 text-[13px] font-dosis-bold text-center">
+              <Text className="text-text-1 text-[13px] font-outfit-bold text-center">
                 Registrate
               </Text>
             </TouchableOpacity>
@@ -186,7 +166,7 @@ export default function Login() {
         <View className="flex flex-row items-center justify-center gap-2">
           <Image source={Logo} className="w-[30px] h-[30px] object-contain" />
 
-          <Text className="text-white text-[26px] font-dosis-bold">
+          <Text className="text-white text-[26px] font-outfit-bold">
             DualEat
           </Text>
         </View>
@@ -195,7 +175,7 @@ export default function Login() {
       <View className="flex-1 justify-end">
         <View className="w-full flex-[0.75] bg-[#1A1A1A] rounded-tr-[40px] rounded-tl-[40px] items-center pt-8">
           <View className="flex-col gap-1 items-center">
-            <Text className="text-[24px] font-dosis-bold text-text-1 mt-2 tracking-tighter">
+            <Text className="text-[24px] font-outfit-bold text-text-1 mt-2 tracking-tighter">
               Iniciar sesión
             </Text>
             <Text className="font-dosis-light text-[14px] text-text-2 mb-10">
@@ -221,7 +201,7 @@ export default function Login() {
           </View>
 
           <TouchableOpacity className=" w-[80%] mt-5 me-5">
-            <Text className="text-[13px] text-right text-text-1 font-dosis-bold tracking-tighter">
+            <Text className="text-[13px] text-right text-text-1 font-outfit-bold tracking-tighter">
               ¿Olvidaste tu contraseña?
             </Text>
           </TouchableOpacity>
@@ -234,7 +214,7 @@ export default function Login() {
             {loading ? (
               <ActivityIndicator className="py-0.5" color="#fff" />
             ) : (
-              <Text className="text-text-1 font-dosis-bold text-[15px] tracking-tighter">
+              <Text className="text-text-1 font-outfit-bold text-[15px] tracking-tighter">
                 Iniciar Sesión
               </Text>
             )}
@@ -243,7 +223,7 @@ export default function Login() {
           {/* --- Divisor "o" --- */}
           <View className="flex-row items-center w-[80%] my-6">
             <View className="flex-1 h-px bg-gray-300" />
-            <Text className="mx-4 text-text-1 font-dosis-medium">**</Text>
+            <Text className="mx-4 text-text-1 font-outfit-regular">**</Text>
             <View className="flex-1 h-px bg-gray-300" />
           </View>
 
@@ -253,7 +233,7 @@ export default function Login() {
             className="bg-bg-gray border border-gray-300 w-[80%] p-3 rounded-full items-center flex-row justify-center"
           >
             <GoogleIcon />
-            <Text className="text-text-5 font-dosis-bold text-[14px] ml-1 tracking-tighter">
+            <Text className="text-text-5 font-outfit-bold text-[14px] ml-1 tracking-tighter">
               Iniciar sesión con Google
             </Text>
           </TouchableOpacity>

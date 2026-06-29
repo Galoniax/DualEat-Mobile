@@ -47,7 +47,7 @@ export default function PostActions({ content, type }: PostActionsProps) {
     UP: type === "POST" ? (isVoteDown ? "#fff" : "#707070") : "#707070",
     DOWN: type === "POST" ? (isVoteUP ? "#fff" : "#707070") : "#707070",
 
-    HEIGHT_BUTTON: type === "POST" ? 35 : 0,
+    HEIGHT_BUTTON: type === "POST" ? 30 : 0,
   };
 
   return (
@@ -90,7 +90,7 @@ export default function PostActions({ content, type }: PostActionsProps) {
             )}
           </TouchableOpacity>
 
-          <Text className={`text-[13px] font-dosis-bold ${styles.TEXT_COLOR}`}>
+          <Text className={`text-xs font-outfit-bold ${styles.TEXT_COLOR}`}>
             {totalLikes}
           </Text>
 
@@ -125,7 +125,7 @@ export default function PostActions({ content, type }: PostActionsProps) {
         </View>
 
         {type === "POST" && (
-          <TouchableOpacity
+          <View
             style={{
               borderRadius: 999,
               flexShrink: 1,
@@ -134,10 +134,10 @@ export default function PostActions({ content, type }: PostActionsProps) {
             className="flex-row items-center gap-x-2 py-1 px-4 border border-gray-300"
           >
             <Octicons name="comment" size={16} color="#707070" />
-            <Text className="text-[13px] font-dosis-bold text-text-4">
+            <Text className="text-sm font-outfit-bold text-text-4">
               {content?.total_comments ?? 0}
             </Text>
-          </TouchableOpacity>
+          </View>
         )}
       </View>
     </View>

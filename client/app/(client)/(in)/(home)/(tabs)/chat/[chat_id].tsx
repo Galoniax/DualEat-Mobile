@@ -34,14 +34,6 @@ import { capitalize } from "@/utils/normalize";
 import { Path, Svg } from "react-native-svg";
 import RecipesModal from "@/components/features/chat/RecipesModal";
 
-const rules = {
-  strong: (node: any, children: any, parent: any, styles: any) => (
-    <Text key={node.key} style={[styles.strong, { fontFamily: "Dosis-Bold" }]}>
-      {children}
-    </Text>
-  ),
-};
-
 export default function ChatScreen() {
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
@@ -92,6 +84,17 @@ export default function ChatScreen() {
     if (!message) return;
     const text = message.trim();
 
+    console.log(user)
+
+    if (!user) return;
+
+    if (
+      user.subscription_status === "ACTIVE"
+    ) {
+      router.push("/(shared)/subscription");
+      return;
+    }
+
     setMessage("");
 
     createMessage(
@@ -126,7 +129,7 @@ export default function ChatScreen() {
       <View
         className={`mb-6 ${item.role === "USER" ? "items-end" : "items-start"} `}
       >
-        <Markdown style={markdownStyles(item.role === "USER")} rules={rules}>
+        <Markdown style={markdownStyles(item.role === "USER")}>
           {item.text}
         </Markdown>
       </View>
@@ -195,10 +198,10 @@ export default function ChatScreen() {
             ListEmptyComponent={
               !isPending ? (
                 <View className="flex-1 flex-col items-center justify-center gap-y-0.5">
-                  <Text className="text-text-5 font-dosis-medium text-[18px]">
+                  <Text className="text-text-4 font-outfit-light text-lg">
                     Hola, {user ? user.name : "Usuario"}
                   </Text>
-                  <Text className="text-text-3 font-dosis-bold text-[24px]">
+                  <Text className="text-text-3 font-outfit-bold text-2xl">
                     ¿Por dónde empezamos?
                   </Text>
                 </View>
@@ -208,7 +211,7 @@ export default function ChatScreen() {
               isPending ? (
                 <View className="items-center justify-start flex-row gap-x-4">
                   <ActivityIndicator size="small" color="#e5a657" />
-                  <Text className="text-text-5 font-dosis-regular text-[14px]">
+                  <Text className="text-text-5 font-outfit-light text-[14px]">
                     Pensando...
                   </Text>
                 </View>
@@ -235,7 +238,7 @@ export default function ChatScreen() {
                   key={ingredient.id}
                   className="flex-row items-center justify-center gap-x-4 border border-bg-yellow rounded-full px-3 py-1.5"
                 >
-                  <Text className="text-text-3 font-dosis-regular text-[14px]">
+                  <Text className="text-text-3 font-outfit-light text-[14px]">
                     +{ingredientsSelected.length - 4}
                   </Text>
                 </View>
@@ -245,7 +248,7 @@ export default function ChatScreen() {
                 key={ingredient.id}
                 className="flex-row items-center justify-center gap-x-4 border border-bg-yellow rounded-full px-3 py-1.5"
               >
-                <Text className="text-text-3 font-dosis-regular text-[14px]">
+                <Text className="text-text-3 font-outfit-light text-[14px]">
                   {capitalize(ingredient.name)}
                 </Text>
                 <TouchableOpacity
@@ -351,8 +354,8 @@ const HeaderActions = ({ onNewChat }: { onNewChat: () => void }) => {
 
 const markdownStyles = (isUser: boolean) => ({
   body: {
-    fontFamily: "Dosis-Regular",
-    fontSize: 15,
+    fontFamily: "Outfit-Light",
+    fontSize: 14,
     color: "#4A4947",
     maxWidth: isUser ? "70%" : ("95%" as any),
     paddingHorizontal: isUser ? 16 : 0,
@@ -363,7 +366,7 @@ const markdownStyles = (isUser: boolean) => ({
     borderColor: isUser ? "#dbdbdb" : "transparent",
   },
   strong: {
-    fontFamily: "Dosis-Bold",
+    fontFamily: "Outfit-Bold",
     fontWeight: "normal" as "normal",
   },
   paragraph: {

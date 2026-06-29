@@ -1,13 +1,16 @@
 import axiosInterceptor from "@/api/client";
-import { MenuFood } from "@/app/(client)/(out)/l/[local_id]/[local_slug]";
+import { MenuFood } from "@/app/(client)/(out)/local/[local_id]";
 import {
   Local,
   Order,
+  OrderStatus,
   Response,
   ResponseWithPagination,
 } from "@/interface/global";
 
 import { handleApiError } from "@/utils/apiErrorHandler";
+
+type FilterKey = OrderStatus | "REVIEW";
 
 // --- 1. OBTENER INFO DE CARRITO ---
 // ===================================
@@ -24,6 +27,7 @@ export const getCartInfo = async (
     return {
       success: response.data.success ?? true,
       status: response.status,
+      message: response.data.message,
       data: response.data.data as { items: MenuFood[]; local: Local },
     };
   } catch (err: any) {
@@ -35,17 +39,19 @@ export const getCartInfo = async (
 // ===================================
 export const getUserOrders = async (
   page: number,
+  type?: FilterKey,
 ): Promise<ResponseWithPagination<Order> | null> => {
   try {
     const response = await axiosInterceptor.get("/order/user/orders", {
       params: {
         page,
+        type,
       },
     });
 
     if (!response.data.success) return null;
     else return response.data as ResponseWithPagination<Order>;
-  } catch (err: unknown) {
+  } catch (err: any) {
     return handleApiError(err);
   }
 };
@@ -71,13 +77,16 @@ export const getOrderById = async (id: string): Promise<Response> => {
 export const createManualOrder = async (
   local_id: string,
   items: { food_id: string; quantity: number }[],
-  notes?: string
+  notes?: string,
 ): Promise<Response> => {
   try {
-    const response = await axiosInterceptor.post(`/order/locals/${local_id}/orders/manual`, {
-      items,
-      notes,
-    });
+    const response = await axiosInterceptor.post(
+      `/order/locals/${local_id}/orders/manual`,
+      {
+        items,
+        notes,
+      },
+    );
 
     return {
       success: response.data.success ?? true,
@@ -85,22 +94,7 @@ export const createManualOrder = async (
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message: err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado creando la orden manual.",
-    };
+    return handleApiError(err);
   }
 };
 
@@ -110,7 +104,9 @@ export const getLocalOrders = async (
   local_id: string,
 ): Promise<Response<Order[]>> => {
   try {
-    const response = await axiosInterceptor.get(`/order/locals/${local_id}/orders`);
+    const response = await axiosInterceptor.get(
+      `/order/locals/${local_id}/orders`,
+    );
 
     return {
       success: true,
@@ -118,22 +114,7 @@ export const getLocalOrders = async (
       data: response.data as Order[],
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message: err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado obteniendo las órdenes.",
-    };
+    return handleApiError(err);
   }
 };
 
@@ -147,7 +128,7 @@ export const updateOrderStatus = async (
   try {
     const response = await axiosInterceptor.patch(
       `/order/locals/${local_id}/orders/${order_id}/status`,
-      { status }
+      { status },
     );
 
     return {
@@ -156,22 +137,7 @@ export const updateOrderStatus = async (
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
-
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message: err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
-    return {
-      success: false,
-      status: 500,
-      message: "Error inesperado actualizando el estado de la orden.",
-    };
+    return handleApiError(err);
   }
 };
 
@@ -185,7 +151,7 @@ export const updateOrderItems = async (
   try {
     const response = await axiosInterceptor.put(
       `/order/locals/${local_id}/orders/${order_id}/items`,
-      { items }
+      { items },
     );
 
     return {
@@ -194,21 +160,28 @@ export const updateOrderItems = async (
       data: response.data.data,
     };
   } catch (err: any) {
-    if (isAxiosError(err)) {
-      console.log("Axios error:", err.response?.data || err.message);
+    return handleApiError(err);
+  }
+};
 
-      if (err.response) {
-        return {
-          success: err.response.data.success ?? false,
-          status: err.response.status,
-          message: err.response.data.message || "Error procesando la solicitud.",
-        };
-      }
-    }
+// --- 8. CREAR PRECOMPRA ---
+// ===================================
+export const prePurchase = async (
+  local_id: string,
+  items: { food_id: string; quantity: number }[],
+): Promise<Response<{ order: Order; checkoutUrl: string }>> => {
+  try {
+    const response = await axiosInterceptor.post("/order/checkout", {
+      local_id,
+      items,
+      platform: "mobile",
+    });
     return {
-      success: false,
-      status: 500,
-      message: "Error inesperado actualizando los items de la orden.",
+      success: response.data.success ?? true,
+      status: response.status,
+      data: response.data.result as { order: any; checkoutUrl: string },
     };
+  } catch (err: any) {
+    return handleApiError(err);
   }
 };

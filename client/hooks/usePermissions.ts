@@ -8,7 +8,7 @@ export function usePermissions(lID?: string, oUID?: string) {
     const userWorkplaceIds = user?.workplaces?.map((w) => w.id) || [];
 
     const isStaff = Boolean(
-      user?.isBusiness && lID && userWorkplaceIds.includes(lID)
+      user?.is_business && lID && userWorkplaceIds.includes(lID)
     );
 
     const isCustomer = Boolean(user?.id && oUID && user.id === oUID);

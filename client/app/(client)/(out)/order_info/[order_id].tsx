@@ -1,16 +1,14 @@
-import DraftOrderView from "@/components/features/order/DraftOrderView";
 import OrderView from "@/components/features/order/OrderView";
-import { ErrorType, ErrorView } from "@/components/ui/feedback/ErrorView";
+import { ErrorView } from "@/components/ui/feedback/ErrorView";
 
-import { useOrderStore } from "@/context/store/useOrderStore";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Order, QROrderItem } from "@/interface/global";
 import { getOrderById } from "@/services/order.api";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import {
   ImageBackground,
   RefreshControl,
@@ -23,17 +21,19 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
+interface QROrderItemExt extends QROrderItem {
+  p: number;
+}
+
 export default function OrderInfoScreen() {
   const { order_id } = useLocalSearchParams<{ order_id: string }>();
   const router = useRouter();
 
   const insets = useSafeAreaInsets();
 
-  const [selected, setSelected] = useState<QROrderItem[]>([]);
+  const [selected, setSelected] = useState<QROrderItemExt[]>([]);
 
-  const isNew = order_id === "create";
-
-  const tempOrder = useOrderStore((state) => state.tempOrder);
+  const background = require("@/assets/images/order_bg.webp");
 
   const {
     data: order,
@@ -67,12 +67,6 @@ export default function OrderInfoScreen() {
     refetchOnWindowFocus: true,
   });
 
-  useFocusEffect(
-    useCallback(() => {
-      refetch();
-    }, [refetch]),
-  );
-
   const { isStaff, isCustomer } = usePermissions(
     order?.local?.id,
     order?.user_id,
@@ -87,7 +81,7 @@ export default function OrderInfoScreen() {
 
   if (errorCode && !isLoading) {
     return (
-      <ErrorView type={errorCode as ErrorType} onAction={() => router.back()} />
+      <ErrorView type={errorCode} onAction={() => router.back()} />
     );
   }
 
@@ -105,9 +99,7 @@ export default function OrderInfoScreen() {
         contentContainerStyle={{ flexGrow: 1 }}
       >
         <ImageBackground
-          source={{
-            uri: "https://hawksrestaurant.com/wp-content/uploads/2025/03/7B70150F-DAA9-4E5B-B40F-1F58BFC71E13.jpg",
-          }}
+          source={background}
           resizeMode="cover"
           className="flex-1 relative"
         >
@@ -124,25 +116,17 @@ export default function OrderInfoScreen() {
             <Ionicons name="chevron-back" size={26} color="#fff" />
           </TouchableOpacity>
 
-
-
-          {isNew && tempOrder ? (
-            <DraftOrderView tempOrder={tempOrder} insets={insets} />
-          ) : (
-            order && (
-              <OrderView
-                order={order}
-                insets={insets}
-                selected={selected}
-                setSelected={setSelected}
-                isStaff={isStaff}
-                isCustomer={isCustomer}
-              />
-            )
+          {order && (
+            <OrderView
+              order={order}
+              insets={insets}
+              selected={selected}
+              setSelected={setSelected}
+              isCustomer={isCustomer}
+            />
           )}
         </ImageBackground>
       </ScrollView>
     </SafeAreaView>
   );
 }
-// isLoading para order &&

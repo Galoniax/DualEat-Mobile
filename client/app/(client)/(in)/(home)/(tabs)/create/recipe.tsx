@@ -21,7 +21,7 @@ import {
   UploadableFile,
 } from "@/interface/global.dto";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Ingredient, Unit, UnitList, UnitNames } from "@/interface/global";
 import {
   BottomSheetBackdrop,
@@ -37,10 +37,10 @@ import { useIngredients } from "@/hooks/api/recipe/useIngredients";
 import IngredientsModal from "@/components/features/chat/IngredientsModal";
 import { usePostCreateStore } from "@/context/store/usePostCreate";
 import { createPost, upload } from "@/services/post.api";
+import { useMutation } from "@tanstack/react-query";
+import { globalToast as toast } from "@/utils/toast";
 
 type RecipePartial = Omit<RecipeDTO, "ingredients" | "steps">;
-type IngredientPartial = RecipeIngredientDTO[];
-type StepsPartial = RecipeStepDTO[];
 
 export default function CreateRecipeScreen() {
   const router = useRouter();
@@ -53,22 +53,20 @@ export default function CreateRecipeScreen() {
 
   const { data, isLoading } = useIngredients(true);
 
-  const [ingredients, setIngredients] = useState<IngredientPartial>([
+  const [ingredients, setIngredients] = useState<RecipeIngredientDTO[]>([
     {
-      ingredient_id: "",
-      name: "",
+      ingredient: null,
       quantity: "",
       unit: Unit.GRAMOS,
       notes: "",
     },
   ]);
 
-  const [steps, setSteps] = useState<StepsPartial>([
+  const [steps, setSteps] = useState<RecipeStepDTO[]>([
     {
       step_number: 1,
       description: "",
       estimated_time: null,
-      image_url: "",
     },
   ]);
 
@@ -82,6 +80,10 @@ export default function CreateRecipeScreen() {
     total_time: total,
     main_image: "",
   });
+
+  useEffect(() => {
+    setRecipe((prev) => ({ ...prev, total_time: total }));
+  }, [total]);
 
   const handleAddImage = async (isSteps: boolean, index: number) => {
     let newImage: UploadableFile[] = [];
@@ -159,91 +161,101 @@ export default function CreateRecipeScreen() {
     }, []),
   );
 
+  const { mutate: submitRecipe, isPending: isSubmitting } = useMutation({
+    mutationFn: async () => {
+      const uploadPayload: UploadPayload = {
+        post_images: post.image_urls as UploadableFile[],
+        main_image: recipe.main_image as UploadableFile,
+      };
+
+      const response = await upload(uploadPayload);
+
+      if (!response.success) {
+        console.log(response.message || "Error al subir los archivos");
+        return;
+      }
+
+      const urls = response.data;
+
+      const postDTO: PostDTO = {
+        title: post.title.trim(),
+        content: post.content.trim(),
+        image_urls: urls?.post_images || [],
+        community: post.community,
+      };
+
+      const recipeDTO: RecipeDTO = {
+        name: recipe.name.trim(),
+        description: recipe.description.trim(),
+        total_time: recipe.total_time,
+        main_image: urls?.main_image || "",
+        ingredients: ingredients.map((ingredient) => {
+          return {
+            ...ingredient,
+            ingredient_id: Number(ingredient.ingredient?.id),
+            notes: ingredient.notes?.trim() || "",
+          };
+        }),
+        steps: steps.map((step): RecipeStepDTO => {
+          return {
+            ...step,
+            description: step.description.trim(),
+          };
+        }),
+      };
+
+      const createResponse = await createPost(postDTO, recipeDTO);
+
+      return createResponse;
+    },
+    onMutate: () => {
+      console.log("Publicando receta...");
+    },
+    onSuccess: (res) => {
+      console.log(res?.message || "Receta publicada exitosamente");
+      clearPost();
+    },
+    onError: (err: any) => {
+      console.log(err.message || "Error al publicar la receta");
+    },
+  });
+
   const handleSubmit = async () => {
-    // TODO: Toast
     if (!recipe.name || !recipe.description || !recipe.main_image) {
-      console.log("Faltan datos en la receta");
+      toast.error("Error", "Faltan datos por completar");
       return;
     }
 
     if (
       ingredients.some(
         (ingredient) =>
-          !ingredient.ingredient_id ||
-          !ingredient.name ||
-          !ingredient.quantity ||
-          !ingredient.unit,
+          !ingredient.ingredient || !ingredient.quantity || !ingredient.unit,
       )
     ) {
+      toast.error("Error", "Los ingredientes deben tener una cantidad y unidad");
       return;
     }
 
     if (steps.some((step) => !step.description)) {
+      toast.error("Error", "Todos los pasos deben tener una descripción");
       return;
     }
 
-    const uploadPayload: UploadPayload = {
-      post_images: post.image_urls as UploadableFile[],
-      recipe_main_image: recipe.main_image as UploadableFile,
-      recipe_step_images: steps.flatMap((step) =>
-        step.image_url ? [step.image_url] : [],
-      ) as UploadableFile[],
-    };
-
-    const response = await upload(uploadPayload);
-
-    if (!response.success) {
-      console.log("Error al subir las imágenes");
-      return;
-    }
-
-    const urls = response.data;
-
-    let counter = 0;
-
-    const postDTO: PostDTO = {
-      title: post.title.trim(),
-      content: post.content.trim(),
-      image_urls: urls?.post_images || [],
-      community_id: post.community_id,
-    };
-
-    const recipeDTO: RecipeDTO = {
-      name: recipe.name.trim(),
-      description: recipe.description.trim(),
-      total_time: recipe.total_time,
-      main_image: urls?.recipe_main_image || "",
-      ingredients: ingredients.map((ingredient) => {
-        return {
-          ...ingredient,
-          name: ingredient.name.trim(),
-          notes: ingredient.notes?.trim() || "",
-        };
-      }),
-      steps: steps.map((step): RecipeStepDTO => {
-        let image_url: string | null = null;
-        if (step.image_url) {
-          image_url = urls?.recipe_step_images?.[counter] || null;
-          counter++;
-        }
-
-        return {
-          ...step,
-          description: step.description.trim(),
-          image_url: image_url as string,
-        };
-      }),
-    };
-
-    const createResponse = await createPost(postDTO, recipeDTO);
-
-    if (createResponse.success) {
-      clearPost();
-      router.back();
-    } else {
-      console.log("Error al crear la receta");
-    }
+    submitRecipe();
   };
+
+  const isSubmitDisabled = useMemo(() => {
+    const invalidIngredient = ingredients.some(
+      (item) => !item.ingredient || !item.quantity.trim(),
+    );
+
+    const invalidStep = steps.some((step) => !step.description.trim());
+
+    const invalidRecipe =
+      !recipe.name.trim() || !recipe.description.trim() || !recipe.main_image;
+
+    return invalidIngredient || invalidStep || invalidRecipe;
+  }, [ingredients, steps, recipe]);
 
   return (
     <SafeAreaView
@@ -259,17 +271,24 @@ export default function CreateRecipeScreen() {
           <Entypo name="chevron-small-left" size={32} color="#2F2F2F" />
         </TouchableOpacity>
 
-        <Text className="font-dosis-bold text-center text-[16px] text-text-3 flex-1">
-          Crear Receta
+        <Text className="font-outfit-bold text-center text-[16px] text-text-3 flex-1">
+          Crear receta
         </Text>
 
         <TouchableOpacity
+          disabled={isSubmitDisabled || isSubmitting}
           onPress={() => {
             handleSubmit();
           }}
-          className="rounded-full bg-bg-semi-black py-1 px-4 items-center"
+          className={`rounded-full py-1 px-4 items-center bg-bg-semi-black ${
+            isSubmitDisabled || (isSubmitting && "opacity-50")
+          }`}
         >
-          <Text className="font-dosis-bold text-[14px] text-text-1">
+          <Text
+            className={`font-outfit-bold text-sm  ${
+              isSubmitDisabled || isSubmitting ? "text-text-" : "text-text-1"
+            }`}
+          >
             Publicar
           </Text>
         </TouchableOpacity>
@@ -301,20 +320,20 @@ export default function CreateRecipeScreen() {
               <View className="flex-row items-center gap-x-4">
                 <View className="flex-row items-center gap-x-1.5">
                   <EvilIcons name="clock" size={20} color="#707070" />
-                  <Text className="font-dosis-regular text-[14px] text-text-4">
+                  <Text className="font-outfit-light text-[14px] text-text-4">
                     {total} min
                   </Text>
                 </View>
 
                 <View className="flex-row items-center gap-x-1.5">
                   <EvilIcons name="cart" size={20} color="#707070" />
-                  <Text className="font-dosis-regular text-[14px] text-text-4">
+                  <Text className="font-outfit-light text-[14px] text-text-4">
                     {ingredients.length} ingredientes
                   </Text>
                 </View>
                 <View className="flex-row items-center gap-x-1.5">
                   <EvilIcons name="chart" size={20} color="#707070" />
-                  <Text className="font-dosis-regular text-[14px] text-text-4">
+                  <Text className="font-outfit-light text-[14px] text-text-4">
                     {steps.length} pasos
                   </Text>
                 </View>
@@ -322,7 +341,7 @@ export default function CreateRecipeScreen() {
             </RecipeInfo>
 
             <View className="mt-6 flex-col gap-y-6">
-              <Text className="font-dosis-bold text-text-3 text-[16px]">
+              <Text className="font-outfit-bold text-text-3 text-[16px]">
                 Ingredientes
               </Text>
 
@@ -335,7 +354,7 @@ export default function CreateRecipeScreen() {
                 }
               />
 
-              <Text className="font-dosis-bold text-text-3 text-[16px] mt-8">
+              <Text className="font-outfit-bold text-text-3 text-[16px] mt-8">
                 Pasos
               </Text>
 
@@ -393,10 +412,10 @@ export default function CreateRecipeScreen() {
               style={{ width: "90%", margin: "auto" }}
               className="py-2 rounded-[4px] flex-row gap-x-1 border justify-center items-center border-gray-300 "
             >
-              <Text className="text-text-5 text-[14px] font-dosis-bold">
+              <Text className="text-text-5 text-[14px] font-outfit-bold">
                 {capitalize(UnitNames[item].name)}
               </Text>
-              <Text className="text-text-4 text-[14px] font-dosis-regular">
+              <Text className="text-text-4 text-[14px] font-outfit-light">
                 ({UnitNames[item].abbreviation})
               </Text>
             </TouchableOpacity>

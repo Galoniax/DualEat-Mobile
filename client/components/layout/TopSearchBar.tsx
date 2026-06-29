@@ -12,7 +12,10 @@ export const TopSearchBar = (props: any) => {
     navigation.dispatch(DrawerActions.openDrawer());
   };
   const options = props?.options || {};
-  const title = options?.title || "";
+  const title =
+    typeof options?.headerTitle === "string"
+      ? options.headerTitle
+      : options?.title || "";
 
   const RightActions = options?.headerRight || null;
 
@@ -21,7 +24,7 @@ export const TopSearchBar = (props: any) => {
       style={{
         paddingTop: Platform.OS === "ios" ? 50 : 46,
         paddingBottom: 10,
-        zIndex: 10
+        zIndex: 10,
       }}
       className="flex-row px-4 items-center justify-between"
     >
@@ -36,7 +39,7 @@ export const TopSearchBar = (props: any) => {
       {/* --- CENTRO: Título Dinámico --- */}
       <View pointerEvents="none" className="flex-1 items-center">
         {typeof title === "string" ? (
-          <Text className="font-dosis-bold text-[15px] text-text-3">
+          <Text className="font-outfit-bold text-[15px] text-text-3">
             {title}
           </Text>
         ) : null}

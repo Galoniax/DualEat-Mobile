@@ -13,15 +13,16 @@ import { useMemo, useState } from "react";
 import FontAwesome from "@expo/vector-icons/build/FontAwesome";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import AddButton from "../../ui/buttons/AddButton";
-import { MenuLocal } from "@/app/(client)/(out)/l/[local_id]/[local_slug]";
+import { MenuLocal } from "@/app/(client)/(out)/local/[local_id]";
 import { EdgeInsets } from "react-native-safe-area-context";
 
 interface MenuViewProps {
   local: MenuLocal;
   insets: EdgeInsets;
+  ListHeaderComponent?: () => React.ReactNode;
 }
 
-function MenuView({ local, insets }: MenuViewProps) {
+function MenuView({ local, insets, ListHeaderComponent }: MenuViewProps) {
   const { addItem } = useOrdering();
 
   const filter = {
@@ -107,7 +108,7 @@ function MenuView({ local, insets }: MenuViewProps) {
       topSellingIds: topSelling,
       topDiscounts: discounts,
     };
-  }, [local.categories, filters]);
+  }, [local, filters]);
 
   if (!local) return null;
 
@@ -117,17 +118,12 @@ function MenuView({ local, insets }: MenuViewProps) {
       data: categoria.foods,
     })) || [];
 
-  return (
-    <View
-      style={{
-        paddingTop: insets.top - 18,
-        paddingLeft: insets.left + 16,
-        paddingRight: insets.right + 16,
-      }}
-      className="flex-1"
-    >
+  const renderCombinedHeader = () => (
+    <View>
+      {ListHeaderComponent && ListHeaderComponent()}
+
       {/* FILTROS */}
-      <View className="w-full mb-4 bg-bg-semi-white">
+      <View className="w-full mb-4 mt-4 bg-bg-semi-white px-4">
         <ScrollView
           horizontal={true}
           showsHorizontalScrollIndicator={false}
@@ -140,7 +136,7 @@ function MenuView({ local, insets }: MenuViewProps) {
         >
           <View className="flex-row items-center gap-x-2 mt-2">
             <FontAwesome5 name="utensils" size={11} color="#2F2F2F" />
-            <Text className="text-[13px] font-dosis-bold text-text-3 mb-2">
+            <Text className="text-sm font-outfit-bold text-text-3 mb-2">
               Menú
             </Text>
           </View>
@@ -155,7 +151,7 @@ function MenuView({ local, insets }: MenuViewProps) {
                 }`}
               >
                 <Text
-                  className={`text-[13px] font-dosis-bold ${
+                  className={`text-sm font-outfit-bold ${
                     isActive ? "text-white" : "text-gray-700"
                   }`}
                 >
@@ -166,33 +162,17 @@ function MenuView({ local, insets }: MenuViewProps) {
           })}
         </ScrollView>
       </View>
+    </View>
+  );
 
-      {/* 2. LOS MEJORES DESCUENTOS */}
-      {/*{topDiscounts && topDiscounts.length > 0 && (
-        <View className="mb-10">
-          <Text className="text-[20px] font-dosis-bold text-text-3 mb-4">
-            Los mejores descuentos
-          </Text>
-
-          
-          <View className="flex-row flex-wrap justify-between">
-            {topDiscounts.map((item) => (
-              <View key={item.id} style={{ width: "100%", marginBottom: 16 }}>
-                {renderFoodItem({ item }, "row")}
-              </View>
-            ))}
-          </View>
-        </View>
-      )}*/}
-
-      {/* 3. CATEGORÍAS */}
+  return (
+    <View style={{ flex: 1 }} className="flex-1">
       <SectionList
-        scrollEnabled={false}
         sections={menuSections}
         keyExtractor={(item) => item.id.toString()}
         renderSectionHeader={({ section: { title, data } }) =>
           data.length > 0 ? (
-            <Text className="text-[20px] font-dosis-bold mb-4 bg-white">
+            <Text className="text-[20px] font-outfit-bold mb-4 bg-white px-4">
               {title}
             </Text>
           ) : null
@@ -204,7 +184,7 @@ function MenuView({ local, insets }: MenuViewProps) {
 
           return (
             <View
-              style={{ gap: 12, marginBottom: 28 }}
+              style={{ gap: 12, marginBottom: 28, paddingHorizontal: 16 }}
               className="flex-row-reverse justify-between flex-1 w-full"
             >
               {/* Imagen del producto */}
@@ -235,7 +215,7 @@ function MenuView({ local, insets }: MenuViewProps) {
                   {item.discount_pct_applied &&
                     item.discount_pct_applied > 0 && (
                       <View className="py-[3px] px-2 border border-[#fff] bg-bg-red rounded-bl-[0px] rounded-tl-[10px] rounded-[18px] flex-row items-center gap-1">
-                        <Text className="text-text-1 text-[12px] font-dosis-bold">
+                        <Text className="text-text-1 text-[12px] font-outfit-bold">
                           {item.discount_pct_applied}% OFF
                         </Text>
                       </View>
@@ -266,34 +246,34 @@ function MenuView({ local, insets }: MenuViewProps) {
                     <View className="flex-row items-center gap-x-0.5">
                       <FontAwesome name="star" size={11} color="#000" />
 
-                      <Text className="text-[11.5px] font-dosis-bold text-text-3 ml-1">
+                      <Text className="text-[11.5px] font-outfit-bold text-text-3 ml-1">
                         {rating.toFixed(1)}
                       </Text>
 
-                      <Text className="text-[11.5px] font-dosis-regular text-text-3 ml-1">
+                      <Text className="text-[11.5px] font-outfit-light text-text-3 ml-1">
                         ({total_votes})
                       </Text>
                     </View>
                   )}
                   {topSellingIds.has(item.id) && (
-                    <Text className="text-[11px] font-dosis-bold text-bg-red">
+                    <Text className="text-[11px] font-outfit-bold text-bg-red">
                       Más vendido
                     </Text>
                   )}
                 </View>
-                <Text className="font-dosis-bold text-[16px] mb-2">
+                <Text className="font-outfit-bold text-[16px] mb-2">
                   {item.name}
                 </Text>
                 <Text
                   ellipsizeMode="tail"
                   numberOfLines={2}
-                  className="font-dosis-regular text-[13.5px] mb-2"
+                  className="font-outfit-light text-[13.5px] mb-2"
                 >
                   {item.description}
                 </Text>
 
                 <View className="flex-row gap-x-2 items-center">
-                  <Text className="font-dosis-bold text-[17px] text-text-3">
+                  <Text className="font-outfit-bold text-[17px] text-text-3">
                     {formatPrice(item.price)}
                   </Text>
                   {item.price !== item.original_price && (
@@ -306,6 +286,7 @@ function MenuView({ local, insets }: MenuViewProps) {
             </View>
           );
         }}
+        ListHeaderComponent={renderCombinedHeader}
         stickySectionHeadersEnabled={false}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}

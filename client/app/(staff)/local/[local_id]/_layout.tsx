@@ -1,4 +1,4 @@
-import { Tabs, useLocalSearchParams } from "expo-router";
+import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "@/constants/theme";
 import { HapticTab } from "@/components/layout/haptic-tab";
@@ -6,7 +6,6 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 
 export default function StaffLocalTabLayout() {
   const insets = useSafeAreaInsets();
-  const { local_id } = useLocalSearchParams();
 
   const TabStyle = {
     height: 60 + insets.bottom,

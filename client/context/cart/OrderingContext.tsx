@@ -1,15 +1,16 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
 import OrderingModal from "./OrderingModal";
+import { ROUTES } from "@/constants/constants";
 
 const CART_KEY = process.env.CART_KEY || "dualeat_cart";
 
@@ -55,22 +56,23 @@ export const OrderingProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const cartRef = useRef<BottomSheetModal>(null);
 
-  useEffect(() => {
-    if (modals.empty || modals.conflict) {
-      cartRef.current?.present();
-    } else {
-      cartRef.current?.dismiss();
-    }
-  }, [modals]);
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        cartRef.current?.dismiss();
+      };
+    }, [cartRef])
+  )
 
   const open = () => {
     if (items.length > 0) {
-      router.push("/(client)/(out)/cart");
+      router.push(ROUTES.USER.CART);
     } else {
       setModals((prev) => ({
         ...prev,
         empty: true,
       }));
+      cartRef.current?.present();
     }
   };
 
@@ -114,6 +116,7 @@ export const OrderingProvider: React.FC<{ children: React.ReactNode }> = ({
         ...prev,
         conflict: true,
       }));
+      cartRef.current?.present();
       return;
     }
 
@@ -145,16 +148,13 @@ export const OrderingProvider: React.FC<{ children: React.ReactNode }> = ({
         setItems([conflict]);
       }
     }
+    cartRef.current?.dismiss();
     setModals((prev) => ({
       ...prev,
       conflict: false,
     }));
     setConflict(null);
   };
-
-  const snapPoints = useMemo(() => {
-    return modals.empty ? ["30%"] : ["35%"];
-  }, [modals]);
 
   return (
     <OrderingContext.Provider
@@ -170,10 +170,9 @@ export const OrderingProvider: React.FC<{ children: React.ReactNode }> = ({
 
       <BottomSheetModal
         ref={cartRef}
-        snapPoints={snapPoints}
         enablePanDownToClose={true}
         enableOverDrag={false}
-        enableDynamicSizing={false}
+        enableDynamicSizing={true}
         onDismiss={() =>
           setModals((prev) => ({
             ...prev,
@@ -181,7 +180,6 @@ export const OrderingProvider: React.FC<{ children: React.ReactNode }> = ({
             conflict: false,
           }))
         }
-        index={0}
         handleIndicatorStyle={{
           backgroundColor: "#2F2F2F",
           marginTop: 8,

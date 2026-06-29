@@ -27,10 +27,10 @@ export default function StepThree({ community, setCommunity }: StepProps) {
 
   return (
     <View className="flex-col flex-1 px-5 py-4 gap-y-6">
-      <Text className="font-dosis-bold text-[22px] text-text-3">
+      <Text className="font-outfit-bold text-[22px] text-text-3">
         Personaliza tu comunidad
       </Text>
-      <Text className="font-dosis-regular text-[16px] text-text-5 leading-7">
+      <Text className="font-outfit-light text-[16px] text-text-5 leading-7">
         Agrega una imagen y un banner para tu comunidad así los usuarios podrán
         identificarte mejor
       </Text>
@@ -55,9 +55,10 @@ export default function StepThree({ community, setCommunity }: StepProps) {
               <Text
                 numberOfLines={1}
                 ellipsizeMode="tail"
-                className="font-dosis-regular text-[14px] text-text-3"
+                className="font-outfit-light text-[14px] text-text-3"
               >
-                {(community.banner_url as UploadableFile).name || "Agregar banner"}
+                {(community.banner_url as UploadableFile).name ||
+                  "Agregar banner"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -82,9 +83,10 @@ export default function StepThree({ community, setCommunity }: StepProps) {
               <Text
                 numberOfLines={1}
                 ellipsizeMode="tail"
-                className="font-dosis-regular text-[14px] max-w-[50%] text-text-3"
+                className="font-outfit-light text-[14px] max-w-[50%] text-text-3"
               >
-                {(community.image_url as UploadableFile).name || "Agregar icono de la comunidad"}
+                {(community.image_url as UploadableFile).name ||
+                  "Agregar icono de la comunidad"}
               </Text>
             </TouchableOpacity>
           </View>

@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Keyboard,
   Text,
   TextInput,
   TouchableOpacity,
@@ -35,24 +36,24 @@ export default function CommunityModal({ ref, setCommunity }: Props) {
     isFetching,
     refetch,
   } = useQuery({
-    queryKey: ["communities", search],
+    queryKey: ["communities", "search", search],
+
     queryFn: async () => {
-      if (!search.trim()) return [];
+      if (!search.trim()) return true;
+
       const response = await getByName(search);
-      return response.data as Community[];
+      return response.data;
     },
+
     enabled: search.trim().length > 0,
+    placeholderData: true,
     staleTime: 1000 * 60 * 5,
   });
 
   useEffect(() => {
-    if (!search.trim()) return;
-
-    const timeout = setTimeout(() => {
+    if (search.trim()) {
       refetch();
-    }, 1000);
-
-    return () => clearTimeout(timeout);
+    }
   }, [search, refetch]);
 
   useFocusEffect(
@@ -65,61 +66,55 @@ export default function CommunityModal({ ref, setCommunity }: Props) {
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: CommunityMember }) => (
-      <TouchableOpacity
-        onPress={() => {
-          setCommunity(item.community);
-          ref.current?.dismiss();
-        }}
-        key={item.id}
-        className="flex-row items-center justify-between px-6 py-3 border-b border-gray-200 gap-x-4"
-      >
-        {item.community.image_url ? (
-          <Image
-            style={{ flex: 1 }}
-            className="max-h-10 max-w-10 rounded-full w-full h-full flex-shrink-0"
-            source={{
-              uri: item.community.image_url,
-            }}
-          />
-        ) : (
-          <View
-            style={{ flex: 1 }}
-            className="max-h-10 max-w-10 rounded-full w-full h-full flex-shrink-0 bg-bg-semi-black"
-          />
-        )}
+    ({ item }: { item: Community }) => {
+      const isMember =
+        myCommunities?.some(
+          (cm: CommunityMember) => cm?.community_id === item.id,
+        ) ?? false;
 
-        <View style={{ flex: 5 }} className="flex-col gap-y-0.5">
-          <Text className="font-dosis-bold text-[14px] text-text-5">
-            {item.community.name}
-          </Text>
-          <Text
-            ellipsizeMode="tail"
-            numberOfLines={2}
-            className="font-dosis-regular text-[13px] text-text-5 truncate"
-          >
-            {item.community.description}
-          </Text>
-          <Text className="font-dosis-light text-[13px] text-text-5">
-            {item.community.total_members} miembros
-          </Text>
-
-          {item.community.tags && item.community.tags.length > 0 && (
-            <View className="flex-row gap-2">
-              {item.community.tags.map((tag) => (
-                <Text
-                  key={tag.id}
-                  className="font-dosis-regular text-[14px] text-text-5"
-                >
-                  {tag.name}
-                </Text>
-              ))}
+      return (
+        <TouchableOpacity
+          onPress={() => {
+            setCommunity(item);
+            ref.current?.dismiss();
+          }}
+          key={item.id}
+          className="w-full flex flex-row items-center justify-start px-6 py-3 border-b border-gray-200 gap-x-4"
+        >
+          {item.image_url ? (
+            <View  className="h-8 w-8 flex-shrink-0">
+            <Image
+              className="rounded-full w-full h-full object-cover"
+              source={{
+                uri: item.image_url,
+              }}
+              resizeMode="cover"
+              alt={item.name}
+            />
             </View>
+          ) : (
+            <View className="h-8 w-8 rounded-full flex-shrink-0 bg-bg-semi-black" />
           )}
-        </View>
-      </TouchableOpacity>
-    ),
-    [ref, setCommunity],
+
+          <View className="flex-1 flex-col gap-y-1 min-w-0 gap-y-0.5 text-left">
+            <Text className="font-outfit-bold text-sm text-text-5 truncate">
+              {item.name}
+            </Text>
+            <Text
+              ellipsizeMode="tail"
+              numberOfLines={2}
+              className="font-outfit-light text-xs text-text-5 truncate"
+            >
+              {item.description}
+            </Text>
+            <Text className="font-dosis-light text-xs text-text-5">
+              {item.total_members} miembros {isMember && " • Te uniste"}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      );
+    },
+    [ref, setCommunity, myCommunities],
   );
 
   const data = useMemo(() => {
@@ -132,7 +127,10 @@ export default function CommunityModal({ ref, setCommunity }: Props) {
 
       return communities;
     }
-    return myCommunities || [];
+    return (
+      myCommunities?.map((community: CommunityMember) => community.community) ||
+      []
+    );
   }, [search, communities, myCommunities]);
 
   return (
@@ -166,6 +164,7 @@ export default function CommunityModal({ ref, setCommunity }: Props) {
         keyExtractor={(item: Community) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ flexGrow: 1 }}
+        renderItem={renderItem}
         ListHeaderComponent={
           <View
             style={{
@@ -174,13 +173,14 @@ export default function CommunityModal({ ref, setCommunity }: Props) {
             className="items-center mx-6 px-4 py-0.5 justify-start flex-row border border-gray-200 rounded-full"
           >
             <TextInput
-              className="flex-1 text-[16px] text-text-5 font-dosis-regular py-2"
+              className="flex-1 text-base text-text-5 font-outfit-light py-2"
               returnKeyType="search"
               placeholder="Buscar una comunidad"
               placeholderTextColor={"#4A4947"}
               value={search}
-              onChangeText={(text) => {
-                setSearch(text);
+              onSubmitEditing={({ nativeEvent }) => {
+                setSearch(nativeEvent.text);
+                Keyboard.dismiss();
               }}
             />
             <EvilIcons name="search" size={26} color="#4A4947" />
@@ -197,7 +197,7 @@ export default function CommunityModal({ ref, setCommunity }: Props) {
             {isFetching ? (
               <ActivityIndicator size={30} color="#e5a657" />
             ) : (
-              <Text className="text-gray-500 font-dosis-regular text-[16px]">
+              <Text className="text-gray-500 font-outfit-light text-base">
                 {search.trim().length > 0
                   ? "No se encontraron comunidades."
                   : "No perteneces a ninguna comunidad."}
@@ -205,7 +205,6 @@ export default function CommunityModal({ ref, setCommunity }: Props) {
             )}
           </View>
         }
-        renderItem={renderItem}
       />
     </BottomSheetModal>
   );

@@ -1,41 +1,42 @@
 import React from "react";
-import { Image } from "react-native";
-import Svg, { Path } from "react-native-svg";
-
+import { Text, View, ViewStyle } from "react-native";
 import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Colors } from "@/constants/theme";
 import { HapticTab } from "@/components/layout/haptic-tab";
 import { TopSearchBar } from "@/components/layout/TopSearchBar";
+import { useNotifications } from "@/hooks/api/notification/useNotifications";
+import { Bell, House, Map, QrCode, ReceiptText } from "lucide-react-native";
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
 
-  const TabStyle = {
-    height: 60 + insets.bottom,
-    paddingBottom: insets.bottom + 4,
+  const { unreadCount } = useNotifications();
+
+  const TabStyle: ViewStyle = {
+    height: 66 + insets.bottom,
     elevation: 0,
     shadowOpacity: 0,
+    backgroundColor: "#ffffff",
     borderTopWidth: 1,
-    borderTopColor: "#dbdbdb",
-    backgroundColor: "#fefefe",
+    borderTopColor: "#e5e5e7",
   };
 
+  const size = 22;
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors["light"].tint,
-        tabBarInactiveTintColor: "#8e8e93",
+        tabBarActiveTintColor: "#171717",
+        tabBarInactiveTintColor: "#a3a3a3",
         tabBarButton: HapticTab,
         tabBarStyle: TabStyle,
         headerTransparent: true,
+        tabBarShowLabel: true,
         header: (props) => <TopSearchBar {...props} />,
         tabBarIconStyle: {
           flex: 1,
           justifyContent: "center",
           alignItems: "center",
-          marginTop: 0,
         },
       }}
     >
@@ -45,25 +46,20 @@ export default function TabLayout() {
         options={{
           title: "Inicio",
           headerShown: true,
-          tabBarShowLabel: true,
-          tabBarIcon: ({ color, focused }) => {
-            const size = 24;
-            return focused ? (
-              <Image
-                source={{
-                  uri: "https://img.icons8.com/?size=100&id=1iF9PyJ2Thzo&format=png",
-                }}
-                style={{ width: size, height: size, tintColor: color }}
-              />
-            ) : (
-              <Image
-                source={{
-                  uri: "https://img.icons8.com/?size=100&id=i6fZC6wuprSu&format=png",
-                }}
-                style={{ width: size, height: size, tintColor: color }}
-              />
-            );
-          },
+          tabBarLabel: ({ color, focused }) => (
+            <Text
+              style={{
+                color,
+                fontFamily: focused ? "Outfit-Bold" : "Outfit-Medium",
+                fontSize: 10,
+                marginTop: -4,
+                paddingBottom: 4,
+              }}
+            >
+              Inicio
+            </Text>
+          ),
+          tabBarIcon: ({ color }) => <House color={color} size={size} />,
         }}
       />
 
@@ -71,26 +67,22 @@ export default function TabLayout() {
       <Tabs.Screen
         name="maps"
         options={{
-          title: "Mapa",
           headerShown: false,
-          tabBarShowLabel: true,
-          tabBarIcon: ({ color, focused }) => {
-            const size = 24;
-            return focused ? (
-              <Svg width={size} height={size} viewBox="0 0 640 640">
-                <Path
-                  fill={color}
-                  d="M576 112C576 100.9 570.3 90.6 560.8 84.8C551.3 79 539.6 78.4 529.7 83.4L413.5 141.5L234.1 81.6C226 78.9 217.3 79.5 209.7 83.3L81.7 147.3C70.8 152.8 64 163.9 64 176L64 528C64 539.1 69.7 549.4 79.2 555.2C88.7 561 100.4 561.6 110.3 556.6L226.4 498.5L405.8 558.3C413.9 561 422.6 560.4 430.2 556.6L558.2 492.6C569 487.2 575.9 476.1 575.9 464L575.9 112zM256 440.9L256 156.4L384 199.1L384 483.6L256 440.9z"
-                />
-              </Svg>
-            ) : (
-              <Svg width={size} height={size} viewBox="0 0 640 640">
-                <Path
-                  fill={color}
-                  d="M576 112C576 103.7 571.7 96 564.7 91.6C557.7 87.2 548.8 86.8 541.4 90.5L416.5 152.1L244 93.4C230.3 88.7 215.3 89.6 202.1 95.7L77.8 154.3C69.4 158.2 64 166.7 64 176L64 528C64 536.2 68.2 543.9 75.1 548.3C82 552.7 90.7 553.2 98.2 549.7L225.5 489.8L396.2 546.7C409.9 551.3 424.7 550.4 437.8 544.2L562.2 485.7C570.6 481.7 576 473.3 576 464L576 112zM208 146.1L208 445.1L112 490.3L112 191.3L208 146.1zM256 449.4L256 148.3L384 191.8L384 492.1L256 449.4zM432 198L528 150.6L528 448.8L432 494L432 198z"
-                />
-              </Svg>
-            );
+          tabBarLabel: ({ color, focused }) => (
+            <Text
+              style={{
+                color,
+                fontFamily: focused ? "Outfit-Bold" : "Outfit-Medium",
+                fontSize: 10,
+                marginTop: -4,
+                paddingBottom: 4,
+              }}
+            >
+              Mapa
+            </Text>
+          ),
+          tabBarIcon: ({ color }) => {
+            return <Map color={color} size={size} />;
           },
         }}
       />
@@ -99,21 +91,29 @@ export default function TabLayout() {
       <Tabs.Screen
         name="qr"
         options={{
-          title: "QR",
-          tabBarStyle: { display: "none" },
           headerShown: false,
-          tabBarShowLabel: true,
-          tabBarIcon: ({ color }) => {
-            const size = 32;
-            return (
-              <Image
-                source={{
-                  uri: "https://img.icons8.com/fluency-systems-regular/48/qr-code--v1.png",
-                }}
-                style={{ width: size, height: size, tintColor: color }}
-              />
-            );
-          },
+          tabBarLabel: () => null,
+          tabBarStyle: { display: "none" },
+          tabBarIcon: () => (
+            <View
+              style={{
+                width: 46,
+                height: 46,
+                borderRadius: 999,
+                backgroundColor: "#333333",
+                justifyContent: "center",
+                alignItems: "center",
+                transform: [{ translateY: -5 }],
+                shadowColor: "#000",
+                shadowOffset: { width: 2, height: 4 },
+                shadowOpacity: 1,
+                shadowRadius: 3,
+                elevation: 3,
+              }}
+            >
+              <QrCode size={size} color="white" />
+            </View>
+          ),
         }}
       />
 
@@ -123,52 +123,60 @@ export default function TabLayout() {
         options={{
           title: "Pedidos",
           headerShown: true,
-          tabBarShowLabel: true,
-          tabBarIcon: ({ color, focused }) => {
-            const size = 24;
-            return focused ? (
-              <Image
-                source={{
-                  uri: "https://img.icons8.com/fluency-systems-filled/48/receipt.png",
-                }}
-                style={{ width: size, height: size, tintColor: color }}
-              />
-            ) : (
-              <Image
-                source={{
-                  uri: "https://img.icons8.com/fluency-systems-regular/48/receipt.png",
-                }}
-                style={{ width: size, height: size, tintColor: color }}
-              />
-            );
+          tabBarLabel: ({ color, focused }) => (
+            <Text
+              style={{
+                color,
+                fontFamily: focused ? "Outfit-Bold" : "Outfit-Medium",
+                fontSize: 10,
+                marginTop: -4,
+                paddingBottom: 4,
+              }}
+            >
+              Pedidos
+            </Text>
+          ),
+          tabBarIcon: ({ color }) => {
+            return <ReceiptText color={color} size={size} />;
           },
         }}
       />
 
-      {/* ---------------- PESTAÑA: PERFIL ---------------- */}
+      {/* ---------------- PESTAÑA: NOTIFICACIONES ---------------- */}
       <Tabs.Screen
-        name="profile"
+        name="notifications"
         options={{
-          title: "Perfil",
+          title: "Notificaciones",
           headerShown: false,
-          tabBarShowLabel: true,
-          tabBarIcon: ({ color, focused }) => {
-            const size = 24;
-            return focused ? (
-              <Svg width={size} height={size} viewBox="0 0 640 640">
-                <Path
-                  fill={color}
-                  d="M320 312C386.3 312 440 258.3 440 192C440 125.7 386.3 72 320 72C253.7 72 200 125.7 200 192C200 258.3 253.7 312 320 312zM290.3 368C191.8 368 112 447.8 112 546.3C112 562.7 125.3 576 141.7 576L498.3 576C514.7 576 528 562.7 528 546.3C528 447.8 448.2 368 349.7 368L290.3 368z"
-                />
-              </Svg>
-            ) : (
-              <Svg width={size} height={size} viewBox="0 0 640 640">
-                <Path
-                  fill={color}
-                  d="M240 192C240 147.8 275.8 112 320 112C364.2 112 400 147.8 400 192C400 236.2 364.2 272 320 272C275.8 272 240 236.2 240 192zM448 192C448 121.3 390.7 64 320 64C249.3 64 192 121.3 192 192C192 262.7 249.3 320 320 320C390.7 320 448 262.7 448 192zM144 544C144 473.3 201.3 416 272 416L368 416C438.7 416 496 473.3 496 544L496 552C496 565.3 506.7 576 520 576C533.3 576 544 565.3 544 552L544 544C544 446.8 465.2 368 368 368L272 368C174.8 368 96 446.8 96 544L96 552C96 565.3 106.7 576 120 576C133.3 576 144 565.3 144 552L144 544z"
-                />
-              </Svg>
-            );
+          tabBarBadge:
+            unreadCount > 9 ? "+9" : unreadCount > 0 ? unreadCount : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: "#3578e4",
+            color: "#ffffff",
+            fontSize: 9,
+            fontWeight: "bold",
+            height: 14,
+            minWidth: 14,
+            lineHeight: 13,
+            borderRadius: 7,
+            paddingHorizontal: 3,
+            alignSelf: "center",
+          },
+          tabBarLabel: ({ color, focused }) => (
+            <Text
+              style={{
+                color,
+                fontFamily: focused ? "Outfit-Bold" : "Outfit-Medium",
+                fontSize: 10,
+                marginTop: -4,
+                paddingBottom: 4,
+              }}
+            >
+              Alertas
+            </Text>
+          ),
+          tabBarIcon: ({ color }) => {
+            return <Bell color={color} size={size} />;
           },
         }}
       />

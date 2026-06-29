@@ -1,35 +1,19 @@
 import { useLocation } from "@/context/extension/LocationContext";
-import React, { useEffect, useState } from "react";
-import { View, Text, ActivityIndicator, ImageBackground } from "react-native";
+import React from "react";
+import { View, Text, ImageBackground } from "react-native";
 
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Feather from "@expo/vector-icons/Feather";
 import Fontisto from "@expo/vector-icons/Fontisto";
+import { useQuery } from "@tanstack/react-query";
+import axiosInterceptor from "@/api/client";
 
-interface WeatherData {
-  temperature: number;
-  weatherCode: number;
+interface Props {
+  type: "home" | "profile";
 }
 
-async function loadWeather(
-  lat: number,
-  lng: number,
-): Promise<{ temperature: number; weatherCode: number }> {
-  const res = await fetch(
-    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`,
-  );
-  const json = await res.json();
-  return {
-    temperature: json.current_weather.temperature,
-    weatherCode: json.current_weather.weathercode,
-  };
-}
-
-export function WeatherWidget() {
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [loading, setLoading] = useState(true);
-
+export const WeatherWidget = ({ type }: Props) => {
   const { location, address } = useLocation();
 
   const latitude = location?.coords.latitude;
@@ -124,35 +108,33 @@ export function WeatherWidget() {
     };
   }
 
-  useEffect(() => {
-    const fetchWeather = async () => {
-      if (latitude == null || longitude == null) return;
-      try {
-        const data = await loadWeather(latitude, longitude);
-        setWeather(data);
-      } catch (e) {
-        console.log("Error clima", e);
-      }
-      setLoading(false);
-    };
-
-    fetchWeather();
-  }, [latitude, longitude]);
-
-  if (loading) {
-    return (
-      <View className="h-20 rounded-[10px] bg-neutral-100 items-center justify-center">
-        <ActivityIndicator />
-      </View>
-    );
-  }
+  const { data: weather } = useQuery({
+    queryKey: ["weather"],
+    queryFn: async () => {
+      const response = await axiosInterceptor.get(
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`,
+      );
+      const json = response.data;
+      return {
+        temperature: json.current_weather.temperature,
+        weatherCode: json.current_weather.weathercode,
+      };
+    },
+    enabled: !!location && !!latitude && !!longitude,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchInterval: 40 * 60 * 1000,
+  });
 
   if (!weather) return null;
 
   const { label, background, icon } = getWeatherInfo(weather.weatherCode);
 
   return (
-    <View className="h-[90px] w-full rounded-[10px] justify-center overflow-hidden">
+    <View
+      className={`w-full justify-center overflow-hidden
+        ${type === "profile" ? "h-[90px] rounded-[10px]" : "h-[110px] rounded-t-[5px] rounded-br-[70px] rounded-bl-[10px]"}`}
+    >
       <ImageBackground
         source={{
           uri: background,
@@ -163,23 +145,27 @@ export function WeatherWidget() {
 
       <View className="absolute inset-0 bg-black opacity-30" />
 
-      <View className="px-4 z-10">
+      <View className="px-4 flex-col gap-y-2 z-10">
         <View className="justify-between flex-row items-center">
-          <Text className="text-[15px] font-dosis-bold text-white mb-1">
+          <Text
+            className={`font-outfit-bold text-text-1 ${type === "profile" ? "text-[14px]" : "text-[18px]"}`}
+          >
             {icon} {label}
           </Text>
 
-          <View className="flex-row items-center gap-2">
-            <Text className="text-[14px] font-dosis-semibold text-text-2">
+          {type === "profile" && (
+            <Text className="text-[14px] font-outfit-medium text-text-2">
               {address?.city ? `${address.city}` : ""}
             </Text>
-          </View>
+          )}
         </View>
 
-        <Text className="text-[24px] text-white font-dosis-bold tracking-wider">
+        <Text
+          className={`text-text-1 font-outfit-bold tracking-wider ${type === "profile" ? "text-[20px]" : "text-[22px]"}`}
+        >
           {weather.temperature}°
         </Text>
       </View>
     </View>
   );
-}
+};

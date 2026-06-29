@@ -21,13 +21,17 @@ export const ROUTES = {
     // RUTAS DINÁMICAS
     DASHBOARD: (mode: AppMode) => `/(client)/(${mode})/(home)/(tabs)` as Href,
     NOTIFICATIONS: (mode: AppMode) =>
-      `/(client)/(${mode})/notifications` as Href,
-    PROFILE: (mode: AppMode) =>
-      `/(client)/(${mode})/(home)/(tabs)/profile` as Href,
+      `/(client)/(${mode})/(home)/(tabs)/notifications` as Href,
+    PROFILE: (user_id: string) => `/(client)/profile/${user_id}` as Href,
+
+    CREATE_REVIEW: (order_id: string) =>
+      `/(client)/(out)/review/${order_id}` as Href,
+
+    PAYMENT: "/(client)/payment-result",
 
     // OUT
     MAPS: "/(client)/(out)/(home)/(tabs)/maps",
-    LOCAL: "/(client)/(out)/l/[local_id]/[local_slug]",
+    LOCAL: "/(client)/(out)/local/[local_id]",
     CART: "/(client)/(out)/cart",
     QR: "/(client)/(out)/(home)/(tabs)/qr",
     ORDERS: "/(client)/(out)/(home)/(tabs)/orders",
@@ -35,10 +39,10 @@ export const ROUTES = {
 
     // IN
     COMMUNITY: "/(client)/(in)/c/[community_slug]",
-    POST: "/(client)/(in)/c/[community_slug]/p/[post_id]/[post_slug]",
-    RECIPE: "/(client)/(in)/c/[community_slug]/r/[recipe_id]/[recipe_slug]",
-    CREATE: "/(client)/(in)/(home)/(tabs)/create/index",
-    CREATE_RECIPE: "/(client)/(in)/(home)/(tabs)/create/recipe",
+    POST: "/(client)/(in)/p/[post_id]/[post_slug]",
+    RECIPE: "/(client)/(in)/r/[recipe_id]/[recipe_slug]",
+    CREATE: "/(client)/(in)/(home)/(tabs)/create" as Href,
+    CREATE_RECIPE: "/(client)/(in)/(home)/(tabs)/create/recipe" as Href,
     CREATE_COMMUNITY: "/(client)/(in)/create-community",
 
     CHAT_HISTORY: "/(client)/(in)/(home)/(tabs)/chat/history",
@@ -54,7 +58,8 @@ export const ROUTES = {
   },
 
   SHARED: {
-    ORDER_INFO: "/(shared)/order_info/[order_id]",
+    SUBSCRIPTION: "/(shared)/subscription",
+    CONFIGURATION: "/(shared)/configuration",
   },
 } as const;
 
@@ -79,15 +84,15 @@ export const ORDER_STATUS_DICT: Record<string, string> = {
   READY: "Listo para pagar",
   PAID: "Pagado",
   COMPLETED: "Completado",
-  CANCELED: "Cancelado",
+  CANCELLED: "Cancelado",
 };
 
-export const STATUS_COLORS = {
-  COMPLETED: "text-green-800",
-  PAID: "text-[#3578e4]",
-  READY: "text-purple-600",
-  CANCELED: "text-[#B53325]",
-  PENDING: "text-[#e5a657]",
+export const STATUS_COLORS: Record<string, string> = {
+  COMPLETED: "#166534",
+  PAID: "#3578e4",
+  READY: "#7c3aed",
+  CANCELLED: "#B53325",
+  PENDING: "#e5a657",
 };
 
 export type LocalType = (typeof LOCAL_TYPES)[number];

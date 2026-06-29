@@ -1,3 +1,4 @@
+import * as WebBrowser from "expo-web-browser";
 import { useOrdering } from "@/context/cart/OrderingContext";
 import { useOrderStore } from "@/context/store/useOrderStore";
 import { Entypo, Ionicons } from "@expo/vector-icons";
@@ -6,6 +7,8 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import {
   ActivityIndicator,
   Image,
+  Linking,
+  Platform,
   Text,
   TouchableOpacity,
   View,
@@ -15,7 +18,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
-import { getCartInfo } from "@/services/order.api";
+import { getCartInfo, prePurchase } from "@/services/order.api";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Local, QROrderPayload } from "@/interface/global";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -24,9 +27,9 @@ import { formatPrice } from "@/utils/distance";
 import { ScrollView } from "react-native-gesture-handler";
 import { isLocalOpen } from "@/utils/isLocalOpen";
 import { useAuth } from "@/context/auth/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useQRParser } from "@/utils/qr";
-import { MenuFood } from "./l/[local_id]/[local_slug]";
+import { MenuFood } from "./local/[local_id]";
 import AddButton from "@/components/ui/buttons/AddButton";
 
 export default function CartScreen() {
@@ -72,9 +75,9 @@ export default function CartScreen() {
   );
 
   const handleOpenQR = () => {
-    if (items.length === 0 || !localId || !user || user.isBusiness) return;
+    if (items.length === 0 || !localId || !user || user.is_business) return;
 
-    if (user && user.isBusiness === false) {
+    if (user && user.is_business === false) {
       const payload: QROrderPayload = {
         t: "order",
         oi: "create",
@@ -93,6 +96,107 @@ export default function CartScreen() {
       router.push(ROUTES.USER.QR);
     }
   };
+
+  const { mutate: checkout, isPending } = useMutation({
+    mutationFn: async () => {
+      const checkoutItems = items.map((item) => ({
+        food_id: item.food_id,
+        quantity: item.quantity,
+      }));
+      return await prePurchase(localId, checkoutItems);
+    },
+    onSuccess: async (data) => {
+      if (data.success && data.data?.checkoutUrl) {
+        const url = data.data.checkoutUrl;
+
+        // Extraer el pref_id de la url (ej: pref_id=3468655592-5596e5bd-...)
+        const match = url.match(/pref_id=([^&]+)/);
+        const prefId = match ? match[1] : null;
+
+        const isSandbox = url.includes("sandbox.mercadopago");
+        let openedNatively = false;
+
+        console.log("URL", url);
+        console.log("PREF ID", prefId);
+        console.log("IS SANDBOX", isSandbox);
+
+        // 1. Intentar abrir la app nativa de Mercado Pago SOLO en producción y si tenemos el prefId.
+        // La app nativa no soporta compras en Sandbox ya que requiere iniciar sesión con usuarios de prueba.
+        if (!isSandbox && prefId) {
+          const deeplinkMP =
+            Platform.OS === "ios"
+              ? `mpago://hp/card/checkout?pref_id=${prefId}`
+              : `mercadopago://checkout?pref_id=${prefId}`;
+
+          console.log("DEEP LINK MP", deeplinkMP);
+          try {
+            await Linking.openURL(deeplinkMP);
+            openedNatively = true;
+          } catch (error) {
+            console.log(
+              "App de Mercado Pago no instalada o falló al abrir nativamente:",
+              error,
+            );
+          }
+        }
+
+        // 2. Fallback: Si es sandbox o no se pudo abrir la app nativa, abrir con el navegador integrado
+        if (!openedNatively) {
+          try {
+            // openAuthSessionAsync se cerrará automáticamente cuando redireccione a "dualeat://"
+            const result = await WebBrowser.openAuthSessionAsync(
+              url,
+              "dualeat://",
+              {
+                preferEphemeralSession: true,
+              },
+            );
+
+            console.log("RESULT", result);
+
+            if (result.type === "success" && result.url) {
+              console.log("Pago completado por web:", result.url);
+              // 1. Extraer los parámetros de búsqueda de la URL
+              const queryString = result.url.split("?")[1] || "";
+              const searchParams = new URLSearchParams(queryString);
+              const status = searchParams.get("status") || "";
+              const type = searchParams.get("type") || "";
+              const id = searchParams.get("id") || "";
+              // 2. Comprobar si la URL del redirect es de tipo order_info o payment-result
+              if (result.url.includes("order_info/")) {
+                // Caso PRE_ORDER (pago normal): Extraemos el ID del path de la URL
+                const pathPart = result.url
+                  .split("?")[0]
+                  .replace("dualeat://", "");
+                const orderId = pathPart.split("/").pop(); // ej: "sSjsJoUxim"
+                router.replace({
+                  pathname: ROUTES.USER.ORDER_INFO,
+                  params: { order_id: orderId as string },
+                });
+              } else {
+                // Caso ORDER: Redirigimos a la pantalla de resultados pasándole los queries
+                router.replace({
+                  pathname: ROUTES.USER.PAYMENT,
+                  params: {
+                    status: status,
+                    type: type,
+                    order_id: id,
+                  },
+                });
+              }
+            }
+          } catch (error) {
+            console.log("Error abriendo el navegador integrado:", error);
+            // Fallback final en navegador externo si algo falla con el Session
+            await WebBrowser.openBrowserAsync(url);
+          }
+        }
+      }
+    },
+    onError: (error) => {
+      console.log("Error en prePurchaseMutate:", error);
+    },
+  });
 
   useEffect(() => {
     if (!local) return;
@@ -135,8 +239,6 @@ export default function CartScreen() {
     });
   }, [items, data]);
 
-  console.log("ITEMS FOR CART", JSON.stringify(itemsForCart, null, 2));
-
   const finalTotal = itemsForCart.reduce(
     (total, item) => total + item.subtotal_price,
     0,
@@ -158,18 +260,17 @@ export default function CartScreen() {
       >
         <TouchableOpacity
           onPress={() => router.back()}
-          className="w-[40px] h-[40px] justify-center items-center"
+          className="justify-center items-center"
         >
-          <Entypo name="chevron-thin-left" size={18} color="#333333" />
+          <Entypo name="chevron-small-left" size={32} color="#2F2F2F" />
         </TouchableOpacity>
-        <Text className="text-[16px] font-dosis-bold">Tu carrito</Text>
+        <Text className="text-base font-outfit-bold">Tu carrito</Text>
         <TouchableOpacity
-          className="w-[40px] h-[40px] justify-center items-center"
           onPress={() => {
             clear();
           }}
         >
-          <Text className="text-[13px] font-dosis-bold">Vaciar</Text>
+          <Text className="text-sm font-outfit-bold text-text-3">Vaciar</Text>
         </TouchableOpacity>
       </View>
 
@@ -193,7 +294,7 @@ export default function CartScreen() {
               onPress={() => {
                 router.push({
                   pathname: ROUTES.USER.LOCAL,
-                  params: { local_id: local.id, local_slug: local.slug },
+                  params: { local_id: local.id },
                 });
               }}
               style={{
@@ -210,7 +311,7 @@ export default function CartScreen() {
                 />
 
                 <View className="flex-col gap-1.5">
-                  <Text className="text-[16px] font-dosis-bold text-text-3">
+                  <Text className="text-[16px] font-outfit-bold text-text-3">
                     {local.name}
                   </Text>
                   <View className="flex-row items-center gap-1">
@@ -219,7 +320,7 @@ export default function CartScreen() {
                       size={14}
                       color="#2F2F2F"
                     />
-                    <Text className="text-[13px] font-dosis-regular text-text-5 text-ellipsis">
+                    <Text className="text-[13px] font-outfit-light text-text-5 text-ellipsis">
                       {local.address}
                     </Text>
                   </View>
@@ -231,7 +332,7 @@ export default function CartScreen() {
 
           {/** PRODUCTOS */}
           <View>
-            <Text className="text-[18px] font-dosis-bold text-text-3 mb-4">
+            <Text className="text-lg font-outfit-bold text-text-3 mb-4">
               Productos
             </Text>
             {itemsForCart.map((item) => (
@@ -246,12 +347,12 @@ export default function CartScreen() {
                 />
 
                 <View className="flex-col gap-1">
-                  <Text className="text-[14px] font-dosis-medium text-text-3">
+                  <Text className="text-[14px] font-outfit-regular text-text-3">
                     {item.name}
                   </Text>
 
                   <View className="flex-row items-center gap-2 mb-1">
-                    <Text className="font-dosis-bold text-[15.5px] text-text-3">
+                    <Text className="font-outfit-bold text-[15.5px] text-text-3">
                       {formatPrice(item.subtotal_price)}
                     </Text>
 
@@ -273,7 +374,7 @@ export default function CartScreen() {
                     }}
                     className="py-[3px] px-2 border border-[#B53325] bg-bg-semi-white"
                   >
-                    <Text className="text-[#B53325] text-[11px] font-dosis-bold">
+                    <Text className="text-[#B53325] text-[11px] font-outfit-bold">
                       {item.discount_pct_applied}% OFF
                     </Text>
                   </View>
@@ -300,7 +401,7 @@ export default function CartScreen() {
 
           {/** RESUMEN */}
           <View>
-            <Text className="text-[18px] font-dosis-bold text-text-3 mb-4">
+            <Text className="text-[18px] font-outfit-bold text-text-3 mb-4">
               Resumen
             </Text>
             <View className="flex-col items-center">
@@ -309,10 +410,10 @@ export default function CartScreen() {
                   key={index}
                   className="w-full pb-2.5 flex-row justify-between items-center"
                 >
-                  <Text className="text-[14.5px] font-dosis-regular text-text-3">
+                  <Text className="text-[14.5px] font-outfit-light text-text-3">
                     {label}
                   </Text>
-                  <Text className="text-[15px] font-dosis-bold text-text-3">
+                  <Text className="text-[15px] font-outfit-bold text-text-3">
                     {label === "Productos"
                       ? formatPrice(originalTotal)
                       : "-" + formatPrice(originalTotal - finalTotal)}
@@ -336,7 +437,7 @@ export default function CartScreen() {
           className="bg-bg-semi-white flex-col gap-y-2"
         >
           <View className="flex-row justify-between items-center">
-            <Text className="text-text-3 text-[18px] font-dosis-bold">
+            <Text className="text-text-3 text-[18px] font-outfit-bold">
               Subtotal
             </Text>
             <View style={{ alignItems: "flex-end" }} className="flex-col gap-1">
@@ -345,7 +446,7 @@ export default function CartScreen() {
                   {formatPrice(originalTotal)}
                 </Text>
               )}
-              <Text className="text-text-3 text-[16px] font-dosis-bold">
+              <Text className="text-text-3 text-[16px] font-outfit-bold">
                 {formatPrice(finalTotal)}
               </Text>
             </View>
@@ -356,13 +457,18 @@ export default function CartScreen() {
           */}
           <View className="w-full flex-row items-center justify-center mt-2 gap-2">
             <TouchableOpacity
-              onPress={() => console.log("Continuar con el pago")}
+              onPress={() => checkout()}
+              disabled={isPending}
               style={{ flex: 3 }}
               className={`bg-bg-red py-2.5 rounded-[8px] items-center`}
             >
-              <Text className="text-white font-dosis-bold text-[14px]">
-                ¿Pagar ahora?
-              </Text>
+              {isPending ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text className="text-white font-outfit-bold text-[14px]">
+                  ¿Pagar ahora?
+                </Text>
+              )}
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handleOpenQR()}

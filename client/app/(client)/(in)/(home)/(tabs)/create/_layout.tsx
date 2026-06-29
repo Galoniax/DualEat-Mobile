@@ -21,7 +21,7 @@ export default function CreateStackLayout() {
       <Stack.Screen
         name="recipe"
         options={{
-          title: "Crear Receta",
+          title: "Crear receta",
           headerShown: false,
         }}
       />

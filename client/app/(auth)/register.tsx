@@ -85,7 +85,7 @@ export default function Register() {
               className="p-2 rounded-lg "
               onPress={() => router.push("/(auth)/login")}
             >
-              <Text className="text-text-1 text-[13px] font-dosis-bold text-center">
+              <Text className="text-text-1 text-[13px] font-outfit-bold text-center">
                 Inicia Sesión
               </Text>
             </TouchableOpacity>
@@ -95,7 +95,7 @@ export default function Register() {
         <View className="flex flex-row items-center justify-center gap-2">
           <Image source={Logo} className="w-[30px] h-[30px] object-contain" />
 
-          <Text className="text-white text-[26px] font-dosis-bold">
+          <Text className="text-white text-[26px] font-outfit-bold">
             DualEat
           </Text>
         </View>
@@ -104,7 +104,7 @@ export default function Register() {
       <View className="flex-1 justify-end">
         <View className="w-full flex-[0.75] bg-[#1A1A1A] rounded-tr-[40px] rounded-tl-[40px] items-center pt-8">
           <View className="flex-col gap-1 items-center">
-            <Text className="text-[24px] font-dosis-bold text-text-1 mt-2 tracking-tighter">
+            <Text className="text-[24px] font-outfit-bold text-text-1 mt-2 tracking-tighter">
               Crear una cuenta
             </Text>
             <Text className="font-dosis-light text-[14px] text-text-2 mb-10">
@@ -142,7 +142,7 @@ export default function Register() {
             activeOpacity={0.7}
             className="bg-bg-yellow w-[80%] p-3 rounded-full items-center mt-10 border border-gray-300"
           >
-            <Text className="text-text-1 font-dosis-bold text-[15px] tracking-tighter">
+            <Text className="text-text-1 font-outfit-bold text-[15px] tracking-tighter">
               Registrarse
             </Text>
           </TouchableOpacity>
@@ -150,7 +150,7 @@ export default function Register() {
           {/* --- Divisor "o" --- */}
           <View className="flex-row items-center w-[80%] my-6">
             <View className="flex-1 h-px bg-gray-300" />
-            <Text className="mx-4 text-text-1 font-dosis-medium">**</Text>
+            <Text className="mx-4 text-text-1 font-outfit-regular">**</Text>
             <View className="flex-1 h-px bg-gray-300" />
           </View>
 
@@ -160,7 +160,7 @@ export default function Register() {
             className="bg-bg-gray border border-gray-300 w-[80%] p-3 rounded-full items-center flex-row justify-center"
           >
             <GoogleIcon />
-            <Text className="text-text-5 font-dosis-bold text-[14px] ml-1 tracking-tighter">
+            <Text className="text-text-5 font-outfit-bold text-[14px] ml-1 tracking-tighter">
               Regístrate con Google
             </Text>
           </TouchableOpacity>

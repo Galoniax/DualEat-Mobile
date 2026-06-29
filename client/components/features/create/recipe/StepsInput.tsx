@@ -13,7 +13,7 @@ export default function StepsInput({ steps, setSteps }: Props) {
       {steps.map((step, index) => (
         <View key={index} className="flex-col gap-4 w-full">
           <View className="flex-row items-center gap-x-4 w-full">
-            <Text className="font-dosis-bold">{step.step_number}</Text>
+            <Text className="font-outfit-bold">{step.step_number}</Text>
 
             <TextInput
               multiline={true}
@@ -30,7 +30,7 @@ export default function StepsInput({ steps, setSteps }: Props) {
               }
               placeholder="Descripción"
               placeholderTextColor="#999"
-              className="font-dosis-regular px-3 py-2 rounded-[4px] text-[14px] text-text-4 border border-gray-200"
+              className="font-outfit-light px-3 py-2 rounded-[4px] text-[14px] text-text-4 border border-gray-200"
             />
 
             <TextInput
@@ -48,7 +48,7 @@ export default function StepsInput({ steps, setSteps }: Props) {
               }
               placeholder="Tiempo estimado"
               placeholderTextColor="#999"
-              className="font-dosis-regular px-3 py-2 rounded-[4px] text-[14px] text-text-4 border border-gray-200"
+              className="font-outfit-light px-3 py-2 rounded-[4px] text-[14px] text-text-4 border border-gray-200"
             />
           </View>
         </View>
@@ -64,7 +64,6 @@ export default function StepsInput({ steps, setSteps }: Props) {
                 step_number: steps.length + 1,
                 description: "",
                 estimated_time: null,
-                image_url: null,
               },
             ])
           }
@@ -73,7 +72,7 @@ export default function StepsInput({ steps, setSteps }: Props) {
           <AntDesign name="plus" size={18} color="#e5a657" />
           <Text
             numberOfLines={1}
-            className="font-dosis-regular text-[14px] text-text-3"
+            className="font-outfit-light text-[14px] text-text-3"
           >
             Agregar paso
           </Text>
@@ -88,7 +87,7 @@ export default function StepsInput({ steps, setSteps }: Props) {
             <AntDesign name="minus" size={18} color="#e5a657" />
             <Text
               numberOfLines={1}
-              className="font-dosis-regular text-[14px] text-text-3"
+              className="font-outfit-light text-[14px] text-text-3"
             >
               Eliminar paso
             </Text>

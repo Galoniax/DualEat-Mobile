@@ -10,9 +10,8 @@ import {
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter, Stack } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { Feather } from "@expo/vector-icons";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Community, TagCategory } from "@/interface/global";
 import { getTagCategories } from "@/services/category.api";
@@ -48,6 +47,9 @@ export default function SearchScreen() {
     queryKey: ["categories"],
     queryFn: async () => {
       const response = await getTagCategories();
+      if (!response.success || !response.data) {
+        throw new Error(response.message || "Error al obtener categorías");
+      }
       return response.data as TagCategory[];
     },
     staleTime: 1000 * 60 * 30,
@@ -57,6 +59,8 @@ export default function SearchScreen() {
     retry: false,
   });
 
+  console.log(data)
+
   const {
     data: communities,
     isLoading,
@@ -65,6 +69,10 @@ export default function SearchScreen() {
     queryKey: ["communities", category_id],
     queryFn: async () => {
       const response = await getByCategorySkeleton(Number(category_id));
+
+      if (!response.success || !response.data) {
+        throw new Error(response.message || "Error al obtener comunidades");
+      }
 
       return response.data as CommunityByTags[];
     },
@@ -139,21 +147,6 @@ export default function SearchScreen() {
       style={{ paddingTop: headerHeight }}
       className="flex-1 flex-col gap-y-2 bg-bg-semi-white px-4"
     >
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <View style={{ gap: 16 }} className="flex-row items-center">
-              <TouchableOpacity
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                onPress={() => router.push(ROUTES.USER.EXPLORE_SEARCH)}
-              >
-                <Feather name="search" size={22} color="#2F2F2F" />
-              </TouchableOpacity>
-            </View>
-          ),
-        }}
-      />
-
       <FlatList
         data={categoriesWithCommunities}
         keyExtractor={(category) => `category-${category.id}`}
@@ -168,7 +161,7 @@ export default function SearchScreen() {
         }
         ListHeaderComponent={() => (
           <View className="flex-col gap-y-2.5 mt-4 mb-2">
-            <Text className="text-text-3 font-dosis-bold text-[15px]">
+            <Text className="text-text-3 font-outfit-bold text-[15px]">
               Explora comunidades por tema
             </Text>
             <FlatList
@@ -186,7 +179,7 @@ export default function SearchScreen() {
                   }`}
                 >
                   <Text
-                    className={`font-dosis-regular text-[13px] ${
+                    className={`font-outfit-light text-[13px] ${
                       selectedCategory?.id === item.id
                         ? "text-text-1"
                         : "text-text-5"
@@ -202,7 +195,7 @@ export default function SearchScreen() {
         )}
         renderItem={({ item: category }) => (
           <View className="flex-col gap-y-3">
-            <Text className="text-text-3 font-dosis-bold text-[15px]">
+            <Text className="text-text-3 font-outfit-bold text-[15px]">
               {category.name}
             </Text>
 
@@ -238,10 +231,10 @@ export default function SearchScreen() {
                         className="w-11 h-11 rounded-full"
                       />
                       <View className="flex-col">
-                        <Text className="text-[17px] font-dosis-bold text-text-3 tracking-tighter">
+                        <Text className="text-[17px] font-outfit-bold text-text-3 tracking-tighter">
                           {community.name}
                         </Text>
-                        <Text className="text-[13px] font-dosis-regular text-text-5 tracking-tighter">
+                        <Text className="text-[13px] font-outfit-light text-text-5 tracking-tighter">
                           {community.total_members} miembros
                         </Text>
                       </View>
@@ -255,7 +248,7 @@ export default function SearchScreen() {
                         className="ml-auto"
                       >
                         <Text
-                          className={`text-[13px] rounded-full px-2.5 py-1.5 tracking-tighter font-dosis-bold 
+                          className={`text-[13px] rounded-full px-2.5 py-1.5 tracking-tighter font-outfit-bold 
                             ${
                               isJoined
                                 ? "bg-bg-gray text-text-3 border border-gray-600"
@@ -270,7 +263,7 @@ export default function SearchScreen() {
                     <Text
                       numberOfLines={2}
                       ellipsizeMode="tail"
-                      className="text-[13px] leading-5 font-dosis-regular text-text-4 tracking-tighter truncate"
+                      className="text-[13px] leading-5 font-outfit-light text-text-4 tracking-tighter truncate"
                     >
                       {community.description}
                     </Text>
@@ -289,7 +282,7 @@ export default function SearchScreen() {
                 color="#e5a657"
               />
             ) : (
-              <Text className="text-center text-text-6 font-dosis-regular">
+              <Text className="text-center text-text-6 font-outfit-light">
                 No hay comunidades disponibles por el momento.
               </Text>
             )}

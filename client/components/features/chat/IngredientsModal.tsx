@@ -46,7 +46,7 @@ const IngredientItem = memo(
           style={{
             color: isSelected ? "#3578e4" : "#4A4947",
           }}
-          className="font-dosis-regular text-[14px]"
+          className="font-outfit-light text-[14px]"
         >
           {capitalize(item.name)}
         </Text>
@@ -80,9 +80,7 @@ export default function IngredientsModal({
 
   const renderItem = useCallback(
     ({ item }: { item: Ingredient }) => {
-      const isSelected = ingredientsIDs
-        ? ingredientsIDs.includes(item)
-        : false;
+      const isSelected = ingredientsIDs ? ingredientsIDs.includes(item) : false;
       return (
         <IngredientItem
           item={item}
@@ -102,7 +100,7 @@ export default function IngredientsModal({
         </View>
       ) : (
         <View className="flex-1 items-center justify-center mt-10">
-          <Text className="text-text-3 font-dosis-regular text-[14px]">
+          <Text className="text-text-3 font-outfit-light text-[14px]">
             No hay ingredientes
           </Text>
         </View>
@@ -120,7 +118,7 @@ export default function IngredientsModal({
         }}
         className="bg-bg-semi-white z-10"
       >
-        <Text className="text-text-3 font-dosis-bold text-[18px] text-center mb-3">
+        <Text className="text-text-3 font-outfit-bold text-[18px] text-center mb-3">
           Ingredientes
         </Text>
 
@@ -129,7 +127,7 @@ export default function IngredientsModal({
           onChangeText={setSearchQuery}
           placeholder="Buscar ingrediente..."
           placeholderTextColor="#999"
-          className="font-dosis-regular px-3 py-2.5 rounded-[5px] text-[15px] text-text-4 border border-gray-400"
+          className="font-outfit-light px-3 py-2.5 rounded-[5px] text-[15px] text-text-4 border border-gray-400"
           style={{
             width: "100%",
             margin: 4,

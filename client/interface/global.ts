@@ -1,8 +1,6 @@
-import { JSX } from "react/jsx-runtime";
+export type Role = "USER" | "ADMIN";
 
-type Role = "user" | "admin" | "staff";
-
-type SuscriptionStatus = "active" | "inactive" | "trial" | "canceled";
+type SuscriptionStatus = "ACTIVE" | "INACTIVE" | "TRIAL" | "CANCELLED";
 
 export interface Response<T = unknown> {
   success: boolean;
@@ -27,7 +25,7 @@ export interface ChatSessionResponse {
 
 export interface UploadResponse {
   post_images: string[];
-  recipe_main_image: string;
+  main_image: string;
   recipe_step_images: string[];
 }
 
@@ -40,7 +38,6 @@ export interface AuthResponse {
   message: string;
   user?: User;
   token?: string;
-  next_step?: string;
 }
 
 export interface User {
@@ -48,17 +45,33 @@ export interface User {
   slug: string;
   name: string;
   email: string;
-  avatar_url:
-    | string
-    | "https://ohhvldagwoycuifwhgtc.supabase.co/storage/v1/object/public/assets/DefaultProfile.png";
+  avatar_url: string
   role: Role;
   active: boolean;
   verified: boolean;
   provider: string;
-  isBusiness: boolean;
-  suscription_status: SuscriptionStatus;
+  is_business: boolean;
+  subscription_status: SuscriptionStatus;
   trial_ends_at: Date | null;
+  notificationsPref: NotificationFrequency;
   workplaces: Workplace[];
+
+  preferences: UserPreference[];
+
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface UserPreference {
+  id: number;
+  user_id: string;
+  user: User;
+
+  food_category_id: string | null;
+  community_tag_id: string | null;
+
+  foodCategory: FoodCategory | null;
+  communityTag: CommunityTag | null;
 }
 
 export interface Workplace {
@@ -68,11 +81,16 @@ export interface Workplace {
   role: "admin" | "staff";
 }
 
-interface NotificationMetadata {
-  title: string | null; // Titulo del post o comunidad
-  slug: string | null; // Slug
-  image_urls: string[] | null; // Imagenes URL
-  target_name: string | null; // Nombre del objetivo para una acción (ej. Nombre del restaurante)
+interface Metadata {
+  params?: {
+    slug?: string;
+    parent_slug?: string;
+    id?: string;
+    parent_id?: string;
+  };
+  message?: string;
+
+  image_urls?: string[];
 }
 
 export interface Notification {
@@ -81,9 +99,9 @@ export interface Notification {
   content_type: NotificationContentType;
   content_id?: string;
 
-  metadata: NotificationMetadata;
-
+  title: string;
   message: string;
+  metadata?: Metadata | any;
   read: boolean;
   deleted: boolean;
   created_at: string;
@@ -133,7 +151,7 @@ export interface Food {
   id: string;
   local_id: string;
   local: Local;
-  category_id: number;
+  category_id: string;
   category: FoodCategory;
   name: string;
   description?: string;
@@ -209,7 +227,7 @@ export interface Schedules {
 }
 
 export interface FoodCategory {
-  id: number;
+  id: string;
   name: string;
   tipo: string;
   icon_url: string | null;
@@ -218,14 +236,12 @@ export interface FoodCategory {
 }
 
 export interface CommunityTag {
-  id: number;
+  id: string;
   name: string;
   active: boolean;
 
   category: TagCategory;
   communities: Community[];
-
-  //user_preferences: UserPreference[];
 }
 
 export interface TagCategory {
@@ -261,6 +277,7 @@ export interface Community {
   tags: CommunityTag[];
 
   isMember?: boolean;
+  is_moderator?: boolean;
   recieves_notifications?: NotificationFrequency;
 }
 
@@ -397,7 +414,6 @@ export interface RecipeStep {
   recipe_id: string;
   step_number: number;
   description: string;
-  image_url: string | null;
   estimated_time: number | null;
 }
 
@@ -407,7 +423,7 @@ export interface RecipeIngredient {
   recipe_id: string;
 
   ingredient: Ingredient;
-  ingredient_id: string;
+  ingredient_id: number;
 
   quantity: string;
   unit: Unit;
@@ -418,6 +434,12 @@ export interface Ingredient {
   id: string;
   name: string;
   description: string | null;
+
+  calories: number;
+  proteins: number;
+  carbs: number;
+  fat: number;
+
   recipe_ingredients: RecipeIngredient[];
 }
 
@@ -496,37 +518,19 @@ export const UnitNames: Record<Unit, { abbreviation: string; name: string }> = {
   },
 };
 
-export type NutritionData = {
+export interface NutritionData {
   total_ingredients: number;
   avg_calories: number;
   avg_proteins: number;
   avg_carbs: number;
   avg_fat: number;
-  details: {
-    ingredient: string;
-    found: boolean;
-    energy_kcal?: undefined;
-    proteins?: undefined;
-    carbohydrates?: undefined;
-    fat?: undefined;
-  }[];
   total: number;
-};
+}
 
 // ================================================
 // INTERFAZ PARA ITEMS DE NAVEGACIÓN EN TABS
 // ================================================
-export interface DataItem {
-  name: string;
-  title: string;
-  icons: {
-    default: (color: string, size: number) => JSX.Element;
-    focused?: (color: string, size: number) => JSX.Element;
-  };
-  showHeader?: boolean;
-  isTab?: boolean;
-  redirect?: string;
-}
+
 export type DayOfWeek =
   | "LUNES"
   | "MARTES"
