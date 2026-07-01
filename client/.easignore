@@ -1,0 +1,27 @@
+# EAS ignore configuration (supersedes .gitignore for EAS uploads)
+
+# Carpetas de caché de Expo y Metro
+.expo/
+.metro-health-check*
+
+# Carpeta de paquetes descargados
+node_modules/
+
+# Carpetas nativas generadas (se vuelven a generar en la nube)
+/android
+/ios
+
+# Builds y Bundles
+dist/
+web-build/
+expo-env.d.ts
+
+# Archivos temporales y debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.agents
+
+# macOS
+.DS_Store
+*.pem
