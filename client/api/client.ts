@@ -1,12 +1,26 @@
-import axios from "axios";
+import { create } from "axios";
 import * as SecureStore from "expo-secure-store";
 
 const TOKEN_KEY = process.env.TOKEN_KEY || "dualeat_session_token";
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
-const axiosInterceptor = axios.create({
+console.log("Conectando a:", BASE_URL);
+
+// https://dualeat-backend.up.railway.app/api
+
+/** CONSEGUIR TOKEN DE FIREBASE
+ *
+ *  async function getFirebaseToken() {
+ *      const token = (await Notifications.getDevicePushTokenAsync()).data;
+ *      console.log("Token de Firebase:", token);
+ * }
+ * getFirebaseToken();
+ */
+
+const axiosInterceptor = create({
   baseURL: BASE_URL,
   timeout: 15000,
+  withCredentials: true,
 });
 
 // 1. INTERCEPTOR DE REQUEST (Salida)
@@ -25,7 +39,6 @@ axiosInterceptor.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-
 // 2. INTERCEPTOR DE RESPONSE (Llegada)
 /*
 axiosInterceptor.interceptors.response.use(
@@ -43,5 +56,4 @@ axiosInterceptor.interceptors.response.use(
   },
 );
 */
-
 export default axiosInterceptor;
