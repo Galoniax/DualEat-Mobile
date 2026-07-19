@@ -8,13 +8,6 @@ export default function CommunityLayout() {
       }}
     >
       <Stack.Screen name="index" />
-      <Stack.Screen
-        name="search"
-        options={{
-          presentation: "fullScreenModal",
-          animation: "fade",
-        }}
-      />
     </Stack>
   );
 }

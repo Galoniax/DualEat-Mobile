@@ -171,17 +171,39 @@ export const prePurchase = async (
   items: { food_id: string; quantity: number }[],
 ): Promise<Response<{ order: Order; checkoutUrl: string }>> => {
   try {
-    const response = await axiosInterceptor.post("/order/checkout", {
+    const response = await axiosInterceptor.post("/order/draft", {
       local_id,
       items,
       platform: "mobile",
     });
     return {
       success: response.data.success ?? true,
+      message: response.data.message,
       status: response.status,
       data: response.data.result as { order: any; checkoutUrl: string },
     };
   } catch (err: any) {
-    return handleApiError(err);
+    throw handleApiError(err);
+  }
+};
+
+// --- 9. PAGAR ORDEN ---
+// ===================================
+export const purchase = async (
+  order_id: string,
+): Promise<Response> => {
+  try {
+    const response = await axiosInterceptor.post("/order/checkout", {
+      order_id: order_id,
+      redirect_url: "dualeat://payment-result",
+    });
+    return {
+      success: response.data.success ?? true,
+      message: response.data.message,
+      status: response.status,
+      data: response.data.data,
+    };
+  } catch (err: any) {
+    throw handleApiError(err);
   }
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from "react";
 import * as Location from "expo-location";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface LocationContextType {
   location: Location.LocationObject | null;
@@ -41,15 +42,31 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({
     const loc = await Location.getCurrentPositionAsync({});
     setLocation(loc);
 
+    let currentAddress: CustomAddress | null = null;
     try {
       const addressResponse = await Location.reverseGeocodeAsync(loc.coords);
       if (addressResponse.length > 0) {
         const { street, city, country, region } = addressResponse[0];
-        setAddress({ street, city, country, region });
+        currentAddress = { street, city, country, region };
+        setAddress(currentAddress);
       }
     } catch (e) {
       console.log("No se pudo traducir la ubicación");
       console.log(e);
+    }
+
+    try {
+      const lastLocation = {
+        coords: {
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+        },
+        address: currentAddress,
+        timestamp: Date.now(),
+      };
+      await AsyncStorage.setItem("@last_known_location", JSON.stringify(lastLocation));
+    } catch (err) {
+      console.log("Error guardando ubicación en AsyncStorage", err);
     }
   }
 

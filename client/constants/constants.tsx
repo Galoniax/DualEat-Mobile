@@ -48,6 +48,8 @@ export const ROUTES = {
     CHAT_HISTORY: "/(client)/(in)/(home)/(tabs)/chat/history",
     CHAT: "/(client)/(in)/(home)/(tabs)/chat/[chat_id]",
 
+    QR_SCREEN: "/(client)/qr-screen",
+
     EXPLORE: "/(client)/(in)/(home)/(tabs)/explore/",
     EXPLORE_SEARCH: "/(client)/(in)/(home)/(tabs)/explore/search",
     COMMUNITY_SEARCH: "/(client)/(in)/c/[community_slug]/search",

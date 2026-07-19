@@ -24,6 +24,7 @@ import {
 import { globalToast as toast } from "@/utils/toast";
 
 import * as Crypto from "expo-crypto";
+import { UserSessionData } from "@/context/auth/AuthContext";
 
 // usePostById (GET)
 //==============================================
@@ -121,7 +122,7 @@ export const useReplies = (comment_id: string, enabled: boolean) => {
 
 // useCreateComment (POST)
 //==============================================
-export const useCreateComment = (user: User) => {
+export const useCreateComment = (user: UserSessionData) => {
   const queryClient = useQueryClient();
 
   return useMutation({

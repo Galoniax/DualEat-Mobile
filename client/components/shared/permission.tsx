@@ -6,85 +6,97 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import LinearGradient from "react-native-linear-gradient";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 type PermissionType = "QR" | "QR_STAFF";
 
 interface PermissionViewProps {
   type: PermissionType;
-  permission?: { granted: boolean };
   requestPermission: () => void;
 }
 
-const PermissionView = ({
-  type,
-  permission,
-  requestPermission,
-}: PermissionViewProps) => {
+const PermissionView = ({ type, requestPermission }: PermissionViewProps) => {
   const steps = [1, 2, 3];
   const Logo = require("@/assets/icon/LogoDualEat.png");
 
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView className="flex-1 flex-col h-full justify-end pb-10">
+    <SafeAreaView
+      edges={["top", "left", "right", "bottom"]}
+      style={{ paddingBottom: insets.bottom }}
+      className="flex-1"
+    >
       <ImageBackground
         source={require("@/assets/images/PermissionBG.png")}
-        className="absolute inset-0  min-h-full w-full"
+        className="absolute inset-0 min-h-full w-full"
         resizeMode="cover"
       />
 
-      <View className="flex px-5 flex-row items-center gap-3 mb-3">
-        <Image source={Logo} className="w-6 h-6" />
-        <Text className="text-white text-[14px] font-outfit-bold">DualEat</Text>
-      </View>
+      <LinearGradient
+        colors={["rgba(0, 0, 0, 0.5)", "rgba(0, 0, 0, 0)"]}
+        className="absolute inset-0 min-h-full w-full"
+        start={{ x: 0, y: 1 }}
+        end={{ x: 0, y: 0 }}
+      />
 
-      <Text className="text-white text-[28px] font-outfit-bold px-5 mb-3">
-        {type === "QR_STAFF" ? (
-          <>
-            Escanea pedidos <Text className="text-[#ec3f2b]">rápido</Text>
-          </>
-        ) : (
-          <>
-            Escanea, explora y <Text className="text-[#ec3f2b]">disfruta</Text>
-          </>
-        )}
-      </Text>
+      <View className="flex-col h-full justify-end gap-y-6 px-4">
+        <View className="flex flex-row items-center gap-x-2">
+          <Image source={Logo} resizeMode="contain" className="w-5 h-5" />
+          <Text className="text-white text-sm font-outfit-bold">DualEat</Text>
+        </View>
 
-      <View className="items-center px-8">
-        <Text className="text-text-2 text-start text-[15px] font-dosis-light">
+        <Text className="text-white text-2xl font-outfit-bold">
+          {type === "QR_STAFF" ? (
+            <>
+              Escanea pedidos <Text className="text-[#ec3f2b]">rápido</Text>
+            </>
+          ) : (
+            <>
+              Escanea, explora y{" "}
+              <Text className="text-[#ec3f2b]">disfruta</Text>
+            </>
+          )}
+        </Text>
+
+        <Text className="text-text-1 text-base font-outfit-light">
           {type === "QR_STAFF"
             ? "Para que puedas escanear el QR de los clientes y cargar sus órdenes de forma inmediata, necesitamos acceso a tu cámara."
             : "Para que puedas descubrir los menús de tus locales favoritos en DualEat, necesitamos acceso a tu cámara."}
         </Text>
 
-        <View className="flex-row justify-start w-full gap-2 mt-4">
-          {steps.map((step) => (
+        <View className="flex-row justify-start w-full gap-2">
+          {steps.map((step, idx) => (
             <View
               key={step}
-              className={`${step < steps.length - 1 ? "max-w-10" : "max-w-[6px]"}`}
+              className={`${idx === 0 ? "max-w-10" : "max-w-[6px]"}`}
               style={{
                 height: 4,
                 flex: 1,
                 backgroundColor: step < steps.length - 1 ? "#B53325" : "gray",
-                borderRadius: 99,
+                borderRadius: 999,
               }}
             />
           ))}
         </View>
         <TouchableOpacity
           onPress={requestPermission}
-          className="bg-bg-red py-3.5 w-full rounded-[10px] mt-[60px] items-center justify-center"
+          className="bg-bg-red py-3.5 w-full rounded-[5px] items-center justify-center"
         >
-          <Text className="text-white font-outfit-bold text-md">
+          <Text className="text-white font-outfit-bold text-sm">
             Conceder permiso
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => router.back()}
-          className="mt-5 items-center py-3.5 w-full justify-center"
+          className="items-center py-3.5 w-full justify-center"
         >
-          <Text className="text-white font-outfit-bold text-md">Cerrar</Text>
+          <Text className="text-text-1 font-outfit-bold text-sm">Cerrar</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

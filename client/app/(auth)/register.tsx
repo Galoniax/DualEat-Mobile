@@ -6,7 +6,7 @@ import {
   Image,
 } from "react-native";
 
-import Toast from "react-native-toast-message";
+import { globalToast as toast } from "@/utils/toast";
 
 import { GoogleIcon } from "@/assets/icon/google";
 import { useState } from "react";
@@ -21,6 +21,9 @@ import { ROUTES } from "@/constants/constants";
 import { getDeviceId } from "@/utils/device";
 import { useGoogleAuth } from "@/hooks/auth/useGoogleAuth";
 import { useAuth } from "@/context/auth/AuthContext";
+import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 
 export default function Register() {
   // --- ESTADOS LOCALES ---
@@ -39,19 +42,11 @@ export default function Register() {
     const deviceId = await getDeviceId();
 
     if (!email || !password || !confirmPassword) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Por favor, completa todos los campos.",
-      });
+      toast.error("Error", "Por favor, completa todos los campos.");
       return;
     }
     if (password !== confirmPassword) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Las contraseñas no coinciden.",
-      });
+      toast.error("Error", "Las contraseñas no coinciden.");
       return;
     }
 
@@ -59,7 +54,8 @@ export default function Register() {
   };
 
   return (
-    <View className="flex-1 bg-bg-semi-black">
+    <SafeAreaView edges={["bottom", "left", "right", "top"]} className="flex-1">
+      <StatusBar style="light" />
       <ImageBackground
         source={require("@/assets/images/YellowPermissionBG.png")}
         className="flex-1"
@@ -68,104 +64,120 @@ export default function Register() {
         <View className="absolute inset-0 bg-black/50" />
 
         <View className="flex-row justify-between w-[90%] mx-auto items-center mt-[15%] mb-12">
-          <View className="flex-1">
-            <Ionicons
-              name="chevron-back"
-              size={22}
-              color="#fff"
-              onPress={() => router.push(ROUTES.PUBLIC.HOME)}
-            />
-          </View>
+          <TouchableOpacity onPress={() => router.push(ROUTES.PUBLIC.HOME)}>
+            <Ionicons name="chevron-back" size={22} color="#fff" />
+          </TouchableOpacity>
 
-          <View className="flex-row items-center flex-2 justify-center">
-            <Text className="text-text-2 text-[13px] font-dosis-light mr-2">
+          <View className="flex-row items-center justify-center">
+            <Text className="text-text-2 text-sm font-outfit-light">
               ¿Ya tienes una cuenta?
             </Text>
             <TouchableOpacity
-              className="p-2 rounded-lg "
-              onPress={() => router.push("/(auth)/login")}
+              className="p-2 rounded-lg"
+              onPress={() => router.push(ROUTES.AUTH.LOGIN)}
             >
-              <Text className="text-text-1 text-[13px] font-outfit-bold text-center">
+              <Text className="text-text-1 text-sm font-outfit-bold">
                 Inicia Sesión
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <View className="flex flex-row items-center justify-center gap-2">
+        <View className="flex flex-row items-center justify-center gap-x-3">
           <Image source={Logo} className="w-[30px] h-[30px] object-contain" />
 
-          <Text className="text-white text-[26px] font-outfit-bold">
-            DualEat
-          </Text>
+          <Text className="text-white text-3xl font-outfit-bold">DualEat</Text>
         </View>
       </ImageBackground>
 
-      <View className="flex-1 justify-end">
-        <View className="w-full flex-[0.75] bg-[#1A1A1A] rounded-tr-[40px] rounded-tl-[40px] items-center pt-8">
-          <View className="flex-col gap-1 items-center">
-            <Text className="text-[24px] font-outfit-bold text-text-1 mt-2 tracking-tighter">
-              Crear una cuenta
-            </Text>
-            <Text className="font-dosis-light text-[14px] text-text-2 mb-10">
-              ¡Bienvenido a DualEat! Vamos a crear tu cuenta.
-            </Text>
-          </View>
-
-          <View className="w-full items-center flex-col gap-3">
-            <TextInputUI
-              value={email}
-              onChangeText={setEmail}
-              type="email-address"
-              title="Email"
-            />
-
-            <TextInputUI
-              value={password}
-              onChangeText={setPassword}
-              isPassword={true}
-              type="default"
-              title="Contraseña"
-            />
-
-            <TextInputUI
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              isPassword={true}
-              type="default"
-              title="Confirmar Contraseña"
-            />
-          </View>
-
-          <TouchableOpacity
-            onPress={handleRegister}
-            activeOpacity={0.7}
-            className="bg-bg-yellow w-[80%] p-3 rounded-full items-center mt-10 border border-gray-300"
+      <BottomSheet
+        enablePanDownToClose={false}
+        enableOverDrag={false}
+        enableDynamicSizing={false}
+        keyboardBehavior="extend"
+        keyboardBlurBehavior="restore"
+        backgroundStyle={{
+          borderTopLeftRadius: 40,
+          borderTopRightRadius: 40,
+          backgroundColor: "#f5f5f5",
+        }}
+        handleIndicatorStyle={{
+          display: "none",
+        }}
+        snapPoints={["75%"]}
+      >
+        <BottomSheetScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 60 }}
+          className="flex-1 py-4"
+        >
+          <View
+            style={{ maxWidth: "90%", alignSelf: "center" }}
+            className="w-full items-center flex-col gap-y-5"
           >
-            <Text className="text-text-1 font-outfit-bold text-[15px] tracking-tighter">
-              Registrarse
-            </Text>
-          </TouchableOpacity>
+            <View className="flex-col gap-y-2 items-center mb-4">
+              <Text className="text-2xl font-outfit-bold text-text-3">
+                Crear una cuenta
+              </Text>
+              <Text className="font-outfit-light text-base text-center text-text-3">
+                ¡Bienvenido a DualEat! Vamos a crear tu cuenta.
+              </Text>
+            </View>
 
-          {/* --- Divisor "o" --- */}
-          <View className="flex-row items-center w-[80%] my-6">
-            <View className="flex-1 h-px bg-gray-300" />
-            <Text className="mx-4 text-text-1 font-outfit-regular">**</Text>
-            <View className="flex-1 h-px bg-gray-300" />
+            <View className="w-full items-center flex-col gap-y-8">
+              <TextInputUI
+                value={email}
+                onChangeText={setEmail}
+                type="email-address"
+                title="Email"
+              />
+
+              <TextInputUI
+                value={password}
+                onChangeText={setPassword}
+                isPassword={true}
+                type="default"
+                title="Contraseña"
+              />
+
+              <TextInputUI
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                isPassword={true}
+                type="default"
+                title="Confirmar Contraseña"
+              />
+            </View>
+
+            <TouchableOpacity
+              onPress={handleRegister}
+              className="bg-bg-yellow w-full p-3 rounded-full items-center"
+            >
+              <Text className="text-text-1 font-outfit-bold text-base">
+                Registrarse
+              </Text>
+            </TouchableOpacity>
+
+            {/* --- Divisor "o" --- */}
+            <View className="flex-row items-center w-[80%]">
+              <View className="flex-1 h-px bg-gray-400" />
+              <Text className="mx-4 text-text-3 font-outfit-bold">**</Text>
+              <View className="flex-1 h-px bg-gray-400" />
+            </View>
+
+            {/* --- Botón de Google --- */}
+            <TouchableOpacity
+              onPress={handleGoogleLogin}
+              className="bg-bg-gray border border-gray-300 p-3 w-full rounded-full items-center flex-row justify-center"
+            >
+              <GoogleIcon />
+              <Text className="text-text-5 font-outfit-bold text-sm">
+                Regístrate con Google
+              </Text>
+            </TouchableOpacity>
           </View>
-
-          {/* --- Botón de Google --- */}
-          <TouchableOpacity
-            onPress={handleGoogleLogin}
-            className="bg-bg-gray border border-gray-300 w-[80%] p-3 rounded-full items-center flex-row justify-center"
-          >
-            <GoogleIcon />
-            <Text className="text-text-5 font-outfit-bold text-[14px] ml-1 tracking-tighter">
-              Regístrate con Google
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
+        </BottomSheetScrollView>
+      </BottomSheet>
+    </SafeAreaView>
   );
 }

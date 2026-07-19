@@ -37,7 +37,6 @@ export const useChat = (chat_id: string | undefined) => {
   });
 };
 
-//==============================================
 // useCreateMessage (POST)
 //==============================================
 export const useCreateMessage = () => {
@@ -46,18 +45,14 @@ export const useCreateMessage = () => {
   return useMutation({
     mutationFn: async ({
       chat_id,
-      recipe_id,
       message,
-      prevMessages,
-      ingredients
+      ingredients,
     }: {
       chat_id: string | null;
-      recipe_id: string | null;
       message: string;
-      prevMessages: ChatSessionData[];
       ingredients: Ingredient[];
     }) => {
-      const response = await ask(message, chat_id, recipe_id, prevMessages, ingredients);
+      const response = await ask(message, chat_id, ingredients);
 
       if (!response.success || !response.data) {
         throw new Error("Error en la respuesta del servidor");
@@ -65,7 +60,7 @@ export const useCreateMessage = () => {
 
       console.log("Mensaje enviado", JSON.stringify(response.data, null, 2));
 
-      return response.data;
+      return response;
     },
 
     onMutate: async ({
@@ -73,9 +68,7 @@ export const useCreateMessage = () => {
       message,
     }: {
       chat_id: string | null;
-      recipe_id: string | null;
       message: string;
-      prevMessages: ChatSessionData[];
       ingredients: Ingredient[];
     }) => {
       await queryClient.cancelQueries({ queryKey: ["chat", chat_id] });
@@ -105,10 +98,14 @@ export const useCreateMessage = () => {
       return { previous, chat_id };
     },
     onSuccess: (data, variables) => {
-      const { chat: updated } = data;
-      const targetId = variables.chat_id || updated.chat_id;
+      const response = data;
 
-      const iaMessage = updated.messages.findLast((m: any) => m.role === "IA");
+      const updated = response.data?.chat;
+      const targetId = variables.chat_id || updated?.chat_id;
+
+      const iaMessage = updated?.messages.findLast(
+        (m: ChatSessionData) => m.role === "IA",
+      );
 
       queryClient.setQueryData(
         ["chat", targetId],
@@ -122,7 +119,6 @@ export const useCreateMessage = () => {
         },
       );
     },
-
     onError: (err, { chat_id }, context) => {
       if (context?.previous) {
         queryClient.setQueryData(["chat", chat_id], context.previous);

@@ -32,6 +32,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import PostCard from "@/components/features/post/PostCard";
 import { ROUTES } from "@/constants/constants";
+import { ScanQrCode } from "lucide-react-native";
 
 type GlobalSearch = Post | Recipe | PostComment;
 
@@ -247,11 +248,16 @@ export default function ProfileScreen() {
     );
   };
 
-  const renderItem = ({ item }: { item: GlobalSearch }) => {
+  const renderItem = ({ item, index }: { item: GlobalSearch; index: number }) => {
     if (tab === "posts") {
       return (
         <View className="mb-4 bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <PostCard post={item as Post} padding="px-4 py-2" showActions={false} type="HOME" />
+          <PostCard
+            post={item as Post}
+            padding="px-4 py-2"
+            showActions={false}
+            type="HOME"
+          />
         </View>
       );
     }
@@ -270,50 +276,88 @@ export default function ProfileScreen() {
             })
           }
           activeOpacity={0.8}
-          className="bg-white border border-gray-200 rounded-2xl p-4 flex-row gap-x-4 mb-4"
+          style={{
+            borderBottomWidth: index < items.length - 1 ? 1 : 0,
+            borderBottomColor: "#f0eeec",
+          }}
+          className="flex-row gap-3 pb-3 mb-3 items-center"
         >
           <Image
             source={{
-              uri: recipe.main_image || "https://placehold.co/400x400",
+              uri: recipe.main_image || "https://placehold.co/100x100/png",
             }}
-            className="w-24 h-24 object-cover rounded-xl border border-gray-100 flex-shrink-0"
+            className="w-12 h-12 rounded-[5px] object-cover"
           />
-          <View className="flex-1 justify-between py-1">
-            <View>
-              <Text
-                className="font-outfit-bold text-text-3 text-[16px] leading-snug"
-                numberOfLines={1}
-              >
-                {recipe.name}
-              </Text>
-              <Text
-                className="text-text-5 text-[13px] font-outfit-light mt-1 leading-normal"
-                numberOfLines={2}
-              >
-                {recipe.description}
-              </Text>
-            </View>
 
-            <View className="flex-row items-center gap-x-3 text-text-6 mt-2">
-              {recipe.total_time && (
-                <View className="flex-row items-center gap-x-1">
-                  <Feather name="clock" size={12} color="#707070" />
-                  <Text className="text-[12px] font-outfit-light text-text-6">
-                    {recipe.total_time} min
+          <View className="flex-col flex-1 justify-center">
+            <Text
+              className="text-text-3 text-base font-outfit-bold"
+              numberOfLines={1}
+            >
+              {recipe.name}
+            </Text>
+
+            <Text
+              className="text-text-5 text-sm font-outfit-light"
+              ellipsizeMode="tail"
+              numberOfLines={1}
+            >
+              {recipe.description}
+            </Text>
+          </View>
+
+          {/* Right section for stats or action buttons */}
+          <View className="flex-row items-center gap-x-2">
+            {isOwner ? (
+              <View className="flex-row items-center gap-x-1.5">
+                <TouchableOpacity
+                  onPress={() => {
+                    router.push({
+                      pathname: ROUTES.USER.CREATE_RECIPE,
+                      params: {
+                        recipe_id: recipe.id,
+                        is_edit: "true",
+                      },
+                    });
+                  }}
+                  activeOpacity={0.7}
+                  className="p-1.5 rounded-lg border border-orange-200 bg-orange-50/50 justify-center items-center"
+                >
+                  <Feather name="edit-2" size={11} color="#e5a657" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    // Delete logic
+                  }}
+                  activeOpacity={0.7}
+                  className="p-1.5 rounded-lg border border-red-200 bg-red-50/55 justify-center items-center"
+                >
+                  <Feather name="trash-2" size={11} color="#ef4444" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View className="flex-row items-center gap-x-2.5">
+                {recipe.total_time && (
+                  <View className="flex-row items-center gap-x-0.5">
+                    <Feather name="clock" size={10} color="#707070" />
+                    <Text className="text-[11px] font-outfit-light text-text-6">
+                      {recipe.total_time}m
+                    </Text>
+                  </View>
+                )}
+                <View className="flex-row items-center gap-x-0.5">
+                  <MaterialCommunityIcons
+                    name="silverware-fork-knife"
+                    size={10}
+                    color="#707070"
+                  />
+                  <Text className="text-[11px] font-outfit-light text-text-6">
+                    {recipe.ingredients?.length || 0}
                   </Text>
                 </View>
-              )}
-              <View className="flex-row items-center gap-x-1">
-                <MaterialCommunityIcons
-                  name="silverware-fork-knife"
-                  size={12}
-                  color="#707070"
-                />
-                <Text className="text-[12px] font-outfit-light text-text-6">
-                  {recipe.ingredients?.length || 0} ing.
-                </Text>
               </View>
-            </View>
+            )}
           </View>
         </TouchableOpacity>
       );
@@ -409,12 +453,22 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         {isOwner && (
-          <TouchableOpacity
-            onPress={() => router.push(ROUTES.SHARED.CONFIGURATION)}
-            className="rounded-full"
-          >
-            <Feather name="settings" size={16} color="#555" />
-          </TouchableOpacity>
+          <View className="flex-row gap-x-6">
+            <TouchableOpacity
+              onPress={() => router.push(ROUTES.SHARED.CONFIGURATION)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              className="rounded-full"
+            >
+              <Feather name="settings" size={16} color="#555" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push(ROUTES.USER.QR_SCREEN)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              className="rounded-full"
+            >
+              <ScanQrCode size={16} color="#555" />
+            </TouchableOpacity>
+          </View>
         )}
       </View>
 

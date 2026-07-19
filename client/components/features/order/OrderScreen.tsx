@@ -179,7 +179,7 @@ export default function OrdersView() {
   return (
     <SafeAreaView
       style={{ paddingTop: headerHeight }}
-      edges={["left", "right"]}
+      edges={["left", "right", "bottom"]}
       className="flex-1 flex-col bg-bg-semi-white gap-y-2"
     >
       <ScrollView

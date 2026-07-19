@@ -33,8 +33,6 @@ export default function NotificationView() {
     refetch,
   } = useNotifications();
 
-  console.log(notifications);
-
   const handleNavigation = (item: Notification) => {
     switch (item.content_type) {
       case "ORDER":
@@ -125,7 +123,7 @@ export default function NotificationView() {
 
   return (
     <SafeAreaView
-      edges={["top", "bottom", "left", "right"]}
+      edges={["top", "left", "right"]}
       className="flex-1 bg-bg-semi-white flex-col gap-y-6"
     >
       <View

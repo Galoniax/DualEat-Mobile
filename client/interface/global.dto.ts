@@ -1,7 +1,7 @@
 import { Community, Ingredient, Unit } from "./global";
 export interface preferencesDTO {
   filter: "distancia" | "descuento";
-  categorias: number[];
+  categorias: string[];
   horario: boolean;
   bestSellers: boolean;
 }
@@ -71,7 +71,7 @@ export interface RecipeStepDTO {
 }
 
 export interface RecipeIngredientDTO {
- ingredient: Ingredient | null;
+  ingredient: Ingredient | null;
   quantity: string;
   unit: Unit;
   notes?: string;

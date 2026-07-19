@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
   TextInput,
+  Text,
 } from "react-native";
 
 type RecipePartial = Omit<RecipeDTO, "ingredients" | "steps">;
@@ -15,6 +16,7 @@ interface Props {
   setRecipe: React.Dispatch<React.SetStateAction<RecipePartial>>;
   handleAddImage: (isSteps: boolean, index: number) => void;
   children: React.ReactNode;
+  limit: number;
 }
 
 export default function RecipeInfo({
@@ -22,6 +24,7 @@ export default function RecipeInfo({
   setRecipe,
   handleAddImage,
   children,
+  limit,
 }: Props) {
   return (
     <>
@@ -64,16 +67,29 @@ export default function RecipeInfo({
 
       {children}
       {/** Descripción */}
-      <TextInput
-        value={recipe.description}
-        maxLength={300}
-        onChangeText={(text) => setRecipe({ ...recipe, description: text })}
-        placeholder="Descripción"
-        placeholderTextColor="#999"
-        className="font-outfit-light rounded-[4px] text-[14px] text-text-4 flex-1 border border-gray-200"
-        multiline={true}
-        numberOfLines={3}
-      />
+      <View className="flex-col w-full gap-y-1">
+        <TextInput
+          value={recipe.description}
+          maxLength={limit}
+          onChangeText={(text) => setRecipe({ ...recipe, description: text })}
+          placeholder="Descripción"
+          placeholderTextColor="#999"
+          className="font-outfit-light rounded-[4px] text-[14px] text-text-4 p-2 border border-gray-200"
+          multiline={true}
+          numberOfLines={10}
+        />
+        <View className="flex-row justify-end items-center px-1">
+          <Text
+            className={`font-outfit-light text-xs ${
+              (recipe.description || "").length >= limit
+                ? "text-red-500"
+                : "text-text-4"
+            }`}
+          >
+            {(recipe.description || "").length} / {limit} caracteres
+          </Text>
+        </View>
+      </View>
     </>
   );
 }

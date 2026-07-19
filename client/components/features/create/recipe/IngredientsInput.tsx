@@ -27,11 +27,11 @@ export default function IngredientsInput({
               onPress={() => {
                 onOpenIngredientModal(index, "ingredient");
               }}
-              style={{ flex: 5 }}
-              className="font-outfit-light px-3 py-2 rounded-[4px] text-[14px] text-text-4 border border-gray-300"
+              style={{ flex: 1 }}
+              className="font-outfit-light px-3 py-2 rounded-[4px] text-sm text-text-4 border border-gray-300"
             >
-              <Text className="text-text-4 text-[14px] font-outfit-light">
-                {ingredient.name || "Ingrediente"}
+              <Text className="text-text-4 text-sm font-outfit-light">
+                {ingredient.ingredient?.name || "Ingrediente"}
               </Text>
             </TouchableOpacity>
 
@@ -47,17 +47,15 @@ export default function IngredientsInput({
               }
               placeholder="Cantidad"
               placeholderTextColor="#999"
-              style={{ flex: 3 }}
-              className="font-outfit-light truncate px-3 py-2 rounded-[4px] text-[14px] text-text-4 border border-gray-200"
+              className="font-outfit-light truncate px-3 py-2 rounded-[4px] text-sm text-text-4 border border-gray-200"
             />
             <TouchableOpacity
               onPress={() => {
                 onOpenUnitModal(index, "unit");
               }}
-              style={{ flex: 2 }}
               className="px-3 py-2 rounded-[4px] border border-gray-300"
             >
-              <Text className="text-text-4 text-[14px] font-outfit-light">
+              <Text className="text-text-4 text-sm font-outfit-light">
                 {UnitNames[ingredient.unit].abbreviation}
               </Text>
             </TouchableOpacity>
@@ -89,8 +87,7 @@ export default function IngredientsInput({
             setIngredients([
               ...ingredients,
               {
-                ingredient_id: "",
-                name: "",
+                ingredient: null,
                 quantity: "",
                 unit: Unit.GRAMOS,
                 notes: "",
@@ -99,10 +96,10 @@ export default function IngredientsInput({
           }
           className="flex-1 flex-row items-center gap-x-2 py-2.5 rounded-[5px] justify-center border border-[#e5a657]"
         >
-          <AntDesign name="plus" size={18} color="#e5a657" />
+          <AntDesign name="plus" size={16} color="#e5a657" />
           <Text
             numberOfLines={1}
-            className="font-outfit-light text-[14px] text-text-3"
+            className="font-outfit-light text-sm text-text-3"
           >
             Agregar ingrediente
           </Text>
@@ -116,10 +113,10 @@ export default function IngredientsInput({
             }
             className="flex-1 flex-row items-center gap-x-2 py-2.5 rounded-[5px] justify-center border border-[#e5a657]"
           >
-            <AntDesign name="minus" size={18} color="#e5a657" />
+            <AntDesign name="minus" size={16} color="#e5a657" />
             <Text
               numberOfLines={1}
-              className="font-outfit-light text-[14px] text-text-3"
+              className="font-outfit-light text-sm text-text-3"
             >
               Eliminar ingrediente
             </Text>

@@ -11,13 +11,12 @@ export default function StepsInput({ steps, setSteps }: Props) {
   return (
     <>
       {steps.map((step, index) => (
-        <View key={index} className="flex-col gap-4 w-full">
-          <View className="flex-row items-center gap-x-4 w-full">
-            <Text className="font-outfit-bold">{step.step_number}</Text>
-
+        <View key={index} className="flex-row gap-4 w-full">
+          <Text className="font-outfit-bold">{step.step_number}</Text>
+          <View className="flex-row flex-grow gap-2">
             <TextInput
               multiline={true}
-              numberOfLines={2}
+              numberOfLines={10}
               maxLength={200}
               value={step.description}
               style={{ flex: 2 }}
@@ -30,7 +29,7 @@ export default function StepsInput({ steps, setSteps }: Props) {
               }
               placeholder="Descripción"
               placeholderTextColor="#999"
-              className="font-outfit-light px-3 py-2 rounded-[4px] text-[14px] text-text-4 border border-gray-200"
+              className="font-outfit-light px-3 py-2 rounded-[4px] text-sm text-text-4 border border-gray-200"
             />
 
             <TextInput
@@ -48,7 +47,7 @@ export default function StepsInput({ steps, setSteps }: Props) {
               }
               placeholder="Tiempo estimado"
               placeholderTextColor="#999"
-              className="font-outfit-light px-3 py-2 rounded-[4px] text-[14px] text-text-4 border border-gray-200"
+              className="font-outfit-light px-3 py-2 rounded-[4px] text-sm text-text-4 border border-gray-200"
             />
           </View>
         </View>
@@ -69,10 +68,10 @@ export default function StepsInput({ steps, setSteps }: Props) {
           }
           className="flex-1 flex-row items-center gap-x-2 py-2.5 rounded-[5px] justify-center border border-[#e5a657]"
         >
-          <AntDesign name="plus" size={18} color="#e5a657" />
+          <AntDesign name="plus" size={16} color="#e5a657" />
           <Text
             numberOfLines={1}
-            className="font-outfit-light text-[14px] text-text-3"
+            className="font-outfit-light text-sm text-text-3"
           >
             Agregar paso
           </Text>
@@ -84,10 +83,10 @@ export default function StepsInput({ steps, setSteps }: Props) {
             onPress={() => setSteps((prev) => prev.slice(0, prev.length - 1))}
             className="flex-1 flex-row items-center gap-x-2 py-2.5 rounded-[5px] justify-center border border-[#e5a657]"
           >
-            <AntDesign name="minus" size={18} color="#e5a657" />
+            <AntDesign name="minus" size={16} color="#e5a657" />
             <Text
               numberOfLines={1}
-              className="font-outfit-light text-[14px] text-text-3"
+              className="font-outfit-light text-sm text-text-3"
             >
               Eliminar paso
             </Text>

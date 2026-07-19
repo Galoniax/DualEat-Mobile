@@ -6,9 +6,10 @@ import { useAuth } from "@/context/auth/AuthContext";
 import { useRouter } from "expo-router";
 
 import { ROUTES } from "@/constants/constants";
-import { showToast } from "@/utils/toast";
+import { globalToast as toast } from "@/utils/toast";
 import { useLoader } from "@/context/app/LoadingContext";
 import { getDeviceId } from "@/utils/device";
+import { BASE_URL } from "@/api/config";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -18,7 +19,6 @@ export const useGoogleAuth = () => {
   const { setToken } = useAuth();
   const { setType } = useLoader();
 
-  // --- A. PROCESAR DEEP LINK ---
   const handleDeepLink = useCallback(
     async (url: string) => {
       try {
@@ -46,7 +46,6 @@ export const useGoogleAuth = () => {
     [router, setToken],
   );
 
-  // --- B. LOGIN CON GOOGLE ---
   const handleGoogleLogin = useCallback(async () => {
     const deviceID = await getDeviceId();
 
@@ -54,28 +53,18 @@ export const useGoogleAuth = () => {
 
     try {
       setType("minimal");
+      const url = `${BASE_URL}/auth/google?platform=mobile&deviceId=${deviceID}`;
+      const redirect = Linking.createURL("callback");
 
-      //const url = process.env.GOOGLE_CALLBACK_URL;
-      const backendUrl = `https://honest-continuous-sponsored-singh.trycloudflare.com/api/auth/google?platform=mobile&deviceId=${deviceID}`;
-
-      const redirectUrl = Linking.createURL("callback");
-
-      const result = await WebBrowser.openAuthSessionAsync(
-        backendUrl,
-        redirectUrl,
-      );
+      const result = await WebBrowser.openAuthSessionAsync(url, redirect);
 
       // Procesar resultado directo
       if (result.type === "success" && result.url) {
         await handleDeepLink(result.url);
       } else if (result.type === "cancel") {
-        showToast(
-          "info",
-          "Inicio de sesión OAuth cancelado por el usuario",
-          "Info",
-        );
+        toast.info("OAuth", "Inicio de sesión OAuth cancelado por el usuario");
       } else if (result.type === "dismiss") {
-        showToast("info", "Inicio de sesión OAuth no completado", "Info");
+        toast.info("OAuth", "Inicio de sesión OAuth no completado");
       }
     } catch (e) {
       console.log("Error en login:", e);
@@ -84,9 +73,7 @@ export const useGoogleAuth = () => {
     }
   }, [setType, handleDeepLink]);
 
-  // --- C. ESCUCHAR DEEP LINKS ---
   useEffect(() => {
-    // Capturar URL inicial
     const getInitialURL = async () => {
       const url = await Linking.getInitialURL();
       if (url) {
@@ -96,7 +83,6 @@ export const useGoogleAuth = () => {
 
     getInitialURL();
 
-    // Listener para URLs mientras la app está abierta
     const subscription = Linking.addEventListener("url", (event) => {
       handleDeepLink(event.url);
     });

@@ -168,6 +168,7 @@ export default function ReviewScreen() {
           color="#2F2F2F"
           emptyColor="#707070"
           starSize={36}
+          step={"full"}
           maxStars={5}
           StarIconComponent={(iconProps) => {
             const name = iconProps.type === "empty" ? "star-o" : "star";

@@ -1,10 +1,20 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { View, Text, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import * as Linking from "expo-linking";
+import { useEffect } from "react";
 
 export default function PaymentResultScreen() {
   const router = useRouter();
+  
+
+ const pathname = usePathname(); // Te da la ruta actual, ej: "/profile/settings"
+const urlCompleta = Linking.createURL(pathname);
+
+console.log("BANANA URL COMPLETA:", urlCompleta);
+
+
 
   // Obtener parámetros del deep link
   const { status, payment_id, preference_id, merchant_order_id } =

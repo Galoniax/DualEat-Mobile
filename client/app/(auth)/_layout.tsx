@@ -8,7 +8,9 @@ export default function AuthLayout() {
   const { mode } = useAppMode();
 
   if (user) {
-    const hasWorkplaces = (user.workplaces && user.workplaces.length > 0) || (user.role as string) === 'staff';
+    const hasWorkplaces =
+      (user.workplaces && user.workplaces.length > 0) ||
+      (user.role as string) === "staff";
     if (hasWorkplaces && !user.is_business) {
       return <Redirect href="/(staff)/(tabs)" />;
     }
@@ -17,10 +19,10 @@ export default function AuthLayout() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="welcome" />
-      <Stack.Screen name="login" />
-      <Stack.Screen name="register" />
-      <Stack.Screen name="onboarding" />
+      <Stack.Screen name="welcome" options={{ animation: "fade" }} />
+      <Stack.Screen name="login" options={{ animation: "fade_from_bottom" }} />
+      <Stack.Screen name="register" options={{ animation: "flip" }} />
+      <Stack.Screen name="onboarding" options={{ animation: "simple_push" }} />
     </Stack>
   );
 }

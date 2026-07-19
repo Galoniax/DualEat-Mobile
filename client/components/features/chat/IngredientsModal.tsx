@@ -146,7 +146,6 @@ export default function IngredientsModal({
         keyExtractor={(item: Ingredient) => item.id}
         showsVerticalScrollIndicator={true}
         numColumns={1}
-        drawDistance={250}
         scrollEnabled={true}
         estimatedItemSize={53}
         renderItem={renderItem}

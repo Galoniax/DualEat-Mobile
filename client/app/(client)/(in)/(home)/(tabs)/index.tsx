@@ -67,7 +67,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView
-      edges={["left", "right"]}
+      edges={["left", "right", "bottom"]}
       style={{ paddingTop: headerHeight }}
       className="flex-1 bg-bg-semi-white"
     >

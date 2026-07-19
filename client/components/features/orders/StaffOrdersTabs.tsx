@@ -1,14 +1,14 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Image, TextInput, FlatList, RefreshControl, Modal } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useAuth } from "@/context/auth/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getLocalById } from "@/services/discovery.api";
 import { createManualOrder, getLocalOrders, updateOrderStatus, updateOrderItems } from "@/services/order.api";
 import { Local, Food, Order, OrderStatus } from "@/interface/global";
 import { formatPrice } from "@/utils/distance";
+import { globalToast as toast } from "@/utils/toast";
 
 interface CartItem {
   food: Food;
@@ -37,7 +37,6 @@ function CustomConfirmModal({
   cancelLabel?: string;
   type?: "default" | "destructive" | "success"
 }) {
-  const insets = useSafeAreaInsets();
   const colors = {
     default: { bg: "#EFF6FF", icon: "#3B82F6", btn: "#3B82F6" },
     destructive: { bg: "#FEF2F2", icon: "#EF4444", btn: "#EF4444" },
@@ -73,7 +72,6 @@ function CustomConfirmModal({
 // MODAL: EDITAR ORDEN (CON MENÚ PARA AGREGAR)
 // =============================================
 function EditOrderModal({ order, localId, onClose, onSaved }: { order: Order; localId: string; onClose: () => void; onSaved: () => void }) {
-  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [items, setItems] = useState(
     order.order_items?.map((oi) => ({ food_id: oi.food_id, food_name: oi.food?.name || "Producto", unit_price: oi.unit_price, quantity: oi.quantity })) || []
@@ -402,7 +400,6 @@ export function RecentOrdersTab({ localId }: { localId: string }) {
 // PESTAÑA: NUEVA ORDEN (DETERMINISTIC UI)
 // =============================================
 export function NewOrderTab({ localId, onOrderCreated, qrPayload }: { localId: string; onOrderCreated: () => void; qrPayload?: string }) {
-  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -418,29 +415,62 @@ export function NewOrderTab({ localId, onOrderCreated, qrPayload }: { localId: s
   const localData = response?.data as Local | undefined;
   const router = useRouter();
 
+  // 1. Detectar si el QR escaneado es una orden ya pagada / existente en base de datos
+  const scannedOrder = useMemo(() => {
+    if (!qrPayload) return null;
+    try {
+      const parsed = JSON.parse(qrPayload);
+      if (parsed && parsed.t === "order" && parsed.oi !== "create") {
+        return parsed; // parsed: { t: "order", oi: "orderId", l: "localId", u: "userId", i: [...], c: "shortCode" }
+      }
+    } catch (e) {
+      console.log("Error parsing scannedOrder in useMemo", e);
+    }
+    return null;
+  }, [qrPayload]);
+
   useEffect(() => {
     if (localData && qrPayload && loadedQrPayload !== qrPayload) {
       try {
-        const parsedItems = JSON.parse(qrPayload) as { id: string; q: number }[];
-        const newCart: CartItem[] = [];
+        const parsed = JSON.parse(qrPayload);
         
-        parsedItems.forEach(item => {
-          let foundFood: Food | undefined;
-          localData.categories?.forEach(cat => {
-            const f = cat.foods?.find(food => food.id === item.id);
-            if (f) foundFood = f;
+        let itemsArray: { id: string; q: number }[] = [];
+        let isExistingOrder = false;
+        
+        if (Array.isArray(parsed)) {
+          itemsArray = parsed;
+        } else if (parsed && parsed.t === "order") {
+          if (parsed.oi !== "create") {
+            isExistingOrder = true;
+          } else {
+            itemsArray = parsed.i || [];
+          }
+        }
+        
+        if (isExistingOrder) {
+          // Si es una orden existente, marcamos el payload como cargado para que se renderice la UI especial
+          setLoadedQrPayload(qrPayload);
+        } else if (itemsArray.length > 0) {
+          const newCart: CartItem[] = [];
+          
+          itemsArray.forEach(item => {
+            let foundFood: Food | undefined;
+            localData.categories?.forEach(cat => {
+              const f = cat.foods?.find(food => food.id === item.id);
+              if (f) foundFood = f;
+            });
+            
+            if (foundFood) {
+              newCart.push({ food: foundFood, quantity: item.q });
+            }
           });
           
-          if (foundFood) {
-            newCart.push({ food: foundFood, quantity: item.q });
+          if (newCart.length > 0) {
+            setCart(newCart);
+            setLoadedQrPayload(qrPayload);
+            // Limpiamos el payload de los params de la ruta para que no se recargue al cambiar de tab
+            router.setParams({ qrPayload: "" });
           }
-        });
-        
-        if (newCart.length > 0) {
-          setCart(newCart);
-          setLoadedQrPayload(qrPayload);
-          // Limpiamos el payload de la URL para que no se vuelva a cargar al cambiar de tab o regresar
-          router.setParams({ qrPayload: "" });
         }
       } catch (e) {
          console.log("Error parsing qrPayload", e);
@@ -464,7 +494,6 @@ export function NewOrderTab({ localId, onOrderCreated, qrPayload }: { localId: s
     });
   };
 
-  const totalQuantity = cart.reduce((acc, item) => acc + item.quantity, 0);
   const totalPrice = cart.reduce((acc, item) => acc + (item.food.price * item.quantity), 0);
 
   const handleSubmit = async () => {
@@ -474,6 +503,7 @@ export function NewOrderTab({ localId, onOrderCreated, qrPayload }: { localId: s
     setSubmitting(false);
     if (result.success) {
       setNotes("");
+      setCart([]);
       onOrderCreated();
     }
   };
@@ -485,6 +515,127 @@ export function NewOrderTab({ localId, onOrderCreated, qrPayload }: { localId: s
 
   if (isLoading) return <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}><ActivityIndicator size="large" color="#B53325" /></View>;
 
+  // RENDERIZADO 1: VISTA DE DETALLES DE ORDEN EXISTENTE (MARCAR COMO LISTA / COMPLETADA)
+  if (scannedOrder) {
+    const itemsToShow = (scannedOrder.i || []).map((item: any) => {
+      let foundFood: Food | undefined;
+      localData?.categories?.forEach((cat) => {
+        const f = cat.foods?.find((food) => food.id === item.id);
+        if (f) foundFood = f;
+      });
+      return {
+        food: foundFood || { id: item.id, name: `Producto #${item.id}`, price: 0, image_url: "" },
+        quantity: item.q,
+      };
+    });
+
+    const handleUpdateStatus = async (status: "READY" | "COMPLETED") => {
+      setSubmitting(true);
+      try {
+        const res = await updateOrderStatus(localId, scannedOrder.oi, status);
+        if (res.success) {
+          toast.success(
+            "Estado Actualizado",
+            `El pedido se marcó como ${status === "READY" ? "LISTO" : "ENTREGADO"}.`
+          );
+          onOrderCreated(); // Invalida queries de órdenes del local y vuelve a "Pedidos Recientes"
+          router.setParams({ qrPayload: "" }); // Restablece el tab
+        } else {
+          toast.error("Error", res.message || "No se pudo actualizar el estado del pedido.");
+        }
+      } catch (err: any) {
+        console.error("Error actualizando estado del pedido:", err);
+        toast.error("Error", err.message || "Ocurrió un error al actualizar el pedido.");
+      } finally {
+        setSubmitting(false);
+      }
+    };
+
+    const handleDismiss = () => {
+      router.setParams({ qrPayload: "" });
+    };
+
+    return (
+      <View style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+          {/* Tarjeta de Resumen de Pedido */}
+          <View style={{ backgroundColor: "white", borderRadius: 24, padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 3, marginBottom: 20, alignItems: "center" }}>
+            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#E0F2FE", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+              <Ionicons name="receipt-outline" size={32} color="#0284c7" />
+            </View>
+
+            <Text style={{ fontSize: 22, fontFamily: "Dosis-Bold", color: "#1F2937" }}>Pedido Existente</Text>
+            <Text style={{ fontSize: 14, fontFamily: "Dosis-Medium", color: "#6B7280", marginTop: 4 }}>ID: {scannedOrder.oi}</Text>
+
+            {scannedOrder.c && (
+              <View style={{ backgroundColor: "#F3F4F6", borderRadius: 16, paddingHorizontal: 24, paddingVertical: 12, marginTop: 16, alignItems: "center" }}>
+                <Text style={{ fontSize: 12, fontFamily: "Dosis-Medium", color: "#6B7280", textTransform: "uppercase" }}>Código de Retiro</Text>
+                <Text style={{ fontSize: 32, fontFamily: "Dosis-Bold", color: "#B53325", marginTop: 4, letterSpacing: 1 }}>{scannedOrder.c}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Lista de Alimentos */}
+          <Text style={{ fontSize: 16, fontFamily: "Dosis-Bold", color: "#4B5563", marginBottom: 12, marginLeft: 4 }}>Productos del Pedido</Text>
+          <View style={{ backgroundColor: "white", borderRadius: 24, overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2, padding: 16, gap: 16 }}>
+            {itemsToShow.map((item: any, idx: number) => (
+              <View key={item.food.id || idx} style={{ flexDirection: "row", alignItems: "center" }}>
+                {item.food.image_url ? (
+                  <Image source={{ uri: item.food.image_url }} style={{ width: 48, height: 48, borderRadius: 12 }} />
+                ) : (
+                  <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name="fast-food-outline" size={20} color="#9CA3AF" />
+                  </View>
+                )}
+                <View style={{ flex: 1, marginLeft: 16 }}>
+                  <Text style={{ fontSize: 15, fontFamily: "Dosis-Bold", color: "#1F2937" }}>{item.food.name}</Text>
+                  <Text style={{ fontSize: 13, fontFamily: "Dosis-Medium", color: "#6B7280", marginTop: 2 }}>Cantidad: {item.quantity}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+
+        {/* Acciones */}
+        <View style={{ padding: 24, borderTopLeftRadius: 32, borderTopRightRadius: 32, backgroundColor: "white", shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 8, gap: 12 }}>
+          <TouchableOpacity
+            disabled={submitting}
+            onPress={() => handleUpdateStatus("READY")}
+            style={{ backgroundColor: "#10B981", height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 }}
+          >
+            {submitting ? <ActivityIndicator size="small" color="white" /> : (
+              <>
+                <Ionicons name="restaurant-outline" size={20} color="white" />
+                <Text style={{ color: "white", fontSize: 16, fontFamily: "Dosis-Bold" }}>Marcar como Listo</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            disabled={submitting}
+            onPress={() => handleUpdateStatus("COMPLETED")}
+            style={{ backgroundColor: "#3B82F6", height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 }}
+          >
+            {submitting ? <ActivityIndicator size="small" color="white" /> : (
+              <>
+                <Ionicons name="checkmark-done" size={20} color="white" />
+                <Text style={{ color: "white", fontSize: 16, fontFamily: "Dosis-Bold" }}>Entregar / Completar</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleDismiss}
+            style={{ height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center" }}
+          >
+            <Text style={{ color: "#6B7280", fontSize: 15, fontFamily: "Dosis-Bold" }}>Volver al Menú</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  // RENDERIZADO 2: CREACIÓN DE ORDEN MANUAL / MODIFICACIÓN DE ELEMENTOS
   return (
     <View style={{ flex: 1 }}>
       <View style={{ padding: 20, backgroundColor: "white", borderBottomWidth: 1, borderBottomColor: "#F3F4F6" }}>

@@ -27,6 +27,7 @@ export const login = async (
       remember: r,
       token: rt,
       deviceId: d,
+      platform: "mobile"
     });
 
     return response.data as AuthResponse;

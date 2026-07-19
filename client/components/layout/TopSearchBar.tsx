@@ -11,11 +11,10 @@ export const TopSearchBar = (props: any) => {
     if (!user) return;
     navigation.dispatch(DrawerActions.openDrawer());
   };
+  
   const options = props?.options || {};
-  const title =
-    typeof options?.headerTitle === "string"
-      ? options.headerTitle
-      : options?.title || "";
+  const headerTitle = options?.headerTitle;
+  const title = options?.title || "";
 
   const RightActions = options?.headerRight || null;
 
@@ -32,17 +31,19 @@ export const TopSearchBar = (props: any) => {
       <TouchableOpacity onPress={handleMenuPress}>
         <Image
           source={{ uri: user?.avatar_url }}
-          className="w-[32px] h-[32px] rounded-full bg-gray-200"
+          className="w-[30px] h-[30px] rounded-full bg-gray-200"
         />
       </TouchableOpacity>
 
       {/* --- CENTRO: Título Dinámico --- */}
       <View pointerEvents="none" className="flex-1 items-center">
-        {typeof title === "string" ? (
-          <Text className="font-outfit-bold text-[15px] text-text-3">
-            {title}
+        {typeof headerTitle === "function" ? (
+          headerTitle()
+        ) : (
+          <Text className="font-outfit-bold text-base text-text-3">
+            {headerTitle || title}
           </Text>
-        ) : null}
+        )}
       </View>
 
       {/* --- DERECHA: Botones Dinámicos --- */}

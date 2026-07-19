@@ -19,7 +19,7 @@ export const getLocalInBounds = async (
 ): Promise<Response> => {
   try {
     preferencesDTO.categorias = preferencesDTO.categorias.map((cat) =>
-      Number(cat),
+      String(cat),
     );
     const response = await axiosInterceptor.post("/local/discovery/bounds", {
       minLat: lM,
@@ -33,6 +33,7 @@ export const getLocalInBounds = async (
     return {
       success: response.data.success ?? true,
       status: response.status,
+      message: response.data.message,
       data: response.data.data,
     };
   } catch (err: any) {

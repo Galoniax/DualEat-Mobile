@@ -1,5 +1,5 @@
 import axiosInterceptor from "@/api/client";
-import { Response } from "@/interface/global";
+import { Recipe, Response, ResponseWithPagination } from "@/interface/global";
 import { handleApiError } from "@/utils/apiErrorHandler";
 
 // --- 1. OBTENER TODOS LOS INGREDIENTES ---
@@ -27,9 +27,53 @@ export const getRecipeById = async (recipe_id: string): Promise<Response> => {
     return {
       success: response.data.success ?? true,
       status: response.status,
+      message: response.data.message,
       data: response.data.data,
     };
   } catch (err: any) {
     return handleApiError(err);
+  }
+};
+
+// --- 3. BUSCAR RECETAS ---
+// ===================================
+export const searchRecipes = async (
+  query: string,
+  page: number = 1,
+): Promise<ResponseWithPagination<Recipe[]>> => {
+  try {
+    const response = await axiosInterceptor.get(`/recipe/search`, {
+      params: {
+        query: query.trim(),
+        page: page,
+      },
+    });
+
+    return {
+      success: response.data.success ?? true,
+      status: response.status,
+      message: response.data.message,
+      data: response.data.data,
+      pagination: response.data.pagination,
+    };
+  } catch (err: any) {
+    throw handleApiError(err);
+  }
+};
+
+// --- 4. OBTENER RECETAS DEL USUARIO ---
+// ===================================
+export const getUserRecipes = async (): Promise<Response<Recipe[]>> => {
+  try {
+    const response = await axiosInterceptor.get(`/recipe/user`);
+
+    return {
+      success: response.data.success ?? true,
+      status: response.status,
+      message: response.data.message,
+      data: response.data.data,
+    };
+  } catch (err: any) {
+    throw handleApiError(err);
   }
 };

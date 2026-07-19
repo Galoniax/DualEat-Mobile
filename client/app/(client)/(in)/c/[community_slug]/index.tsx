@@ -21,8 +21,7 @@ import PostCard from "@/components/features/post/PostCard";
 import { useJoinLeave } from "@/hooks/api/useMyCommunities";
 import { getCommunityPosts } from "@/services/post.api";
 import { Feather } from "@expo/vector-icons";
-import { ROUTES } from "@/constants/constants";
-import { useRecentsStore } from "@/context/store/useRecents";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 export default function CommunityScreen() {
   const { community_slug } = useLocalSearchParams();
@@ -31,11 +30,12 @@ export default function CommunityScreen() {
   const insets = useSafeAreaInsets();
 
   const { mutate: joinLeave } = useJoinLeave();
-  const { setCommunity } = useRecentsStore();
 
   const [isExpanded, setIsExpanded] = useState(false);
 
   const scrollY = useRef(new Animated.Value(0)).current;
+
+  const ref = useRef<BottomSheetModal>(null);
 
   const {
     data: community,
@@ -201,27 +201,6 @@ export default function CommunityScreen() {
                   </Text>
                 </Animated.View>
               </View>
-
-              <TouchableOpacity
-                onPress={() => {
-                  setCommunity(community);
-                  router.push(ROUTES.USER.COMMUNITY_SEARCH);
-                }}
-                className="rounded-full p-1.5 items-center justify-center overflow-hidden"
-              >
-                <Animated.View
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    backgroundColor: "black",
-                    opacity: buttonBgOpacity,
-                  }}
-                />
-                <Feather name="search" size={24} color="#fff" />
-              </TouchableOpacity>
             </View>
           </View>
         );
@@ -276,7 +255,12 @@ export default function CommunityScreen() {
                 </TouchableOpacity>
 
                 {isMember && (
-                  <TouchableOpacity className="flex-row items-center justify-center gap-x-2">
+                  <TouchableOpacity
+                    onPress={() => {
+                      ref.current?.present();
+                    }}
+                    className="flex-row items-center justify-center gap-x-2"
+                  >
                     <Text className="text-[14px] text-text-5 font-outfit-light leading-6">
                       Notificaciones
                     </Text>

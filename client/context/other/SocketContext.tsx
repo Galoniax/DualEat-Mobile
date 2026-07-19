@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { useAuth } from '../auth/AuthContext';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { io, Socket } from "socket.io-client";
+import { useAuth } from "../auth/AuthContext";
+import { BASE_URL } from "@/api/config";
 
 interface SocketContextType {
   socket: Socket | null;
@@ -27,19 +28,19 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     if (!user?.id) return;
 
     // Conectar al servidor de WebSocket
-    const socketInstance = io('http://localhost:3000', {
+    const socketInstance = io(BASE_URL, {
       auth: {
         user_id: user.id,
       },
     });
 
-    socketInstance.on('connect', () => {
-      console.log('[Socket] Conectado al servidor');
+    socketInstance.on("connect", () => {
+      console.log("[Socket] Conectado al servidor");
       setIsConnected(true);
     });
 
-    socketInstance.on('disconnect', () => {
-      console.log('[Socket] Desconectado del servidor');
+    socketInstance.on("disconnect", () => {
+      console.log("[Socket] Desconectado del servidor");
       setIsConnected(false);
     });
 

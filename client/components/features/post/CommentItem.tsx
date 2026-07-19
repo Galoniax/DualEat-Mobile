@@ -1,4 +1,4 @@
-import { PostComment, User } from "@/interface/global";
+import { PostComment } from "@/interface/global";
 import {
   Image,
   KeyboardAvoidingView,
@@ -21,6 +21,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PencilLine, Trash } from "lucide-react-native";
 import { globalToast as toast } from "@/utils/toast";
+import { UserSessionData } from "@/context/auth/AuthContext";
 
 type Comment = Partial<PostComment>;
 
@@ -28,7 +29,7 @@ interface CommentItemProps {
   item: PostComment;
   setComment: React.Dispatch<React.SetStateAction<Comment>>;
   isOwner: boolean;
-  user: User;
+  user: UserSessionData;
   inputRef: React.RefObject<TextInput | null>;
 }
 

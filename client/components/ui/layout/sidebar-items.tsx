@@ -196,7 +196,7 @@ export const UserSidebarItems = ({
 
           {expanded.comunity &&
             (communities && communities.length > 0 ? (
-              <View className="pb-2">
+              <View className="pb-2 flex-col gap-y-3">
                 {communities.map((item: CommunityMember) => (
                   <TouchableOpacity
                     key={item.community.id}
@@ -209,7 +209,7 @@ export const UserSidebarItems = ({
                       });
                       props.navigation.closeDrawer();
                     }}
-                    className="flex-row items-center py-1"
+                    className="flex-row items-center py-2"
                   >
                     {/* Avatar */}
                     <Image
@@ -220,7 +220,7 @@ export const UserSidebarItems = ({
                     {/* Community Info */}
                     <View className="flex-1">
                       <Text
-                        className="font-outfit-light text-base text-text-4 truncate"
+                        className="font-outfit-light text-sm text-text-4 truncate"
                         numberOfLines={1}
                         ellipsizeMode="tail"
                       >

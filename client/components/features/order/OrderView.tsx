@@ -26,8 +26,9 @@ import {
   BottomSheetFlatList,
   BottomSheetModal,
 } from "@gorhom/bottom-sheet";
-import { useQRParser } from "@/utils/qr";
 import { useOrderStore } from "@/context/store/useOrderStore";
+import { useAuth } from "@/context/auth/AuthContext";
+import { ErrorView } from "@/components/ui/feedback/ErrorView";
 
 interface QROrderItemExt extends QROrderItem {
   p: number;
@@ -53,13 +54,14 @@ export default function OrderView({
   const [isExpanded, setIsExpanded] = useState(true);
   const [addFoods, setAddFoods] = useState(false);
 
-  const { generateQR } = useQRParser();
+  const { setTempOrder } = useOrderStore();
+
+  const { user } = useAuth();
 
   const {
     data: foods,
     isLoading,
     error,
-    isError,
   } = useQuery({
     queryKey: ["local_foods", order?.local_id],
     enabled: !!order?.local_id && addFoods,
@@ -167,6 +169,10 @@ export default function OrderView({
   // ESTADOS
   const toReview =
     isCustomer && order.review === null && order.status === "COMPLETED";
+
+  const toEditReview =
+    isCustomer && order.review !== null && order.status === "COMPLETED";
+
   const toShowQR = isCustomer && order.short_code && order.status === "PAID";
 
   // TOTAL
@@ -179,6 +185,18 @@ export default function OrderView({
     () => selected.reduce((acc, item) => acc + item.p * item.q, 0),
     [selected],
   );
+
+  if (order.user_id !== user?.id) {
+    return (
+      <ErrorView
+        type={error?.cause || 403}
+        title="No autorizado"
+        message="No tienes permiso para ver esta orden. Asegúrate de estar en la cuenta correcta."
+        actionLabel="Volver"
+        onAction={() => router.back()}
+      />
+    );
+  }
 
   return (
     <View
@@ -286,12 +304,11 @@ export default function OrderView({
                 c: order.short_code,
               };
 
-              generateQR(payload);
-              useOrderStore.getState().setTempOrder(payload);
+              console.log(JSON.stringify(payload, null, 2));
 
-              router.push({
-                pathname: ROUTES.USER.QR,
-              });
+              setTempOrder(payload);
+
+              router.push(ROUTES.USER.QR_SCREEN);
             }}
             className="bg-bg-semi-black flex-1 py-2.5 rounded-[5px] justify-center items-center flex-row gap-2"
           >
@@ -302,14 +319,14 @@ export default function OrderView({
           </TouchableOpacity>
         )}
 
-        {toReview && (
+        {(toReview || toEditReview) && (
           <TouchableOpacity
             onPress={() => router.push(ROUTES.USER.CREATE_REVIEW(order.id))}
-            className="bg-bg-blue flex-1 py-2.5 rounded-[5px] justify-center items-center flex-row gap-2"
+            className={`flex-1 py-2.5 rounded-[5px] justify-center items-center flex-row gap-2 ${toEditReview ? "bg-bg-red" : "bg-bg-blue"}`}
           >
-            <Ionicons name="star-outline" size={16} color="white" />
-            <Text className="text-white text-sm font-outfit-bold">
-              Escribir reseña
+            <Ionicons name="star" size={16} color={"#fff"} />
+            <Text className={`text-sm font-outfit-bold text-text-1`}>
+              {toEditReview ? "Editar reseña" : "Escribir reseña"}
             </Text>
           </TouchableOpacity>
         )}
@@ -468,12 +485,9 @@ export default function OrderView({
                   c: order.short_code || undefined,
                 };
 
-                generateQR(payload);
-                useOrderStore.getState().setTempOrder(payload);
+                setTempOrder(payload);
 
-                router.push({
-                  pathname: ROUTES.USER.QR,
-                });
+                router.push(ROUTES.USER.QR_SCREEN);
               }}
               className="bg-bg-red flex-1 py-2.5 rounded-[5px] justify-center items-center flex-row gap-2"
             >

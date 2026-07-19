@@ -1,6 +1,6 @@
 export type Role = "USER" | "ADMIN";
 
-type SuscriptionStatus = "ACTIVE" | "INACTIVE" | "TRIAL" | "CANCELLED";
+export type SuscriptionStatus = "ACTIVE" | "INACTIVE" | "TRIAL" | "CANCELLED";
 
 export interface Response<T = unknown> {
   success: boolean;
@@ -20,7 +20,7 @@ export interface ResponseWithPagination<T = unknown> {
 export interface ChatSessionResponse {
   chat: ChatSession;
   recipes: Recipe[] | null;
-  search_query: "SEARCH" | "CHAT";
+  search_query: string;
 }
 
 export interface UploadResponse {
@@ -35,6 +35,7 @@ interface PaginationInfo {
 }
 export interface AuthResponse {
   success: boolean;
+  status: number;
   message: string;
   user?: User;
   token?: string;
@@ -45,7 +46,7 @@ export interface User {
   slug: string;
   name: string;
   email: string;
-  avatar_url: string
+  avatar_url: string;
   role: Role;
   active: boolean;
   verified: boolean;
@@ -54,9 +55,8 @@ export interface User {
   subscription_status: SuscriptionStatus;
   trial_ends_at: Date | null;
   notificationsPref: NotificationFrequency;
-  workplaces: Workplace[];
 
-  preferences: UserPreference[];
+  preferences?: UserPreference[];
 
   created_at: Date;
   updated_at: Date;
@@ -103,7 +103,6 @@ export interface Notification {
   message: string;
   metadata?: Metadata | any;
   read: boolean;
-  deleted: boolean;
   created_at: string;
 
   user: User;
@@ -545,6 +544,7 @@ export type QRTypes = {
   ORDER: "order";
   PROMOTION: "promotion"; // Coupon
   USER: "user";
+  PURCHASE: "purchase";
 };
 
 export type QROrderItem = {
@@ -563,15 +563,22 @@ export type QROrderPayload = {
 
 export type QRUserPayload = {
   t: "user";
-  s: string; // slug
+  id: string; // slug
 };
+
+export type QROrderPurchase = {
+  t: "purchase";
+  l: string; // local_id
+  oi: string; // order_id
+  u: string; // user_id
+}
 
 export type QRLocalPayload = {
   t: "local";
   s: string; // Slug
 };
 
-export type QRData = QROrderPayload | QRUserPayload | QRLocalPayload;
+export type QRData = QROrderPayload | QRUserPayload | QRLocalPayload | QROrderPurchase;
 
 export interface ChatSession {
   chat_id: string;

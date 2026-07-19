@@ -1,5 +1,7 @@
-import { CommunityDTO } from "@/interface/global.dto";
-import { Text, TextInput, View } from "react-native";
+import { CommunityDTO, UploadableFile } from "@/interface/global.dto";
+import { pickMedia } from "@/utils/media";
+import { Entypo } from "@expo/vector-icons";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 
 interface StepProps {
   community: CommunityDTO;
@@ -7,57 +9,87 @@ interface StepProps {
 }
 
 export default function StepTwo({ community, setCommunity }: StepProps) {
+  const handlePickImage = async (type: "image_url" | "banner_url") => {
+    const images = await pickMedia({
+      mediaType: "Images",
+      allowsEditing: true,
+      allowsMultipleSelection: false,
+      selectionLimit: 1,
+    });
+
+    if (images.length > 0) {
+      setCommunity((prev) => ({
+        ...prev,
+        [type]: images[0],
+      }));
+    }
+  };
+
   return (
     <View className="flex-col flex-1 px-5 py-4 gap-y-6">
       <Text className="font-outfit-bold text-[22px] text-text-3">
-        Cuéntanos sobre tu comunidad
+        Personaliza tu comunidad
       </Text>
       <Text className="font-outfit-light text-[16px] text-text-5 leading-7">
-        Danos un nombre y una descripción para tu comunidad. Cuanto más
-        detallada sea la descripción, mejor podrán entender los usuarios de qué
-        se trata tu comunidad.
+        Agrega una imagen y un banner para tu comunidad así los usuarios podrán
+        identificarte mejor
       </Text>
 
       <View className="flex-col gap-y-6">
-        {/** Input nombre de la comunidad  */}
-        <View className="flex-row items-center gap-x-2">
-          <TextInput
-            value={community.name}
-            maxLength={28}
-            onChangeText={(text) => setCommunity({ ...community, name: text })}
-            enterKeyHint="next"
-            placeholder="Nombre de la comunidad"
-            placeholderTextColor={"#4A4947"}
-            className="font-outfit-light flex-1 text-[16px] text-text-3 border border-gray-200 rounded-lg px-4 py-3"
-          />
+        <View className="p-2 border border-gray-200 rounded-lg">
+          {community.banner_url ? (
+            <Image
+              source={{ uri: (community.banner_url as UploadableFile).uri }}
+              className="w-full h-16 rounded-t-[20px]"
+            />
+          ) : (
+            <View className="w-full h-16 bg-gray-200 rounded-t-[20px] flex items-center justify-center" />
+          )}
 
-          <Text
-            className={`font-outfit-light text-[12px] ${community.name.length > 28 ? "text-text-6" : "text-text-5"}`}
-          >
-            {28 - community.name.length}
-          </Text>
+          <View className="w-full flex-row items-center justify-between">
+            <TouchableOpacity
+              onPress={() => handlePickImage("banner_url")}
+              className="flex-1 py-3 px-2 gap-x-4 items-center flex-row "
+            >
+              <Entypo name="image" size={18} color="#2F2F2F" />
+              <Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                className="font-outfit-light text-[14px] text-text-3"
+              >
+                {(community.banner_url as UploadableFile).name ||
+                  "Agregar banner"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/** Input descripción de la comunidad */}
-        <View className="flex-row items-center gap-x-2">
-          <TextInput
-            value={community.description}
-            maxLength={500}
-            multiline={true}
-            numberOfLines={4}
-            onChangeText={(text) =>
-              setCommunity({ ...community, description: text })
-            }
-            enterKeyHint="next"
-            placeholder="Descripción"
-            placeholderTextColor={"#4A4947"}
-            className="font-outfit-light flex-1 text-[16px] text-text-3 border border-gray-200 rounded-lg px-4 py-3"
-          />
-          <Text
-            className={`font-outfit-light text-[12px] ${community.description.length > 500 ? "text-text-6" : "text-text-5"}`}
-          >
-            {500 - community.description.length}
-          </Text>
+        <View className="p-2 border border-gray-200 rounded-lg flex-row gap-x-4">
+          {community.image_url ? (
+            <Image
+              source={{ uri: (community.image_url as UploadableFile).uri }}
+              className="w-12 h-12 rounded-full"
+            />
+          ) : (
+            <View className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center" />
+          )}
+
+          <View className="w-full flex-row items-center justify-between">
+            <TouchableOpacity
+              onPress={() => handlePickImage("image_url")}
+              className="flex-1 py-3 px-2 gap-x-4 items-center flex-row "
+            >
+              <Entypo name="image" size={18} color="#2F2F2F" />
+              <Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                className="font-outfit-light text-[14px] max-w-[50%] text-text-3"
+              >
+                {(community.image_url as UploadableFile).name ||
+                  "Agregar icono de la comunidad"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </View>

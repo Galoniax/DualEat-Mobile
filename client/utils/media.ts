@@ -39,13 +39,23 @@ export const pickMedia = async ({
   if (mediaType === "Videos") expoMediaTypes = ["videos"];
   if (mediaType === "All") expoMediaTypes = ["images", "videos"];
 
-  let result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: expoMediaTypes,
-    allowsMultipleSelection,
-    allowsEditing: allowsMultipleSelection ? false : allowsEditing,
-    quality: 1,
-    selectionLimit,
-  });
+  let result;
+  try {
+    result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: expoMediaTypes,
+      allowsMultipleSelection,
+      allowsEditing: allowsMultipleSelection ? false : allowsEditing,
+      quality: 1,
+      selectionLimit,
+    });
+  } catch (error) {
+    console.error("Error al abrir la galería:", error);
+    toast.error(
+      "Error al abrir galería",
+      "Intenta de nuevo. Si el error persiste, reinicia la app.",
+    );
+    return [];
+  }
 
   if (result.canceled || !result.assets || result.assets.length === 0) {
     return [];

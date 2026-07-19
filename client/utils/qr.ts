@@ -1,6 +1,7 @@
 import { useAuth } from "@/context/auth/AuthContext";
 import { QRData } from "@/interface/global";
 
+
 import LZString from "lz-string";
 
 export function useQRParser() {
@@ -39,6 +40,22 @@ export function useQRParser() {
           return {
             success: true,
             type: "order",
+            data: parsedData,
+          };
+
+        case "purchase":
+          console.log("ENTRO a procesar compra:", parsedData);
+
+          if (parsedData.u !== user?.id) {
+            return {
+              success: false,
+              error: "Acceso denegado: Esta compra no pertenece a este usuario.",
+            };
+          }
+
+          return {
+            success: true,
+            type: "purchase",
             data: parsedData,
           };
 
@@ -81,6 +98,8 @@ export function useQRParser() {
     const compressed = LZString.compressToEncodedURIComponent(
       JSON.stringify(data),
     );
+
+    console.log(compressed)
     return compressed;
   };
 

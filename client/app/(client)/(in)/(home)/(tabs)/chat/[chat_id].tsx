@@ -43,6 +43,8 @@ export default function ChatScreen() {
 
   const { chat_id } = useLocalSearchParams<{ chat_id: string }>();
 
+  const flatlistRef = useRef<FlatList | null>(null);
+
   const [open, setOpen] = useState(false);
 
   const { data: chat, isLoading } = useChat(chat_id as string);
@@ -84,14 +86,13 @@ export default function ChatScreen() {
     if (!message) return;
     const text = message.trim();
 
-    console.log(user)
-
     if (!user) return;
 
     if (
-      user.subscription_status === "ACTIVE"
+      user.subscription_status !== "ACTIVE" &&
+      user.subscription_status !== "TRIAL"
     ) {
-      router.push("/(shared)/subscription");
+      router.push(ROUTES.SHARED.SUBSCRIPTION);
       return;
     }
 
@@ -100,9 +101,7 @@ export default function ChatScreen() {
     createMessage(
       {
         chat_id: chat_id || null,
-        recipe_id: chat?.recipe_id || null,
         message: text,
-        prevMessages: (chat?.messages as ChatSessionData[]) || [],
         ingredients: ingredientsSelected,
       },
       {
@@ -157,7 +156,7 @@ export default function ChatScreen() {
   }, [setQuery, setRecipes, router]);
 
   const messages = useMemo(
-    () => (chat?.messages || []) as ChatSessionData[],
+    () => ([...(chat?.messages || [])] as ChatSessionData[]).reverse(),
     [chat],
   );
 
@@ -176,10 +175,9 @@ export default function ChatScreen() {
         }}
       />
       <KeyboardAvoidingView
-        keyboardVerticalOffset={Platform.OS === "ios" ? headerHeight : 0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? headerHeight : 4}
         behavior="padding"
-        className="flex-col gap-y-4"
-        style={{ flex: 1 }}
+        className="flex-col flex-1 gap-y-4"
       >
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
@@ -187,9 +185,11 @@ export default function ChatScreen() {
           </View>
         ) : (
           <FlatList
+            ref={flatlistRef}
+            inverted
             data={messages}
             renderItem={renderMessage}
-            keyExtractor={(item, index) => index.toString()}
+            keyExtractor={(item, idx) => idx.toString()}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{
               paddingTop: insets.top,
@@ -207,7 +207,7 @@ export default function ChatScreen() {
                 </View>
               ) : null
             }
-            ListFooterComponent={
+            ListHeaderComponent={
               isPending ? (
                 <View className="items-center justify-start flex-row gap-x-4">
                   <ActivityIndicator size="small" color="#e5a657" />
@@ -268,6 +268,7 @@ export default function ChatScreen() {
         </ScrollView>
 
         <MessageInput
+          chat_id={chat?.chat_id}
           message={message}
           setMessage={setMessage}
           handleSubmit={handleSubmit}
@@ -315,14 +316,16 @@ export default function ChatScreen() {
         />
       </BottomSheetModal>
 
-      <RecipesModal
-        chat_id={chat_id}
-        recipeRef={recipeRef}
-        recipes={recipes}
-        setRecipes={setRecipes}
-        query={query}
-        setQuery={setQuery}
-      />
+      
+        <RecipesModal
+          chat_id={chat_id}
+          recipeRef={recipeRef}
+          recipes={recipes}
+          setRecipes={setRecipes}
+          query={query}
+          setQuery={setQuery}
+        />
+      
     </SafeAreaView>
   );
 }

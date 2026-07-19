@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, View, ViewStyle } from "react-native";
+import { Image, Text, View, ViewStyle } from "react-native";
 import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -12,6 +12,8 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
 
   const { unreadCount } = useNotifications();
+
+  const Logo = require("@/assets/icon/LogoDualEatBlack.png");
 
   const TabStyle: ViewStyle = {
     height: 66 + insets.bottom,
@@ -44,8 +46,13 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Inicio",
           headerShown: true,
+          headerTitle: () => (
+            <Image
+              source={Logo}
+              style={{ width: 24, height: 24, resizeMode: "contain" }}
+            />
+          ),
           tabBarLabel: ({ color, focused }) => (
             <Text
               style={{

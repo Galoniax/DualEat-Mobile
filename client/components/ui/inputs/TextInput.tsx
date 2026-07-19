@@ -36,9 +36,9 @@ export default function TextInput({
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <View className="w-[80%] relative mt-4">
+    <View className="w-full relative">
       <View className="absolute -top-2.5 left-10 z-10 px-1">
-        <Text className="text-text-1 text-xs font-outfit-bold">{title}</Text>
+        <Text className="text-text-3 text-xs font-outfit-bold">{title}</Text>
       </View>
 
       {/* 2. CONTENEDOR (El que tiene el borde) */}
@@ -46,14 +46,14 @@ export default function TextInput({
         className={`
             flex-row items-center 
             border rounded-full px-4 py-1
-            ${isFocused ? "border-[#afafaf]" : "border-[#dbdbdb]"}
+            ${isFocused ? "border-gray-400" : "border-gray-300"}
         `}
       >
         {/* Icono a la izquierda */}
         {type === "email-address" ? (
-          <Ionicons name="mail-outline" size={18} color="#fff" />
+          <Ionicons name="mail-outline" size={18} color="#000000ff" />
         ) : isPassword ? (
-          <Ionicons name="lock-closed-outline" size={18} color="#fff" />
+          <Ionicons name="lock-closed-outline" size={18} color="#000000ff" />
         ) : icon ? (
           icon
         ) : null}
@@ -72,7 +72,7 @@ export default function TextInput({
           autoCapitalize="none"
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          className="flex-1 ml-2 text-text-1 font-outfit-light text-base"
+          className="flex-1 ml-2 text-text-3 font-outfit-light text-sm"
         />
 
         {isPassword && (
@@ -83,7 +83,7 @@ export default function TextInput({
             <Ionicons
               name={showPassword ? "eye-off-outline" : "eye-outline"}
               size={18}
-              color="#fff"
+              color="#000000ff"
             />
           </TouchableOpacity>
         )}

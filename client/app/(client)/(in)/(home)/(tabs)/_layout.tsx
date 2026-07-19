@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Text, View, ViewStyle } from "react-native";
+import { Image, Text, View, ViewStyle } from "react-native";
 
 import { HapticTab } from "@/components/layout/haptic-tab";
 import { TopSearchBar } from "@/components/layout/TopSearchBar";
@@ -8,10 +8,13 @@ import { TopSearchBar } from "@/components/layout/TopSearchBar";
 import { Bell, House, MessageCircle, Plus, Search } from "lucide-react-native";
 import { useNotifications } from "@/hooks/api/notification/useNotifications";
 
+
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
 
   const { unreadCount } = useNotifications();
+
+  const Logo = require("@/assets/icon/LogoDualEatBlack.png");
 
   const TabStyle: ViewStyle = {
     height: 66 + insets.bottom,
@@ -44,8 +47,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Inicio",
           headerShown: true,
+          headerTitle: () => (
+            <Image
+              source={Logo}
+              style={{ width: 24, height: 24, resizeMode: "contain" }}
+            />
+          ),
+          headerTitleAlign: "center",
           tabBarLabel: ({ color, focused }) => (
             <Text
               style={{

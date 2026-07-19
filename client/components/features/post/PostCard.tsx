@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from "react";
+import React, { useRef } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
 import type { Post } from "@/interface/global";
 
 import { useAuth } from "@/context/auth/AuthContext";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 
 import {
   AntDesign,
@@ -33,6 +33,7 @@ import {
 } from "@gorhom/bottom-sheet";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BadgeCheck } from "lucide-react-native";
 
 interface PostCardProps {
   post: Post;
@@ -154,14 +155,6 @@ const PostCard: React.FC<PostCardProps> = ({
     deletePost({ post_id: post.id });
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      return () => {
-        ref.current?.dismiss();
-      };
-    }, []),
-  );
-
   return (
     <TouchableOpacity
       key={post.id}
@@ -198,11 +191,15 @@ const PostCard: React.FC<PostCardProps> = ({
             )}
 
             <View className="flex-row items-center gap-2">
+               {(post.user?.subscription_status === "ACTIVE" || post.user?.subscription_status === "TRIAL") && (
+                <BadgeCheck size={16} fill="#3578e4" color="#fff" />
+              )}
               <Text className="text-sm font-outfit-light text-text-4">
                 {post.user?.name}
               </Text>
+             
               <Text className="text-sm font-outfit-light text-text-4">
-                • {getShortTimeAgo(post?.created_at)}
+                • {getShortTimeAgo(post?.created_at, true)}
               </Text>
             </View>
           </View>
@@ -212,6 +209,7 @@ const PostCard: React.FC<PostCardProps> = ({
         {(canEdit || canDelete) && (
           <TouchableOpacity
             onPress={() => ref.current?.present()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             className="rounded-full"
           >
             <AntDesign
@@ -300,7 +298,13 @@ const PostCard: React.FC<PostCardProps> = ({
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
-              setPost(post);
+              setPost({
+                id: post.id,
+                title: post.title,
+                content: post.content,
+                image_urls: post.image_urls || [],
+                community: post.community,
+              });
               router.push(ROUTES.USER.CREATE);
             }}
             className="relative w-full flex-row items-center gap-x-2 py-2"

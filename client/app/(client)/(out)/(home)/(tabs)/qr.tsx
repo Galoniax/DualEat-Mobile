@@ -1,1 +1,5 @@
-export { default } from "@/app/(shared)/qr";
+import QrScreen from "@/app/(shared)/qr";
+
+export default function QRScannerScreen() {
+  return <QrScreen />;
+}

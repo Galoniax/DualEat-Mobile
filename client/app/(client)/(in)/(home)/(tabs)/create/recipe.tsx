@@ -39,6 +39,8 @@ import { usePostCreateStore } from "@/context/store/usePostCreate";
 import { createPost, upload } from "@/services/post.api";
 import { useMutation } from "@tanstack/react-query";
 import { globalToast as toast } from "@/utils/toast";
+import { ROUTES } from "@/constants/constants";
+import { useAuth } from "@/context/auth/AuthContext";
 
 type RecipePartial = Omit<RecipeDTO, "ingredients" | "steps">;
 
@@ -46,6 +48,7 @@ export default function CreateRecipeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  const { user } = useAuth();
   const { post, clearPost } = usePostCreateStore();
 
   const unitModalRef = useRef<BottomSheetModal>(null);
@@ -143,8 +146,7 @@ export default function CreateRecipeScreen() {
         i === indexIngredient.current
           ? {
               ...item,
-              ingredient_id: selectedIngredient.id,
-              name: selectedIngredient.name,
+              ingredient: selectedIngredient,
             }
           : item,
       ),
@@ -208,21 +210,37 @@ export default function CreateRecipeScreen() {
 
       return createResponse;
     },
-    onMutate: () => {
-      console.log("Publicando receta...");
-    },
     onSuccess: (res) => {
-      console.log(res?.message || "Receta publicada exitosamente");
       clearPost();
+      toast.success("Exito", res?.message || "Publicación con receta publicada exitosamente");
+      router.replace({
+        pathname: ROUTES.USER.POST,
+        params: {
+          post_id: res?.data?.id as string,
+          post_slug: res?.data?.slug as string,
+        },
+      });
+      
     },
     onError: (err: any) => {
-      console.log(err.message || "Error al publicar la receta");
+      toast.error("Error", err.message || "Error al publicar la receta");
     },
   });
+
+  const hasActiveSubscription = useMemo(() => {
+    return user?.subscription_status === "ACTIVE" || user?.subscription_status === "TRIAL";
+  }, [user?.subscription_status]);
+
+  const descriptionLimit = useMemo(() => (hasActiveSubscription ? 600 : 300), [hasActiveSubscription]);
 
   const handleSubmit = async () => {
     if (!recipe.name || !recipe.description || !recipe.main_image) {
       toast.error("Error", "Faltan datos por completar");
+      return;
+    }
+
+    if (recipe.description.length > descriptionLimit) {
+      toast.error("Error", `La descripción no puede superar los ${descriptionLimit} caracteres`);
       return;
     }
 
@@ -241,6 +259,11 @@ export default function CreateRecipeScreen() {
       return;
     }
 
+    if (!post) {
+      toast.error("Error", "Debes seleccionar una comunidad");
+      return;
+    }
+
     submitRecipe();
   };
 
@@ -252,10 +275,13 @@ export default function CreateRecipeScreen() {
     const invalidStep = steps.some((step) => !step.description.trim());
 
     const invalidRecipe =
-      !recipe.name.trim() || !recipe.description.trim() || !recipe.main_image;
+      !recipe.name.trim() ||
+      !recipe.description.trim() ||
+      recipe.description.length > descriptionLimit ||
+      !recipe.main_image;
 
     return invalidIngredient || invalidStep || invalidRecipe;
-  }, [ingredients, steps, recipe]);
+  }, [ingredients, steps, recipe, descriptionLimit]);
 
   return (
     <SafeAreaView
@@ -271,7 +297,7 @@ export default function CreateRecipeScreen() {
           <Entypo name="chevron-small-left" size={32} color="#2F2F2F" />
         </TouchableOpacity>
 
-        <Text className="font-outfit-bold text-center text-[16px] text-text-3 flex-1">
+        <Text className="font-outfit-bold text-center text-base text-text-3 flex-1">
           Crear receta
         </Text>
 
@@ -280,14 +306,10 @@ export default function CreateRecipeScreen() {
           onPress={() => {
             handleSubmit();
           }}
-          className={`rounded-full py-1 px-4 items-center bg-bg-semi-black ${
-            isSubmitDisabled || (isSubmitting && "opacity-50")
-          }`}
+          className={`rounded-full py-1 px-4 items-center bg-bg-semi-black disabled:opacity-50`}
         >
           <Text
-            className={`font-outfit-bold text-sm  ${
-              isSubmitDisabled || isSubmitting ? "text-text-" : "text-text-1"
-            }`}
+            className={`font-outfit-bold text-sm text-text-1`}
           >
             Publicar
           </Text>
@@ -314,6 +336,7 @@ export default function CreateRecipeScreen() {
             <RecipeInfo
               recipe={recipe}
               setRecipe={setRecipe}
+              limit={descriptionLimit}
               handleAddImage={handleAddImage}
             >
               {/** Tiempo y ingredientes */}
@@ -367,14 +390,13 @@ export default function CreateRecipeScreen() {
       {/** MODALS  (unit modal)*/}
       <BottomSheetModal
         ref={unitModalRef}
-        snapPoints={["30%"]}
+       
         enablePanDownToClose={true}
         enableOverDrag={false}
-        enableDynamicSizing={false}
-        index={0}
+        enableDynamicSizing={true}
         handleIndicatorStyle={{
           backgroundColor: "#2F2F2F",
-          marginVertical: 10,
+          marginVertical: 4,
         }}
         backgroundStyle={{
           borderTopLeftRadius: 20,

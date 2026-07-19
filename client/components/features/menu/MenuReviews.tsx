@@ -1,8 +1,10 @@
 import { MenuLocal } from "@/app/(client)/(out)/local/[local_id]";
+import { ROUTES } from "@/constants/constants";
 import { LocalReview, ResponseWithPagination } from "@/interface/global";
 import { getLocalReviews } from "@/services/discovery.api";
 import { getShortTimeAgo } from "@/utils/date";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 import { JSX, useCallback } from "react";
 import {
   ActivityIndicator,
@@ -10,6 +12,7 @@ import {
   Image,
   ScrollView,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { EdgeInsets, SafeAreaView } from "react-native-safe-area-context";
@@ -24,6 +27,8 @@ export default function MenuReviews({
   insets: EdgeInsets;
   ListHeaderComponent?: () => React.ReactNode;
 }) {
+  const router = useRouter();
+
   const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage } =
     useInfiniteQuery({
       queryKey: ["local_reviews", local.id],
@@ -104,6 +109,8 @@ export default function MenuReviews({
   };
 
   const renderItem = useCallback(({ item }: { item: LocalReview }) => {
+    const order = item.order;
+
     return (
       <View
         key={item.id}
@@ -111,71 +118,72 @@ export default function MenuReviews({
         className="flex-col gap-y-3"
       >
         <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center gap-x-2">
+          <TouchableOpacity
+            onPress={() => {
+              router.push(ROUTES.USER.PROFILE(item.user_id));
+            }}
+            className="flex-row items-center gap-x-2"
+          >
             <Image
               source={{ uri: item?.user?.avatar_url }}
-              className="w-6 h-6 rounded-full"
+              className="w-8 h-8 rounded-full"
             />
-            <Text className="text-text-3 text-[14px] font-outfit-bold">
+            <Text className="text-text-3 text-sm font-outfit-bold">
               {item?.user?.name}
             </Text>
-          </View>
-          <Text className="text-text-5 text-[14px] font-outfit-light">
+          </TouchableOpacity>
+          <Text className="text-text-5 text-sm font-outfit-light">
             {getShortTimeAgo(item?.created_at || "N/A", true)}
           </Text>
         </View>
-        <View className="flex-row items-center gap-x-1">
-          {stars(item.rating, 16)}
-        </View>
 
-        {item.order?.order_items && item.order.order_items.length > 0 && (
-          <ScrollView
-            horizontal={true}
-            showsHorizontalScrollIndicator={false}
-            className="flex-1"
-            contentContainerStyle={{
-              gap: 8,
-              alignItems: "center",
-            }}
-          >
-            {item.order.order_items.map((orderItem, index) => {
-              const isLast =
-                item.order?.order_items?.length === index + 1 ?? true;
-
+        <ScrollView
+          horizontal={true}
+          showsHorizontalScrollIndicator={false}
+          className="flex-1"
+          contentContainerClassName="rounded-full border border-gray-400 py-1 px-2"
+          contentContainerStyle={{
+            gap: 8,
+            alignItems: "center",
+          }}
+        >
+          {order?.order_items &&
+            order.order_items.length > 0 &&
+            order.order_items.map((orderItem, idx) => {
+              const isLast = idx === order.order_items.length - 1;
               return (
                 <View
                   key={orderItem.food.id}
                   className="flex-row items-center gap-x-2 rounded-full"
                 >
-                  <Image
-                    source={{ uri: orderItem.food.image_url }}
-                    className="w-5 h-5 rounded-full"
-                    resizeMode="cover"
-                  />
-                  <Text className="text-text-5 text-[12px] font-outfit-light">
+                  <Text className="text-text-5 text-xs font-outfit-light">
                     {orderItem.food.name}
                   </Text>
+
                   {!isLast && (
-                    <Text className="font-outfit-light text-text-5">|</Text>
+                    <Text className="font-outfit-light text-text-6">|</Text>
                   )}
                 </View>
               );
             })}
-          </ScrollView>
-        )}
+        </ScrollView>
+
+        <View className="flex-row items-center gap-x-1">
+          {stars(item.rating, 16)}
+        </View>
 
         <Text
           ellipsizeMode="tail"
           numberOfLines={2}
-          className="text-text-6 text-[14px] font-outfit-regular leading-6"
+          className="text-text-5 text-sm font-outfit-light"
         >
           {item?.comment}
         </Text>
       </View>
     );
-  }, []);
+  }, [insets, router]);
 
-  const renderCombinedHeader = () => {
+  const header = () => {
     return (
       <View>
         {ListHeaderComponent && ListHeaderComponent()}
@@ -184,15 +192,15 @@ export default function MenuReviews({
           className="flex-col gap-y-0.5 my-4"
         >
           <View className="flex-row items-center justify-start gap-x-2">
-            <Text className="text-text-3 text-[26px] font-outfit-bold">
+            <Text className="text-text-3 text-2xl font-outfit-bold">
               {local?.average_rating?.toFixed(2) || 0}
             </Text>
             <View className="flex-row items-center gap-x-1">
-              {stars(local?.average_rating || 0, 22)}
+              {stars(local?.average_rating || 0, 20)}
             </View>
           </View>
 
-          <Text className="text-text-5 text-[14px] font-outfit-bold mb-4">
+          <Text className="text-text-5 text-base font-outfit-light">
             {total} opiniones
           </Text>
         </View>
@@ -216,13 +224,14 @@ export default function MenuReviews({
             showsVerticalScrollIndicator={false}
             renderItem={renderItem}
             keyExtractor={(item) => item.id.toString()}
-            ListHeaderComponent={renderCombinedHeader}
+            ListHeaderComponent={header}
+
             ListEmptyComponent={
               <View
                 style={{ paddingHorizontal: insets.right + insets.left + 12 }}
                 className="flex-col items-center justify-center h-full"
               >
-                <Text className="text-text-3 text-[15px] font-outfit-bold">
+                <Text className="text-text-3 text-base font-outfit-bold">
                   No hay reseñas
                 </Text>
               </View>
@@ -237,7 +246,7 @@ export default function MenuReviews({
               ) : null
             }
             contentContainerStyle={{
-              paddingBottom: insets.bottom + 20,
+              paddingBottom: insets.bottom + 20, gap: 16,
             }}
           />
         )

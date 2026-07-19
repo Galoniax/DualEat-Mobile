@@ -46,6 +46,11 @@ export default function ClientLayout() {
         name="payment-result"
         options={{ animation: "slide_from_bottom" }}
       />
+
+       <Stack.Screen
+        name="qr-screen"
+        options={{ animation: "simple_push" }}
+      />
     </Stack>
   );
 }

@@ -20,7 +20,7 @@ import {
   logoutAll as authLogoutAll,
 } from "@/services/auth.api";
 
-import type { NotificationFrequency, Role, User, Workplace } from "@/interface/global";
+import type { NotificationFrequency, Role, SuscriptionStatus, Workplace } from "@/interface/global";
 
 import { useLoader } from "../app/LoadingContext";
 import { ROUTES } from "@/constants/constants";
@@ -38,15 +38,19 @@ export interface UserSessionData {
   provider: string;
   is_business: boolean;
   active: boolean;
-  subscription_status: string;
+  subscription_status: SuscriptionStatus;
   trial_ends_at: Date | null;
   avatar_url: string;
   verified: boolean;
   notificationsPref: NotificationFrequency;
-  workplaces?: Workplace[]; 
+
+  created_at: Date;
+  updated_at: Date;
+
+  workplaces: Workplace[]; 
 
   loginAt?: Date;
-  lastActivity?: Date;
+  lastActivity?: Date
   deviceId?: string;
 }
 
@@ -84,7 +88,7 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserSessionData | null>(null);
   const [authReady, setAuthReady] = useState(false);
 
   const router = useRouter();

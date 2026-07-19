@@ -1,6 +1,9 @@
 import React, { createContext, useEffect, useMemo, useState } from "react";
 import { useSocket } from "./SocketContext";
 import { useAuth } from "../auth/AuthContext";
+import * as Notifications from "expo-notifications";
+import { router } from "expo-router";
+import { ROUTES } from "@/constants/constants";
 
 import { Notification } from "@/interface/global";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -60,6 +63,42 @@ export const NotificationProvider = ({
     const unread = notifications.filter((n: Notification) => !n.read).length;
     setUnreadCount(unread);
   }, [notifications]);
+
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        try {
+          console.log("Respuesta recibida!");
+          const data = response.notification.request.content.data;
+          console.log("Notification Data:", data);
+          if (data) {
+            console.log("data.type:", data.type);
+            console.log("data.local_id:", data.local_id);
+            if (data.type === "WEATHER_RECOMMENDATION" && data.local_id) {
+              console.log("Redirecting to local:", data.local_id);
+              router.push({
+                pathname: ROUTES.USER.LOCAL,
+                params: { local_id: data.local_id as string },
+              });
+              console.log("Router push executed.");
+            } else {
+              console.log(
+                "Notification data did not match WEATHER_RECOMMENDATION condition.",
+              );
+            }
+          } else {
+            console.log("No data in notification content.");
+          }
+        } catch (err) {
+          console.error("Error handling notification click:", err);
+        }
+      },
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   // Obtener notificaciones iniciales
   useEffect(() => {

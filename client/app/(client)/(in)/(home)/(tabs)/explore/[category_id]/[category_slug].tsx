@@ -161,7 +161,7 @@ export default function SearchScreen() {
         }
         ListHeaderComponent={() => (
           <View className="flex-col gap-y-2.5 mt-4 mb-2">
-            <Text className="text-text-3 font-outfit-bold text-[15px]">
+            <Text className="text-text-3 font-outfit-bold text-base">
               Explora comunidades por tema
             </Text>
             <FlatList
@@ -172,14 +172,14 @@ export default function SearchScreen() {
               renderItem={({ item }) => (
                 <TouchableOpacity
                   onPress={() => handlePressCategory(item as TagCategory)}
-                  className={`flex-shrink items-center justify-center py-2 px-4 rounded-full border border-gray-300 ${
+                  className={`flex-shrink items-center justify-center py-1.5 px-4 rounded-full border border-gray-300 ${
                     selectedCategory?.id === item.id
                       ? "bg-bg-semi-black "
                       : "bg-bg-semi-white"
                   }`}
                 >
                   <Text
-                    className={`font-outfit-light text-[13px] ${
+                    className={`font-outfit-light text-sm ${
                       selectedCategory?.id === item.id
                         ? "text-text-1"
                         : "text-text-5"

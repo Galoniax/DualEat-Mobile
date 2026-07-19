@@ -51,8 +51,6 @@ export default function OrderInfoScreen() {
 
       const response = await getOrderById(order_id);
 
-      console.log("Order Data:", JSON.stringify(response.data, null, 2));
-
       if (!response || !response.success) {
         throw new Error(response?.message || "Error al obtener la orden", {
           cause: response?.status,

@@ -1,4 +1,3 @@
-import * as WebBrowser from "expo-web-browser";
 import { useOrdering } from "@/context/cart/OrderingContext";
 import { useOrderStore } from "@/context/store/useOrderStore";
 import { Entypo, Ionicons } from "@expo/vector-icons";
@@ -7,8 +6,6 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import {
   ActivityIndicator,
   Image,
-  Linking,
-  Platform,
   Text,
   TouchableOpacity,
   View,
@@ -18,7 +15,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
-import { getCartInfo, prePurchase } from "@/services/order.api";
+import { getCartInfo } from "@/services/order.api";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Local, QROrderPayload } from "@/interface/global";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -27,10 +24,10 @@ import { formatPrice } from "@/utils/distance";
 import { ScrollView } from "react-native-gesture-handler";
 import { isLocalOpen } from "@/utils/isLocalOpen";
 import { useAuth } from "@/context/auth/AuthContext";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useQRParser } from "@/utils/qr";
+import { useQuery } from "@tanstack/react-query";
 import { MenuFood } from "./local/[local_id]";
 import AddButton from "@/components/ui/buttons/AddButton";
+import { usePrePurchase } from "@/hooks/api/payment/usePayment";
 
 export default function CartScreen() {
   const insets = useSafeAreaInsets();
@@ -40,7 +37,9 @@ export default function CartScreen() {
 
   const { clear, items, addItem } = useOrdering();
 
-  const { generateQR } = useQRParser();
+  const { setTempOrder } = useOrderStore();
+
+  const { mutate: checkout, isPending } = usePrePurchase();
 
   const itemsIDs = useMemo(() => {
     return items.map((item) => item.food_id);
@@ -89,114 +88,20 @@ export default function CartScreen() {
         })),
       };
 
-      //const qrValue = generateQR(payload);
+      setTempOrder(payload);
 
-      useOrderStore.getState().setTempOrder(payload);
-
-      router.push(ROUTES.USER.QR);
+      router.push(ROUTES.USER.QR_SCREEN);
     }
   };
 
-  const { mutate: checkout, isPending } = useMutation({
-    mutationFn: async () => {
-      const checkoutItems = items.map((item) => ({
-        food_id: item.food_id,
-        quantity: item.quantity,
-      }));
-      return await prePurchase(localId, checkoutItems);
-    },
-    onSuccess: async (data) => {
-      if (data.success && data.data?.checkoutUrl) {
-        const url = data.data.checkoutUrl;
+  const handleCheckout = () => {
+    const checkoutItems = items.map((item) => ({
+      food_id: item.food_id,
+      quantity: item.quantity,
+    }));
 
-        // Extraer el pref_id de la url (ej: pref_id=3468655592-5596e5bd-...)
-        const match = url.match(/pref_id=([^&]+)/);
-        const prefId = match ? match[1] : null;
-
-        const isSandbox = url.includes("sandbox.mercadopago");
-        let openedNatively = false;
-
-        console.log("URL", url);
-        console.log("PREF ID", prefId);
-        console.log("IS SANDBOX", isSandbox);
-
-        // 1. Intentar abrir la app nativa de Mercado Pago SOLO en producción y si tenemos el prefId.
-        // La app nativa no soporta compras en Sandbox ya que requiere iniciar sesión con usuarios de prueba.
-        if (!isSandbox && prefId) {
-          const deeplinkMP =
-            Platform.OS === "ios"
-              ? `mpago://hp/card/checkout?pref_id=${prefId}`
-              : `mercadopago://checkout?pref_id=${prefId}`;
-
-          console.log("DEEP LINK MP", deeplinkMP);
-          try {
-            await Linking.openURL(deeplinkMP);
-            openedNatively = true;
-          } catch (error) {
-            console.log(
-              "App de Mercado Pago no instalada o falló al abrir nativamente:",
-              error,
-            );
-          }
-        }
-
-        // 2. Fallback: Si es sandbox o no se pudo abrir la app nativa, abrir con el navegador integrado
-        if (!openedNatively) {
-          try {
-            // openAuthSessionAsync se cerrará automáticamente cuando redireccione a "dualeat://"
-            const result = await WebBrowser.openAuthSessionAsync(
-              url,
-              "dualeat://",
-              {
-                preferEphemeralSession: true,
-              },
-            );
-
-            console.log("RESULT", result);
-
-            if (result.type === "success" && result.url) {
-              console.log("Pago completado por web:", result.url);
-              // 1. Extraer los parámetros de búsqueda de la URL
-              const queryString = result.url.split("?")[1] || "";
-              const searchParams = new URLSearchParams(queryString);
-              const status = searchParams.get("status") || "";
-              const type = searchParams.get("type") || "";
-              const id = searchParams.get("id") || "";
-              // 2. Comprobar si la URL del redirect es de tipo order_info o payment-result
-              if (result.url.includes("order_info/")) {
-                // Caso PRE_ORDER (pago normal): Extraemos el ID del path de la URL
-                const pathPart = result.url
-                  .split("?")[0]
-                  .replace("dualeat://", "");
-                const orderId = pathPart.split("/").pop(); // ej: "sSjsJoUxim"
-                router.replace({
-                  pathname: ROUTES.USER.ORDER_INFO,
-                  params: { order_id: orderId as string },
-                });
-              } else {
-                // Caso ORDER: Redirigimos a la pantalla de resultados pasándole los queries
-                router.replace({
-                  pathname: ROUTES.USER.PAYMENT,
-                  params: {
-                    status: status,
-                    type: type,
-                    order_id: id,
-                  },
-                });
-              }
-            }
-          } catch (error) {
-            console.log("Error abriendo el navegador integrado:", error);
-            // Fallback final en navegador externo si algo falla con el Session
-            await WebBrowser.openBrowserAsync(url);
-          }
-        }
-      }
-    },
-    onError: (error) => {
-      console.log("Error en prePurchaseMutate:", error);
-    },
-  });
+    checkout({ local_id: localId, items: checkoutItems });
+  };
 
   useEffect(() => {
     if (!local) return;
@@ -457,7 +362,7 @@ export default function CartScreen() {
           */}
           <View className="w-full flex-row items-center justify-center mt-2 gap-2">
             <TouchableOpacity
-              onPress={() => checkout()}
+              onPress={() => handleCheckout()}
               disabled={isPending}
               style={{ flex: 3 }}
               className={`bg-bg-red py-2.5 rounded-[8px] items-center`}

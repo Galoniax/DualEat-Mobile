@@ -81,13 +81,14 @@ export const joinLeave = async (
 
 // --- 5. CREAR UNA COMUNIDAD ---
 // ===================================
-export const create = async (community: CommunityDTO): Promise<Response> => {
+export const create = async (community: CommunityDTO): Promise<Response<Community>> => {
   try {
     const response = await axiosInterceptor.post(`/community/create`, { community });
 
     return {
       success: response.data.success ?? true,
       status: response.status,
+      message: response.data.message,
       data: response.data.data,
     };
   } catch (err: any) {

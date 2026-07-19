@@ -37,7 +37,7 @@ import { UploadableFile } from "@/interface/global.dto";
 import { Pencil } from "lucide-react-native";
 
 import { globalToast as toast } from "@/utils/toast";
-import { ApiError } from "@/utils/apiErrorHandler";
+import { WeatherWidget } from "@/components/features/weather/WeatherWidget";
 
 export default function ConfigurationScreen() {
   const router = useRouter();
@@ -244,7 +244,7 @@ export default function ConfigurationScreen() {
         "Su perfil fue actualizado, espere un momento para ver los cambios.",
       );
     },
-    onError: (err: ApiError) => {
+    onError: (err: any) => {
       toast.error(
         err.message,
         "Error al actualizar perfil, intentelo más tarde",
@@ -253,9 +253,13 @@ export default function ConfigurationScreen() {
   });
 
   const handleUpdateProfile = async (isAvatarURL: boolean) => {
-    let avatar_url: UploadableFile | null = null;
+    let avatar_url: UploadableFile | undefined = undefined;
+
+    ref.current?.dismiss();
 
     if (isAvatarURL) {
+      // 1. Cerramos el BottomSheet primero para que la actividad de Android se estabilice
+
       const result = await pickMedia({
         mediaType: "Images",
         allowsEditing: true,
@@ -265,12 +269,11 @@ export default function ConfigurationScreen() {
 
       if (result && result.length > 0) {
         avatar_url = result[0];
+        updateProfile(avatar_url);
       }
+    } else {
+      updateProfile(avatar_url);
     }
-
-    ref.current?.dismiss();
-
-    updateProfile(avatar_url as UploadableFile);
   };
 
   const defaultAvatar = "https://placehold.co/100x100";
@@ -284,12 +287,12 @@ export default function ConfigurationScreen() {
     backup.every((id) => preferences.includes(id));
 
   return (
-    <SafeAreaView className="flex-1 bg-bg-gray flex-col gap-y-3">
+    <SafeAreaView className="flex-1 bg-bg-gray flex-col gap-y-6 px-4">
       {/* Header */}
       <View className="flex-row items-center justify-center w-full py-4">
         <TouchableOpacity
           onPress={() => router.back()}
-          className="h-10 w-10 absolute left-4 flex items-center justify-center"
+          className="h-10 w-10 absolute left-0 flex items-center justify-center"
         >
           <Entypo name="chevron-small-left" size={32} color="#2F2F2F" />
         </TouchableOpacity>
@@ -297,6 +300,8 @@ export default function ConfigurationScreen() {
           Configuración
         </Text>
       </View>
+
+      <WeatherWidget type="PROFILE" />
 
       <KeyboardAvoidingView
         behavior="padding"
@@ -306,7 +311,7 @@ export default function ConfigurationScreen() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 40, gap: 16 }}
-          className="flex-1 px-6"
+          className="flex-1"
         >
           {/* Usuario*/}
           <View className="flex-row items-center gap-x-4">

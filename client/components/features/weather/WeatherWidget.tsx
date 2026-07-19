@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import axiosInterceptor from "@/api/client";
 
 interface Props {
-  type: "home" | "profile";
+  type: "HOME" | "PROFILE";
 }
 
 export const WeatherWidget = ({ type }: Props) => {
@@ -121,9 +121,9 @@ export const WeatherWidget = ({ type }: Props) => {
       };
     },
     enabled: !!location && !!latitude && !!longitude,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-    refetchInterval: 40 * 60 * 1000,
+    staleTime: Infinity,
+    gcTime: Infinity,
+    refetchInterval: 6 * 60 * 60 * 1000,
   });
 
   if (!weather) return null;
@@ -132,39 +132,41 @@ export const WeatherWidget = ({ type }: Props) => {
 
   return (
     <View
-      className={`w-full justify-center overflow-hidden
-        ${type === "profile" ? "h-[90px] rounded-[10px]" : "h-[110px] rounded-t-[5px] rounded-br-[70px] rounded-bl-[10px]"}`}
+      className={`relative w-full justify-center overflow-hidden border border-white/10 rounded-[5px]
+        ${type === "HOME" && "h-[90px]"}`}
     >
       <ImageBackground
         source={{
           uri: background,
         }}
-        className="absolute inset-0 w-full h-full"
+        className="absolute w-full h-full"
         resizeMode="cover"
       />
 
-      <View className="absolute inset-0 bg-black opacity-30" />
+      <View className="absolute inset-0 bg-black/30" />
 
-      <View className="px-4 flex-col gap-y-2 z-10">
+      <View className="px-5 py-3.5 flex-col justify-between gap-y-2">
         <View className="justify-between flex-row items-center">
-          <Text
-            className={`font-outfit-bold text-text-1 ${type === "profile" ? "text-[14px]" : "text-[18px]"}`}
-          >
-            {icon} {label}
-          </Text>
-
-          {type === "profile" && (
-            <Text className="text-[14px] font-outfit-medium text-text-2">
-              {address?.city ? `${address.city}` : ""}
+          <View className="flex-row items-center gap-x-2">
+            {icon}
+            <Text className="font-outfit-bold text-text-1 text-sm">
+              {label}
             </Text>
-          )}
+          </View>
+
+          <View className="flex-row items-center gap-x-1">
+            <Ionicons name="location-sharp" size={13} color="#dbdbdb" />
+            <Text className="text-sm font-outfit-medium text-text-2">
+              {address?.city ? `${address.city}` : "Tu zona"}
+            </Text>
+          </View>
         </View>
 
-        <Text
-          className={`text-text-1 font-outfit-bold tracking-wider ${type === "profile" ? "text-[20px]" : "text-[22px]"}`}
-        >
-          {weather.temperature}°
-        </Text>
+        {type === "HOME" && (
+          <Text className="text-text-1 font-outfit-extrabold text-4xl">
+            {weather.temperature}°
+          </Text>
+        )}
       </View>
     </View>
   );

@@ -14,7 +14,7 @@ import * as WebBrowser from "expo-web-browser";
 
 import { useAuth } from "@/context/auth/AuthContext";
 import { createUserCheckout } from "@/services/subscription.api";
-import { showToast } from "@/utils/toast";
+import { globalToast as toast } from "@/utils/toast";
 
 export default function SubscriptionView() {
   const router = useRouter();
@@ -70,27 +70,19 @@ export default function SubscriptionView() {
         // Abrir la pasarela de Mercado Pago en el navegador del celular
         await WebBrowser.openBrowserAsync(response.checkoutUrl);
       } else {
-        showToast(
-          "error",
-          response.message || "No se pudo iniciar el checkout",
-          "Error",
-        );
+        toast.error(response.message || "No se pudo iniciar el checkout");
       }
     } catch (error) {
       console.error("Error al procesar suscripción:", error);
-      showToast(
-        "error",
-        "Ocurrió un error inesperado al conectar con Mercado Pago",
-        "Error",
-      );
+      toast.error("Ocurrió un error inesperado al conectar con Mercado Pago");
     } finally {
       setLoading(false);
     }
   };
 
   const isUserPremium =
-    user?.suscription_status === "ACTIVE" ||
-    user?.suscription_status === "TRIAL";
+    user?.subscription_status === "ACTIVE" ||
+    user?.subscription_status === "TRIAL";
 
   return (
     <View className="flex-1 bg-black">

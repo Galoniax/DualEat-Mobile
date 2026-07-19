@@ -191,7 +191,7 @@ export const getCommunityPosts = async (
 export const createPost = async (
   post: PostDTO,
   recipe?: RecipeDTO,
-): Promise<Response> => {
+): Promise<Response<Post>> => {
   try {
     const response = await axiosInterceptor.post("/post/create", {
       post: {
@@ -206,6 +206,7 @@ export const createPost = async (
     return {
       success: response.data.success ?? true,
       status: response.status,
+      message: response.data.message,
       data: response.data,
     };
   } catch (err: any) {

@@ -8,44 +8,48 @@ import {
 } from "@/interface/global.dto";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { create, upload } from "@/services/community.api";
+import { create, getByName, upload } from "@/services/community.api";
 import StepOne from "@/components/features/create/community/StepOne";
 import StepTwo from "@/components/features/create/community/StepTwo";
 import StepThree from "@/components/features/create/community/StepThree";
 import { globalToast as toast } from "@/utils/toast";
+import { ROUTES } from "@/constants/constants";
+import { Community, Response } from "@/interface/global";
+import { useMutation } from "@tanstack/react-query";
 
 export default function CreateCommunityScreen() {
   const router = useRouter();
   const [step, setStep] = useState(1);
 
-  const [isLoadingSubmit, setIsLoadingSubmit] = useState(false);
-
   const [community, setCommunity] = useState<CommunityDTO>({
     name: "",
     description: "",
-    image_url: "",
-    banner_url: "",
+    image_url:
+      "https://ohhvldagwoycuifwhgtc.supabase.co/storage/v1/object/public/assets/DefaultCommunity.jpg",
+    banner_url:
+      "https://ohhvldagwoycuifwhgtc.supabase.co/storage/v1/object/public/assets/DefaultBanner.jpg",
     tags: [] as string[],
   });
 
-  const handleNext = async () => {
-    if (step !== 3) setStep((prev) => prev + 1);
-
-    if (
-      step === 3 &&
-      community.tags.length > 0 &&
-      community.name.trim().length > 0 &&
-      community.description.trim().length > 0 &&
-      community.image_url &&
-      community.banner_url
-    ) {
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (payload: UploadPayload) => {
       try {
-        setIsLoadingSubmit(true);
+        const available = await getByName(community.name.trim());
 
-        const payload: UploadPayload = {
-          image_url: community.image_url as UploadableFile,
-          banner_url: community.banner_url as UploadableFile,
-        };
+        const list = Array.isArray(available?.data)
+          ? available.data
+          : available?.data
+            ? [available.data]
+            : [];
+
+        const isTaken = list.some(
+          (c: any) =>
+            c.name.toLowerCase() === community.name.trim().toLowerCase(),
+        );
+
+        if (isTaken) {
+          throw new Error("La comunidad ya existe");
+        }
 
         const responseUpload = await upload(payload);
 
@@ -66,18 +70,48 @@ export default function CreateCommunityScreen() {
         const responseCreate = await create(payloadCommunity);
 
         if (!responseCreate?.success || !responseCreate?.data) {
-          throw new Error("Error al crear la comunidad");
+          throw new Error(
+            responseCreate.message || "Error al crear la comunidad",
+          );
         }
 
-        toast.success("Comunidad creada", "Comunidad creada correctamente");
-        router.back();
-      } catch (err: any) {
-        toast.error(
-          err.message || "Error al crear la comunidad",
-          "La comunidad no se pudo crear, intentalo de nuevo",
-        );
-      } finally {
-        setIsLoadingSubmit(false);
+        return responseCreate;
+      } catch (e: any) {
+        throw e;
+      }
+    },
+
+    onSuccess: (res: Response<Community>) => {
+      toast.success("Comunidad creada", "Comunidad creada correctamente");
+      router.replace({
+        pathname: ROUTES.USER.COMMUNITY,
+        params: {
+          community_slug: res.data?.slug || "",
+        },
+      });
+    },
+  });
+
+  const handleNext = async () => {
+    if (step !== 3) setStep((prev) => prev + 1);
+
+    if (
+      step === 3 &&
+      community.tags.length > 0 &&
+      community.name.trim().length > 0 &&
+      community.description.trim().length > 0 &&
+      community.image_url &&
+      community.banner_url
+    ) {
+      try {
+        const payload: UploadPayload = {
+          image_url: community.image_url as UploadableFile,
+          banner_url: community.banner_url as UploadableFile,
+        };
+
+        mutate(payload);
+      } catch (e: any) {
+        toast.error("Error", e.message);
       }
     }
   };
@@ -117,13 +151,13 @@ export default function CreateCommunityScreen() {
             (step === 2 &&
               (community.name.length < 1 ||
                 community.description.length < 10)) ||
-            isLoadingSubmit
+            isPending
           }
           style={{ minWidth: step === 3 ? 150 : 0 }}
           className="bg-bg-gray py-2 px-4 rounded-full"
           onPress={handleNext}
         >
-          {isLoadingSubmit ? (
+          {isPending ? (
             <ActivityIndicator size={18} color="#2F2F2F" className="py-1" />
           ) : (
             <Text className="font-outfit-bold text-[16px] text-center text-text-5">

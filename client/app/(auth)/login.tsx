@@ -21,6 +21,9 @@ import { useGoogleAuth } from "@/hooks/auth/useGoogleAuth";
 import { getDeviceId } from "@/utils/device";
 import { useAuth } from "@/context/auth/AuthContext";
 import { globalToast as toast } from "@/utils/toast";
+import { SafeAreaView } from "react-native-safe-area-context";
+import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { StatusBar } from "expo-status-bar";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -130,7 +133,8 @@ export default function Login() {
   `;
 
   return (
-    <View className="flex-1 bg-bg-semi-black">
+   <SafeAreaView edges={["bottom", "left", "right", "top"]} className="flex-1">
+    <StatusBar style="light" />
       <ImageBackground
         source={require("@/assets/images/PermissionBG.png")}
         className="flex-1"
@@ -139,52 +143,71 @@ export default function Login() {
         <View className="absolute inset-0 bg-black/50" />
 
         <View className="flex-row justify-between w-[90%] mx-auto items-center mt-[15%] mb-12">
-          <View className="flex-1">
-            <Ionicons
-              name="chevron-back"
-              size={22}
-              color="#fff"
-              onPress={() => router.push(ROUTES.PUBLIC.HOME)}
-            />
-          </View>
+          <TouchableOpacity onPress={() => router.push(ROUTES.PUBLIC.HOME)}>
+            <Ionicons name="chevron-back" size={22} color="#fff" />
+          </TouchableOpacity>
 
-          <View className="flex-row items-center flex-2 justify-center">
-            <Text className="text-text-2 text-[13px] font-dosis-light mr-2">
+          <View className="flex-row items-center justify-center">
+            <Text className="text-text-2 text-sm font-outfit-light">
               ¿Todavía no tienes una cuenta?
             </Text>
             <TouchableOpacity
-              className="p-2 rounded-lg "
+              className="p-2 rounded-lg"
               onPress={() => router.push(ROUTES.AUTH.REGISTER)}
             >
-              <Text className="text-text-1 text-[13px] font-outfit-bold text-center">
+              <Text className="text-text-1 text-sm font-outfit-bold">
                 Registrate
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
+
         <View className="flex flex-row items-center justify-center gap-2">
           <Image source={Logo} className="w-[30px] h-[30px] object-contain" />
 
-          <Text className="text-white text-[26px] font-outfit-bold">
+          <Text className="text-white text-3xl font-outfit-bold">
             DualEat
           </Text>
         </View>
       </ImageBackground>
 
-      <View className="flex-1 justify-end">
-        <View className="w-full flex-[0.75] bg-[#1A1A1A] rounded-tr-[40px] rounded-tl-[40px] items-center pt-8">
-          <View className="flex-col gap-1 items-center">
-            <Text className="text-[24px] font-outfit-bold text-text-1 mt-2 tracking-tighter">
-              Iniciar sesión
-            </Text>
-            <Text className="font-dosis-light text-[14px] text-text-2 mb-10">
-              Conéctate con tu comida, como nunca antes
-            </Text>
-          </View>
+       <BottomSheet
+        enablePanDownToClose={false}
+        enableOverDrag={false}
+        enableDynamicSizing={false}
+        keyboardBehavior="extend"
+        keyboardBlurBehavior="restore"
+        backgroundStyle={{
+          borderTopLeftRadius: 40,
+          borderTopRightRadius: 40,
+          backgroundColor: "#f5f5f5",
+        }}
+        handleIndicatorStyle={{
+          display: "none",
+        }}
+        snapPoints={["75%"]}
+      >
+        <BottomSheetScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 60 }}
+          className="flex-1 py-4"
+        >
+          <View
+            style={{ maxWidth: "90%", alignSelf: "center" }}
+            className="w-full items-center flex-col gap-y-5"
+          >
+            <View className="flex-col gap-y-2 items-center mb-4">
+              <Text className="text-2xl font-outfit-bold text-text-3">
+                Iniciar sesión
+              </Text>
+              <Text className="font-outfit-light text-base text-center text-text-3">
+                Conéctate con tu comida, como nunca antes
+              </Text>
+            </View>
 
-          <View className="w-full items-center flex-col gap-3">
-            <TextInputUI
+            <View className="w-full items-center flex-col gap-y-8">
+              <TextInputUI
               value={email}
               onChangeText={setEmail}
               type="email-address"
@@ -198,47 +221,48 @@ export default function Login() {
               type="default"
               title="Contraseña"
             />
-          </View>
+            </View>
 
-          <TouchableOpacity className=" w-[80%] mt-5 me-5">
-            <Text className="text-[13px] text-right text-text-1 font-outfit-bold tracking-tighter">
-              ¿Olvidaste tu contraseña?
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
+            <TouchableOpacity
             onPress={onPressLogin}
             activeOpacity={0.9}
-            className="bg-bg-red w-[80%] p-3 rounded-full items-center border border-gray-300 mt-6"
+            className="bg-bg-red w-full p-3 rounded-full items-center"
           >
             {loading ? (
               <ActivityIndicator className="py-0.5" color="#fff" />
             ) : (
-              <Text className="text-text-1 font-outfit-bold text-[15px] tracking-tighter">
+              <Text className="text-text-1 font-outfit-bold text-base tracking-tighter">
                 Iniciar Sesión
               </Text>
             )}
           </TouchableOpacity>
 
-          {/* --- Divisor "o" --- */}
-          <View className="flex-row items-center w-[80%] my-6">
-            <View className="flex-1 h-px bg-gray-300" />
-            <Text className="mx-4 text-text-1 font-outfit-regular">**</Text>
-            <View className="flex-1 h-px bg-gray-300" />
-          </View>
-
-          {/* --- Botón de Google --- */}
-          <TouchableOpacity
-            onPress={handleGoogleLogin}
-            className="bg-bg-gray border border-gray-300 w-[80%] p-3 rounded-full items-center flex-row justify-center"
-          >
-            <GoogleIcon />
-            <Text className="text-text-5 font-outfit-bold text-[14px] ml-1 tracking-tighter">
-              Iniciar sesión con Google
+          <TouchableOpacity className="w-full">
+            <Text className="text-sm text-text-3 font-outfit-bold text-right">
+              ¿Olvidaste tu contraseña?
             </Text>
           </TouchableOpacity>
-        </View>
-      </View>
+
+            {/* --- Divisor "o" --- */}
+            <View className="flex-row items-center w-[80%]">
+              <View className="flex-1 h-px bg-gray-400" />
+              <Text className="mx-4 text-text-3 font-outfit-bold">**</Text>
+              <View className="flex-1 h-px bg-gray-400" />
+            </View>
+
+            {/* --- Botón de Google --- */}
+            <TouchableOpacity
+              onPress={handleGoogleLogin}
+              className="bg-bg-gray border border-gray-300 p-3 w-full rounded-full items-center flex-row justify-center"
+            >
+              <GoogleIcon />
+              <Text className="text-text-5 font-outfit-bold text-sm">
+                Regístrate con Google
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </BottomSheetScrollView>
+      </BottomSheet>
 
       <View style={{ width: 0, height: 0, overflow: "hidden", opacity: 0 }}>
         <WebView
@@ -250,6 +274,6 @@ export default function Login() {
           scrollEnabled={false}
         />
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
