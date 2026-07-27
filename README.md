@@ -6,7 +6,7 @@ Entre sus funcionalidades principales, se incluyen:
 
 - Autenticación segura e integración fluida con el ecosistema de la plataforma (incluyendo OAuth y validación biométrica).
 - Exploración de locales gastronómicos mediante mapas interactivos y servicios de geolocalización.
-- Proceso de pedido completo con seguimiento en tiempo real de repartidores y estados de la orden (WebSockets).
+- Proceso de pedido completo con seguimiento en tiempo real de los estados de la orden.
 - Interfaz gráfica moderna, responsiva y adaptable a modos claro/oscuro gracias a la potencia de NativeWind y TailwindCSS.
 - Carga de imágenes o reconocimiento OCR (accediendo a la cámara nativa del dispositivo).
 - Acceso a funcionalidades sociales como foros, recomendaciones y mensajería móvil instantánea.
