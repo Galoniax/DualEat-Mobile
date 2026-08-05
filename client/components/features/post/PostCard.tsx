@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -16,7 +16,6 @@ import {
   MaterialCommunityIcons,
   Octicons,
 } from "@expo/vector-icons";
-import PostImagesCarousel from "./PostImagesCarousel";
 
 import { ROUTES } from "@/constants/constants";
 import PostActions from "./PostActions";
@@ -34,6 +33,7 @@ import {
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BadgeCheck } from "lucide-react-native";
+import ImagesCarousel from "@/components/shared/ImagesCarousel";
 
 interface PostCardProps {
   post: Post;
@@ -73,41 +73,44 @@ const PostCard: React.FC<PostCardProps> = ({
 
   const { setPost } = usePostCreateStore();
 
-  const handleNavigate = (type: "POST" | "RECIPE" | "COMMUNITY") => {
-    switch (type) {
-      case "POST":
-        router.push({
-          pathname: ROUTES.USER.POST,
-          params: {
-            post_id: post.id || "",
-            post_slug: post.slug || "",
-          },
-        });
-        break;
+  const handleNavigate = useCallback(
+    (type: "POST" | "RECIPE" | "COMMUNITY") => {
+      switch (type) {
+        case "POST":
+          router.push({
+            pathname: ROUTES.USER.POST,
+            params: {
+              post_id: post.id || "",
+              post_slug: post.slug || "",
+            },
+          });
+          break;
 
-      case "RECIPE":
-        router.push({
-          pathname: ROUTES.USER.RECIPE,
-          params: {
-            recipe_id: post.recipe?.id || "",
-            recipe_slug: post.recipe?.slug || "",
-          },
-        });
-        break;
+        case "RECIPE":
+          router.push({
+            pathname: ROUTES.USER.RECIPE,
+            params: {
+              recipe_id: post.recipe?.id || "",
+              recipe_slug: post.recipe?.slug || "",
+            },
+          });
+          break;
 
-      case "COMMUNITY":
-        router.push({
-          pathname: ROUTES.USER.COMMUNITY,
-          params: {
-            community_slug: post.community?.slug || "",
-          },
-        });
-        break;
+        case "COMMUNITY":
+          router.push({
+            pathname: ROUTES.USER.COMMUNITY,
+            params: {
+              community_slug: post.community?.slug || "",
+            },
+          });
+          break;
 
-      default:
-        break;
-    }
-  };
+        default:
+          break;
+      }
+    },
+    [post, router],
+  );
 
   const TextHTML = {
     lineHeight: 24,
@@ -156,102 +159,118 @@ const PostCard: React.FC<PostCardProps> = ({
   };
 
   return (
-    <TouchableOpacity
-      key={post.id}
-      className={`flex-col w-full gap-y-2.5 ${padding}`}
-      activeOpacity={0.8}
-      disabled={type === "POST"}
-      onPress={() => {
-        handleNavigate("POST");
-      }}
-    >
-      <View className="flex-row items-center justify-between w-full">
-        <View className="flex-row items-center gap-x-2.5">
-          <Image
-            source={{
-              uri:
-                type === "COMMUNITY"
-                  ? post.user?.avatar_url
-                  : post.community?.image_url ||
-                    "https://ohhvldagwoycuifwhgtc.supabase.co/storage/v1/object/public/assets/DefaultProfile.png",
-            }}
-            className="w-8 h-8 rounded-full"
-            resizeMode="cover"
-          />
-          <View className="flex-col gap-y-0.5">
-            {type !== "COMMUNITY" && (
+    <View key={post.id} className={`flex-col w-full gap-y-2.5 ${padding}`}>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        disabled={type === "POST"}
+        onPress={() => handleNavigate("POST")}
+      >
+        <View className="flex-col gap-y-2.5">
+          <View className="flex-row items-center justify-between w-full">
+            <View className="flex-row items-center gap-x-2.5">
+              <Image
+                source={{
+                  uri:
+                    type === "COMMUNITY"
+                      ? post.user?.avatar_url
+                      : post.community?.image_url ||
+                        "https://ohhvldagwoycuifwhgtc.supabase.co/storage/v1/object/public/assets/DefaultProfile.png",
+                }}
+                className="w-8 h-8 rounded-full"
+                resizeMode="cover"
+              />
+              <View className="flex-col gap-y-0.5">
+                {type !== "COMMUNITY" && (
+                  <TouchableOpacity
+                    onPress={() => handleNavigate("COMMUNITY")}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Text className="text-sm font-outfit-bold text-text-3">
+                      {post.community?.name}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                <View className="flex-row items-center gap-2">
+                  {(post.user?.subscription_status === "ACTIVE" ||
+                    post.user?.subscription_status === "TRIAL") && (
+                    <BadgeCheck size={16} fill="#3578e4" color="#fff" />
+                  )}
+                  <Text className="text-sm font-outfit-light text-text-4">
+                    {post.user?.name}
+                  </Text>
+
+                  <Text className="text-sm font-outfit-light text-text-4">
+                    • {getShortTimeAgo(post?.created_at, true)}
+                  </Text>
+                  {post.edited && (
+                    <Text className="text-xs text-text-4">• (Editado)</Text>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Contenedor Derecho: Botón de opciones */}
+            {(canEdit || canDelete) && (
               <TouchableOpacity
-                onPress={() => handleNavigate("COMMUNITY")}
+                onPress={() => ref.current?.present()}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                className="rounded-full"
               >
-                <Text className="text-sm font-outfit-bold text-text-3">
-                  {post.community?.name}
-                </Text>
+                <AntDesign
+                  style={{ transform: [{ rotate: "90deg" }] }}
+                  name="ellipsis"
+                  size={18}
+                  color="black"
+                />
               </TouchableOpacity>
             )}
+          </View>
 
-            <View className="flex-row items-center gap-2">
-               {(post.user?.subscription_status === "ACTIVE" || post.user?.subscription_status === "TRIAL") && (
-                <BadgeCheck size={16} fill="#3578e4" color="#fff" />
-              )}
-              <Text className="text-sm font-outfit-light text-text-4">
-                {post.user?.name}
+          <View className="flex-col gap-y-2">
+            <Text className="text-lg font-outfit-bold text-text-3">
+              {post.title}
+            </Text>
+
+            {post.content &&
+            post.image_urls?.length === 0 &&
+            type !== "POST" ? (
+              <Text
+                style={TextHTML}
+                className="text-base"
+                ellipsizeMode="tail"
+                numberOfLines={3}
+              >
+                {stripHTMLTags(post.content || "")}
               </Text>
-             
-              <Text className="text-sm font-outfit-light text-text-4">
-                • {getShortTimeAgo(post?.created_at, true)}
-              </Text>
-            </View>
+            ) : (
+              type === "POST" && (
+                <RenderHTML
+                  contentWidth={width}
+                  source={{ html: post.content }}
+                  systemFonts={systemFonts}
+                  baseStyle={TextHTML}
+                  tagsStyles={styles}
+                />
+              )
+            )}
           </View>
         </View>
+      </TouchableOpacity>
 
-        {/* Contenedor Derecho: Botón de opciones */}
-        {(canEdit || canDelete) && (
-          <TouchableOpacity
-            onPress={() => ref.current?.present()}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            className="rounded-full"
-          >
-            <AntDesign
-              style={{ transform: [{ rotate: "90deg" }] }}
-              name="ellipsis"
-              size={18}
-              color="black"
-            />
-          </TouchableOpacity>
-        )}
-      </View>
+      {/* Carrusel de imágenes */}
+      {post?.image_urls?.length > 0 && (
+        <ImagesCarousel
+          media={post.image_urls.map((url) => ({
+            uri: url,
+            type: "",
+            name: "",
+          }))}
+        />
+      )}
 
-      <View className="flex-col gap-y-2">
-        <Text className="text-lg font-outfit-bold text-text-3">
-          {post.title}
-        </Text>
-
-        {post.content && post.image_urls?.length === 0 && type !== "POST" ? (
-          <Text
-            style={TextHTML}
-            className="text-base"
-            ellipsizeMode="tail"
-            numberOfLines={3}
-          >
-            {stripHTMLTags(post.content || "")}
-          </Text>
-        ) : (
-          type === "POST" && (
-            <RenderHTML
-              contentWidth={width}
-              source={{ html: post.content }}
-              systemFonts={systemFonts}
-              baseStyle={TextHTML}
-              tagsStyles={styles}
-            />
-          )
-        )}
-        {post?.image_urls?.length > 0 && <PostImagesCarousel post={post} />}
-
-        {/* Tarjeta de Receta */}
-        {post.recipe && <RecipeCard recipe={{ ...post.recipe }} />}
-      </View>
+      {/* Tarjeta de Receta */}
+      {post.recipe && <RecipeCard recipe={{ ...post.recipe }} />}
 
       {showActions && (
         <View>
@@ -304,6 +323,7 @@ const PostCard: React.FC<PostCardProps> = ({
                 content: post.content,
                 image_urls: post.image_urls || [],
                 community: post.community,
+                recipe: post.recipe,
               });
               router.push(ROUTES.USER.CREATE);
             }}
@@ -320,7 +340,7 @@ const PostCard: React.FC<PostCardProps> = ({
           </TouchableOpacity>
         </BottomSheetView>
       </BottomSheetModal>
-    </TouchableOpacity>
+    </View>
   );
 };
 

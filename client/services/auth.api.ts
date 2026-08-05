@@ -11,6 +11,9 @@ import {
 import { UploadableFile } from "@/interface/global.dto";
 import { handleApiError } from "@/utils/apiErrorHandler";
 
+type Tabs = "posts" | "recipes" | "comments" | "reviews";
+type GlobalSearch = Post | Recipe | PostComment;
+
 // --- 1. INICIO DE SESIÓN ---
 // ===================================
 export const login = async (
@@ -130,9 +133,6 @@ export const getUserById = async (user_id: string): Promise<Response> => {
   }
 };
 
-type Tabs = "posts" | "recipes" | "comments" | "reviews";
-type GlobalSearch = Post | Recipe | PostComment;
-
 // --- 6. OBTENER POSTS, RECETAS, COMMENTARIOS, RESEÑAS DE UN USUARIO ---
 // ===================================
 export const getUserSearch = async (
@@ -158,7 +158,7 @@ export const getUserSearch = async (
       pagination: response.data.pagination,
     };
   } catch (err: any) {
-    return handleApiError(err);
+    throw handleApiError(err);
   }
 };
 

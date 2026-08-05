@@ -1,7 +1,4 @@
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ActivityIndicator,
   FlatList,
@@ -11,8 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router";
-import { Entypo, MaterialCommunityIcons, Octicons } from "@expo/vector-icons";
+import { useFocusEffect } from "expo-router";
+import { MaterialCommunityIcons, Octicons } from "@expo/vector-icons";
 
 import { Notification } from "@/interface/global";
 import { getShortTimeAgo } from "@/utils/date";
@@ -21,9 +18,6 @@ import { useCallback } from "react";
 import { useNotifications } from "@/hooks/api/notification/useNotifications";
 
 export default function NotificationView() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-
   const {
     notifications,
     markAsRead,
@@ -126,25 +120,7 @@ export default function NotificationView() {
       edges={["top", "left", "right"]}
       className="flex-1 bg-bg-semi-white flex-col gap-y-6"
     >
-      <View
-        style={{
-          paddingHorizontal: insets.left + insets.right + 10,
-          paddingTop: insets.top / 2,
-        }}
-        className="flex-row items-center justify-between gap-x-4 w-full"
-      >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          hitSlop={{
-            top: 10,
-            bottom: 10,
-            left: 10,
-            right: 10,
-          }}
-          className="h-10 w-10 flex items-center justify-center"
-        >
-          <Entypo name="chevron-small-left" size={32} color="#2F2F2F" />
-        </TouchableOpacity>
+      <View className="relative flex-row items-center justify-center w-full p-4">
         <Text className="font-outfit-bold text-base text-text-3">
           Notificaciones
         </Text>
@@ -157,6 +133,7 @@ export default function NotificationView() {
             left: 10,
             right: 10,
           }}
+          className="absolute right-4"
         >
           <MaterialCommunityIcons
             name="bell-check-outline"

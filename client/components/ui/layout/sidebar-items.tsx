@@ -1,8 +1,11 @@
 import { ROUTES } from "@/constants/constants";
 import { useOrdering } from "@/context/cart/OrderingContext";
+import { ChatHistory, useHistory } from "@/hooks/api/chat/useHistory";
 import { CommunityMember } from "@/interface/global";
+import { capitalize } from "@/utils/normalize";
 import { Ionicons } from "@expo/vector-icons";
 import { Href, Router } from "expo-router";
+import { BookDashed } from "lucide-react-native";
 import { JSX, useMemo, useState } from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 import { Path, Svg } from "react-native-svg";
@@ -22,12 +25,12 @@ export const SidebarItem = ({
 }) => (
   <View className="flex-row justify-between">
     <TouchableOpacity
-      className={`flex-row flex-1 items-center ${onPress ? "justify-between" : ""} py-2`}
+      className={`flex-row flex-1 items-center ${onPress ? "justify-between" : ""} py-1.5 bg-red`}
       onPress={onPress}
     >
       <View className="flex-row items-center gap-x-4">
         {icon}
-        <Text className="font-outfit-bold text-base text-text-3">{label}</Text>
+        <Text className="font-outfit-bold text-sm text-text-3">{label}</Text>
       </View>
       {isExpanded !== null && (
         <Ionicons
@@ -55,6 +58,8 @@ export const UserSidebarItems = ({
   props: any;
 }) => {
   const { open, items } = useOrdering();
+
+  const { data: chats } = useHistory("");
 
   const [expanded, setExpanded] = useState({
     comunity: false,
@@ -177,6 +182,14 @@ export const UserSidebarItems = ({
             onPress={() => router.push(ROUTES.USER.CREATE_COMMUNITY)}
             isExpanded={null}
           />
+          <SidebarItem
+            isExpanded={null}
+            icon={<BookDashed size={size} color="#4A4947" />}
+            label="¿Nueva receta?"
+            onPress={() => {
+              handlePress(ROUTES.USER.CREATE_RECIPE);
+            }}
+          />
 
           <SidebarItem
             icon={
@@ -196,7 +209,7 @@ export const UserSidebarItems = ({
 
           {expanded.comunity &&
             (communities && communities.length > 0 ? (
-              <View className="pb-2 flex-col gap-y-3">
+              <View className="flex-col gap-y-3">
                 {communities.map((item: CommunityMember) => (
                   <TouchableOpacity
                     key={item.community.id}
@@ -214,7 +227,7 @@ export const UserSidebarItems = ({
                     {/* Avatar */}
                     <Image
                       source={{ uri: item.community.image_url }}
-                      className="w-6 h-6 rounded-full mr-3"
+                      className="w-6 h-6 rounded-full mr-3 border border-dashed border-gray-300"
                     />
 
                     {/* Community Info */}
@@ -251,6 +264,41 @@ export const UserSidebarItems = ({
             onPress={() => setExpanded({ ...expanded, chat: !expanded.chat })}
             isExpanded={expanded.chat}
           />
+
+          {expanded.chat &&
+            (chats && chats.length > 0 ? (
+              <View className="flex-col gap-y-3">
+                {chats.map((item: ChatHistory) => (
+                  <TouchableOpacity
+                    key={item.chat_id}
+                    onPress={() => {
+                      router.push({
+                        pathname: ROUTES.USER.CHAT,
+                        params: {
+                          chat_id: item.chat_id,
+                        },
+                      });
+                      props.navigation.closeDrawer();
+                    }}
+                    className="flex-1 flex-row items-center py-2 px-4 border border-dotted border-gray-400 rounded-[5px]"
+                  >
+                    <Text
+                      className="w-full font-outfit-light text-sm text-text-4 truncate"
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {capitalize(item.title)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View className="pb-2 flex-row justify-center">
+                <Text className="text-text-4 text-base font-outfit-light">
+                  No tienes chats
+                </Text>
+              </View>
+            ))}
         </>
       );
     }
@@ -263,5 +311,6 @@ export const UserSidebarItems = ({
     router,
     open,
     items.length,
+    chats,
   ]);
 };

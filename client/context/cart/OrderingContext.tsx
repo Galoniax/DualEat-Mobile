@@ -59,7 +59,7 @@ export const OrderingProvider: React.FC<{ children: React.ReactNode }> = ({
   useFocusEffect(
     useCallback(() => {
       return () => {
-        cartRef.current?.dismiss();
+        cartRef.current?.forceClose();
       };
     }, [cartRef])
   )

@@ -152,12 +152,12 @@ export default function ReviewScreen() {
         className="justify-start gap-y-5 pb-6"
       >
         <View className="flex-col gap-y-1">
-          <Text className="font-outfit-bold text-2xl text-text-3">
+          <Text className="font-outfit-bold text-xl text-text-3">
             {isEditing
               ? `Edita tu reseña de ${order?.local.name}`
               : `Califica la experiencia en ${order?.local.name}`}
           </Text>
-          <Text className="font-outfit-light text-lg text-text-6">
+          <Text className="font-outfit-light text-base text-text-6">
             Comparte tu experiencia con otros usuarios
           </Text>
         </View>
@@ -167,7 +167,7 @@ export default function ReviewScreen() {
           onChange={setRating}
           color="#2F2F2F"
           emptyColor="#707070"
-          starSize={36}
+          starSize={30}
           step={"full"}
           maxStars={5}
           StarIconComponent={(iconProps) => {
@@ -186,12 +186,12 @@ export default function ReviewScreen() {
           placeholder="Escribe tu reseña (opcional)"
           placeholderTextColor="#707070"
           multiline
-          maxLength={300}
-          numberOfLines={4}
+          maxLength={400}
+          numberOfLines={5}
           value={comment}
           onChangeText={setComment}
           textAlignVertical="top"
-          className="border border-gray-200 bg-white rounded-xl px-3.5 py-3 mt-2 font-outfit-light text-[15px] text-text-5 min-h-[90px] shadow-sm"
+          className="border border-dotted border-gray-300 bg-white rounded-xl px-3.5 py-3 mt-2 font-outfit-light text-base text-text-5 min-h-[90px] shadow-sm"
         />
       </View>
 
@@ -339,7 +339,7 @@ export default function ReviewScreen() {
         {isPending ? (
           <ActivityIndicator size="small" color="#fff" />
         ) : (
-          <Text className="text-lg font-outfit-bold text-text-1">
+          <Text className="text-base font-outfit-bold text-text-1">
             Enviar Reseña
           </Text>
         )}

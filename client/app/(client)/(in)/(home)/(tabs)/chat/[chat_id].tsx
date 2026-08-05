@@ -3,7 +3,6 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   Text,
   TouchableOpacity,
   View,
@@ -27,10 +26,9 @@ import MessageInput from "@/components/features/chat/MessageInput";
 import IngredientsModal from "@/components/features/chat/IngredientsModal";
 import { useChat, useCreateMessage } from "@/hooks/api/chat/useChat";
 import { ROUTES } from "@/constants/constants";
-import { Feather, Octicons } from "@expo/vector-icons";
+import { Octicons } from "@expo/vector-icons";
 import { useIngredients } from "@/hooks/api/recipe/useIngredients";
 import { useAuth } from "@/context/auth/AuthContext";
-import { capitalize } from "@/utils/normalize";
 import { Path, Svg } from "react-native-svg";
 import RecipesModal from "@/components/features/chat/RecipesModal";
 
@@ -71,7 +69,7 @@ export default function ChatScreen() {
   useFocusEffect(
     useCallback(() => {
       return () => {
-        ingredientsRef.current?.dismiss();
+        ingredientsRef.current?.forceClose();
       };
     }, [ingredientsRef]),
   );
@@ -83,7 +81,6 @@ export default function ChatScreen() {
   }, [chat_id, setQuery, setRecipes]);
 
   const handleSubmit = () => {
-    if (!message) return;
     const text = message.trim();
 
     if (!user) return;
@@ -105,13 +102,13 @@ export default function ChatScreen() {
         ingredients: ingredientsSelected,
       },
       {
-        onSuccess: (data) => {
-          if (data.recipes && data.recipes.length > 0) {
+        onSuccess: ({ data }) => {
+          if (data?.recipes && data.recipes.length > 0) {
             setRecipes(data.recipes as Recipe[]);
             setQuery(data.search_query);
           }
 
-          if (!chat_id && data.chat?.chat_id) {
+          if (!chat_id && data?.chat?.chat_id) {
             router.setParams({ chat_id: data.chat.chat_id });
           }
         },
@@ -124,13 +121,21 @@ export default function ChatScreen() {
   };
 
   const renderMessage = useCallback(({ item }: { item: ChatSessionData }) => {
+    const isUser = item.role === "USER";
     return (
-      <View
-        className={`mb-6 ${item.role === "USER" ? "items-end" : "items-start"} `}
-      >
-        <Markdown style={markdownStyles(item.role === "USER")}>
-          {item.text}
-        </Markdown>
+      <View className={`mb-6 w-full ${isUser ? "items-end" : "items-start"}`}>
+        <View
+          style={{
+            maxWidth: isUser ? "80%" : "100%",
+          }}
+          className={
+            isUser
+              ? "bg-white border border-[#dbdbdb] rounded-2xl rounded-tr-none"
+              : "w-full"
+          }
+        >
+          <Markdown style={markdownStyles(isUser)}>{item.text}</Markdown>
+        </View>
       </View>
     );
   }, []);
@@ -188,6 +193,7 @@ export default function ChatScreen() {
             ref={flatlistRef}
             inverted
             data={messages}
+            extraData={messages.length}
             renderItem={renderMessage}
             keyExtractor={(item, idx) => idx.toString()}
             showsVerticalScrollIndicator={false}
@@ -211,7 +217,7 @@ export default function ChatScreen() {
               isPending ? (
                 <View className="items-center justify-start flex-row gap-x-4">
                   <ActivityIndicator size="small" color="#e5a657" />
-                  <Text className="text-text-5 font-outfit-light text-[14px]">
+                  <Text className="text-text-5 font-outfit-light text-sm">
                     Pensando...
                   </Text>
                 </View>
@@ -220,58 +226,12 @@ export default function ChatScreen() {
           />
         )}
 
-        {/** INPUT */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{
-            flexGrow: 0,
-          }}
-          contentContainerStyle={{
-            gap: 4,
-          }}
-        >
-          {ingredientsSelected.map((ingredient, index) => {
-            if (index >= 4)
-              return (
-                <View
-                  key={ingredient.id}
-                  className="flex-row items-center justify-center gap-x-4 border border-bg-yellow rounded-full px-3 py-1.5"
-                >
-                  <Text className="text-text-3 font-outfit-light text-[14px]">
-                    +{ingredientsSelected.length - 4}
-                  </Text>
-                </View>
-              );
-            return (
-              <View
-                key={ingredient.id}
-                className="flex-row items-center justify-center gap-x-4 border border-bg-yellow rounded-full px-3 py-1.5"
-              >
-                <Text className="text-text-3 font-outfit-light text-[14px]">
-                  {capitalize(ingredient.name)}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => handleSelectIngredient(ingredient)}
-                  hitSlop={{
-                    top: 10,
-                    bottom: 10,
-                    left: 10,
-                    right: 10,
-                  }}
-                >
-                  <Feather name="trash" size={16} color="#B53325" />
-                </TouchableOpacity>
-              </View>
-            );
-          })}
-        </ScrollView>
-
         <MessageInput
           chat_id={chat?.chat_id}
           message={message}
           setMessage={setMessage}
           handleSubmit={handleSubmit}
+          ingredients={ingredientsSelected}
           setOpenIngredients={setOpen}
           ingredientsRef={ingredientsRef}
           recipeRef={recipeRef}
@@ -316,16 +276,14 @@ export default function ChatScreen() {
         />
       </BottomSheetModal>
 
-      
-        <RecipesModal
-          chat_id={chat_id}
-          recipeRef={recipeRef}
-          recipes={recipes}
-          setRecipes={setRecipes}
-          query={query}
-          setQuery={setQuery}
-        />
-      
+      <RecipesModal
+        chat_id={chat_id}
+        recipeRef={recipeRef}
+        recipes={recipes}
+        setRecipes={setRecipes}
+        query={query}
+        setQuery={setQuery}
+      />
     </SafeAreaView>
   );
 }
@@ -358,22 +316,39 @@ const HeaderActions = ({ onNewChat }: { onNewChat: () => void }) => {
 const markdownStyles = (isUser: boolean) => ({
   body: {
     fontFamily: "Outfit-Light",
-    fontSize: 14,
+    fontSize: 13,
     color: "#4A4947",
     maxWidth: isUser ? "70%" : ("95%" as any),
     paddingHorizontal: isUser ? 16 : 0,
     paddingVertical: isUser ? 4 : 0,
     lineHeight: 28,
-    borderRadius: isUser ? 15 : 0,
-    borderWidth: isUser ? 1 : 0,
     borderColor: isUser ? "#dbdbdb" : "transparent",
   },
   strong: {
     fontFamily: "Outfit-Bold",
     fontWeight: "normal" as "normal",
   },
+  heading1: {
+    fontSize: 20,
+    fontFamily: "Outfit-Bold",
+  },
+  heading2: {
+    fontSize: 18,
+    fontFamily: "Outfit-Bold",
+  },
+  heading3: {
+    fontSize: 16,
+    fontFamily: "Outfit-Bold",
+  },
   paragraph: {
     marginTop: 0,
-    marginBottom: 0,
+    marginBottom: 6,
+  },
+  bullet_list: {
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  list_item: {
+    marginVertical: 2,
   },
 });

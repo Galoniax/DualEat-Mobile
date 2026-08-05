@@ -22,7 +22,7 @@ import {
 
 interface Props {
   ref: React.RefObject<BottomSheetModal | null>;
-  setCommunity: React.Dispatch<React.SetStateAction<Community | null>>;
+  setCommunity: (community: Community | null) => void;
 }
 
 export default function CommunityModal({ ref, setCommunity }: Props) {
@@ -60,9 +60,8 @@ export default function CommunityModal({ ref, setCommunity }: Props) {
     useCallback(() => {
       return () => {
         setSearch("");
-        ref.current?.dismiss();
       };
-    }, [ref]),
+    }, []),
   );
 
   const renderItem = useCallback(

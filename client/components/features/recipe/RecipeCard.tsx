@@ -9,15 +9,10 @@ export default function RecipeCard({ recipe }: { recipe: Recipe }) {
 
   if (!recipe) return null;
 
-  const steps = recipe.steps || [];
-  const ingredients = recipe.ingredients || [];
-
   const navigate = () => {
     router.push({
       pathname: ROUTES.USER.RECIPE,
       params: {
-        //community_slug: recipe.community?.slug || "",
-        community_slug: "DualEat",
         recipe_id: recipe.id || "",
         recipe_slug: recipe.slug || "",
       },
@@ -60,13 +55,13 @@ export default function RecipeCard({ recipe }: { recipe: Recipe }) {
           <View className="flex-row items-center gap-x-1.5">
             <EvilIcons name="cart" size={12} color="#707070" />
             <Text className="font-outfit-light text-[14px] text-text-4">
-              {ingredients.length || 0} ingredientes
+              {recipe._count?.ingredients || 0} ingredientes
             </Text>
           </View>
           <View className="flex-row items-center gap-x-1.5">
             <EvilIcons name="chart" size={12} color="#707070" />
             <Text className="font-outfit-light text-[14px] text-text-4">
-              {steps.length || 0} pasos
+              {recipe._count?.steps || 0} pasos
             </Text>
           </View>
         </View>

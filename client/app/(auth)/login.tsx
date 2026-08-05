@@ -237,12 +237,6 @@ export default function Login() {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity className="w-full">
-            <Text className="text-sm text-text-3 font-outfit-bold text-right">
-              ¿Olvidaste tu contraseña?
-            </Text>
-          </TouchableOpacity>
-
             {/* --- Divisor "o" --- */}
             <View className="flex-row items-center w-[80%]">
               <View className="flex-1 h-px bg-gray-400" />

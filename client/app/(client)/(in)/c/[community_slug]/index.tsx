@@ -12,18 +12,36 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { getBySlug } from "@/services/community.api";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Community, Post, ResponseWithPagination } from "@/interface/global";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PostCard from "@/components/features/post/PostCard";
 import { useJoinLeave } from "@/hooks/api/useMyCommunities";
 import { getCommunityPosts } from "@/services/post.api";
 import { Feather } from "@expo/vector-icons";
-import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetView,
+} from "@gorhom/bottom-sheet";
+import { BellOff, BellRing } from "lucide-react-native";
+import { changeStatus } from "@/services/notification.api";
+
+import { globalToast as toast } from "@/utils/toast";
+import { useAuth } from "@/context/auth/AuthContext";
+import { ROUTES } from "@/constants/constants";
 
 export default function CommunityScreen() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
   const { community_slug } = useLocalSearchParams();
   const router = useRouter();
 
@@ -34,13 +52,13 @@ export default function CommunityScreen() {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const scrollY = useRef(new Animated.Value(0)).current;
-
   const ref = useRef<BottomSheetModal>(null);
 
   const {
     data: community,
     isLoading,
     isFetching,
+    error,
     refetch,
   } = useQuery({
     queryKey: ["community", community_slug],
@@ -63,6 +81,7 @@ export default function CommunityScreen() {
 
   const {
     data,
+    isLoading: postsLoading,
     isFetchingNextPage,
     fetchNextPage,
     hasNextPage,
@@ -100,6 +119,49 @@ export default function CommunityScreen() {
     retry: 3,
   });
 
+  const { mutate: mutateNotification } = useMutation({
+    mutationFn: async (type: "ALWAYS" | "NONE") => {
+      if (!community) {
+        return;
+      }
+      if (community.receives_notifications === type) {
+        return;
+      }
+      const response = await changeStatus(community?.id, "member", type);
+
+      if (!response.success || !response.data) {
+        throw new Error("Error al cambiar estado de las notificaciones");
+      }
+      return response.data;
+    },
+    onMutate: async (type: "ALWAYS" | "NONE") => {
+      const previous = queryClient.getQueryData(["community", community_slug]);
+      queryClient.setQueryData(
+        ["community", community_slug],
+        (oldData: Community) => {
+          return {
+            ...oldData,
+            receives_notifications: type,
+          };
+        },
+      );
+      return { previous };
+    },
+
+    onSuccess: (data) => {
+      queryClient.setQueryData(["community", community?.id], data);
+    },
+    onError: (e: any, _, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(
+          ["community", community?.id],
+          context.previous,
+        );
+      }
+      toast.error("Error", e.message || "Error al actualizar perfil");
+    },
+  });
+
   const posts = useMemo(() => {
     return (
       data?.pages
@@ -113,9 +175,9 @@ export default function CommunityScreen() {
     refetchPosts();
   }, [refetch, refetchPosts]);
 
-  const isMember = useMemo(() => {
-    return community?.isMember || false;
-  }, [community]);
+  const isMember = community?.isMember || false;
+  const isModerator =
+    community?.creator_id === user?.id || community?.is_moderator;
 
   const Header = ({
     scrollY,
@@ -233,39 +295,55 @@ export default function CommunityScreen() {
                 </View>
               </View>
 
-              <View className="flex-row items-center justify-center">
-                <TouchableOpacity
-                  onPress={() =>
-                    joinLeave({
-                      community,
-                      join: !isMember,
-                    })
-                  }
-                  className="ml-auto"
-                >
-                  <Text
-                    className={`text-sm rounded-full px-2.5 py-1.5 font-outfit-bold ${
-                      isMember
-                        ? "bg-bg-semi-white text-text-3 border border-gray-600"
-                        : "bg-bg-semi-black text-text-1"
-                    }`}
-                  >
-                    {isMember ? "Te uniste" : "Unirse"}
-                  </Text>
-                </TouchableOpacity>
-
+              <View className="flex-row items-center gap-x-4 justify-center">
                 {isMember && (
                   <TouchableOpacity
                     onPress={() => {
                       ref.current?.present();
                     }}
-                    className="flex-row items-center justify-center gap-x-2"
+                    className="rounded-full border border-dashed cursor-pointer border-gray-400 p-2.5 flex items-center justify-center"
                   >
-                    <Text className="text-[14px] text-text-5 font-outfit-light leading-6">
-                      Notificaciones
-                    </Text>
+                    {community?.receives_notifications === "NONE" ? (
+                      <BellOff size={18} className="text-gray-800" />
+                    ) : (
+                      <BellRing size={18} className="text-gray-800" />
+                    )}
                   </TouchableOpacity>
                 )}
+
+                <TouchableOpacity
+                  onPress={() => {
+                    if (!community || community?.creator_id === user?.id)
+                      return;
+                    joinLeave({
+                      community,
+                      join: !isMember,
+                    });
+                  }}
+                  className={`rounded-full cursor-pointer px-4 py-2 ${
+                    isModerator
+                      ? "bg-bg-red"
+                      : isMember
+                        ? "bg-white hover:bg-gray-100 border border-gray-400"
+                        : "bg-bg-blue hover:bg-gray-100"
+                  }`}
+                >
+                  <Text
+                    className={`text-sm font-outfit-bold ${
+                      isModerator
+                        ? "text-white"
+                        : isMember
+                          ? "text-text-5"
+                          : "text-white"
+                    }`}
+                  >
+                    {isModerator
+                      ? "Moderador"
+                      : isMember
+                        ? "Te uniste"
+                        : "Unirse"}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -311,6 +389,25 @@ export default function CommunityScreen() {
     ),
     [],
   );
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        ref.current?.forceClose();
+      };
+    }, [ref]),
+  );
+  
+  useEffect(() => {
+    if (error) {
+      toast.error("Esta comunidad ya no existe");
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace(ROUTES.USER.DASHBOARD("in"));
+      }
+    }
+  }, [error, router]);
 
   return (
     <SafeAreaView
@@ -360,6 +457,19 @@ export default function CommunityScreen() {
               }
             }}
             onEndReachedThreshold={0.5}
+            ListEmptyComponent={
+              postsLoading ? (
+                <View className="py-12 items-center justify-center">
+                  <ActivityIndicator size="large" color="#e5a657" />
+                </View>
+              ) : (
+                <View className="py-12 items-center justify-center">
+                  <Text className="text-base font-outfit-light text-text-4">
+                    No hay publicaciones aún.
+                  </Text>
+                </View>
+              )
+            }
             ListFooterComponent={
               isFetchingNextPage ? (
                 <View className="py-6 items-center justify-center">
@@ -370,6 +480,74 @@ export default function CommunityScreen() {
           />
         </>
       )}
+
+      <BottomSheetModal
+        ref={ref}
+        enablePanDownToClose
+        enableOverDrag={false}
+        enableDynamicSizing={true}
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop
+            {...props}
+            disappearsOnIndex={-1}
+            appearsOnIndex={0}
+            opacity={0.7}
+            pressBehavior="close"
+          />
+        )}
+        handleIndicatorStyle={{
+          display: "none",
+        }}
+      >
+        <BottomSheetView
+          style={{ paddingBottom: insets.bottom + 16 }}
+          className="flex-1 flex-col gap-y-4 p-4 items-center"
+        >
+          <Text className="text-sm font-outfit-light text-text-4">
+            Elige si quieres recibir notificaciones sobre esta comunidad.
+          </Text>
+
+          {[
+            {
+              id: "ALWAYS",
+              label: "Activadas",
+              sublabel: "Recibirás las notificaciones de esta comunidad",
+              icon: BellRing,
+            },
+            {
+              id: "NONE",
+              label: "Desactivadas",
+              sublabel: "Desactiva las notificaciones de esta comunidad",
+              icon: BellOff,
+              hasDivider: true,
+            },
+          ].map((button) => {
+            const isSelected = community?.receives_notifications === button.id;
+
+            return (
+              <TouchableOpacity
+                key={button.id}
+                onPress={() => {
+                  if (!isSelected) {
+                    mutateNotification(button.id as "ALWAYS" | "NONE");
+                  }
+                }}
+                className={`w-full flex-row items-center gap-3.5 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-left`}
+              >
+                <button.icon size={20} color={"#4A4947"} />
+                <View className="flex-col">
+                  <Text className="text-sm font-medium text-text-3 leading-tight">
+                    {button.label}
+                  </Text>
+                  <Text className="text-xs text-text-6 leading-tight">
+                    {button.sublabel}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </BottomSheetView>
+      </BottomSheetModal>
     </SafeAreaView>
   );
 }

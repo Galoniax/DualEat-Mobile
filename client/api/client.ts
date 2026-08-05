@@ -1,12 +1,14 @@
 import { create } from "axios";
 import * as SecureStore from "expo-secure-store";
-
-const TOKEN_KEY = process.env.TOKEN_KEY || "dualeat_session_token";
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+import { BASE_URL, TOKEN_KEY } from "./config";
+import { router } from "expo-router";
+import { ROUTES } from "@/constants/constants";
 
 console.log("Conectando a:", BASE_URL);
 
-// https://dualeat-backend.up.railway.app/api
+SecureStore.getItemAsync(TOKEN_KEY).then((t) => {
+  console.log("[TOKEN ACTUAL EN DISPOSITIVO]:", t ? t : "NO EXISTE");
+});
 
 /** CONSEGUIR TOKEN DE FIREBASE
  *
@@ -39,21 +41,45 @@ axiosInterceptor.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// 2. INTERCEPTOR DE RESPONSE (Llegada)
-/*
-axiosInterceptor.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    // Si el error es 401 (No autorizado) o 403 (Prohibido)
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      console.log("Sesión expirada. Cerrando sesión...");
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
+let onUnauthorizedCallback: (() => void) | null = null;
 
-      router.replace(ROUTES.PUBLIC.HOME);
+export const setOnUnauthorizedCallback = (cb: (() => void) | null) => {
+  onUnauthorizedCallback = cb;
+};
+
+// 2. INTERCEPTOR DE RESPONSE (Llegada)
+axiosInterceptor.interceptors.response.use(
+  async (response) => {
+    const newToken = response.headers["x-new-access-token"];
+
+    if (newToken) {
+      console.log(
+        "[RENOVACIÓN TOKEN] Se recibió x-new-access-token:",
+        newToken.substring(0, 25) + "...",
+      );
+      await SecureStore.setItemAsync(TOKEN_KEY, newToken);
+
+      axiosInterceptor.defaults.headers.common["Authorization"] =
+        `Bearer ${newToken}`;
+    }
+
+    return response;
+  },
+  async (error) => {
+    if (error.response?.status === 401) {
+      console.log("Sesión expirada o inválida");
+      await SecureStore.deleteItemAsync(TOKEN_KEY);
+      delete axiosInterceptor.defaults.headers.common["Authorization"];
+
+      if (onUnauthorizedCallback) {
+        onUnauthorizedCallback();
+      }
+
+      router.replace(ROUTES.AUTH.LOGIN);
     }
 
     return Promise.reject(error);
   },
 );
-*/
+
 export default axiosInterceptor;

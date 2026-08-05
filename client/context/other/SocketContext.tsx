@@ -28,7 +28,9 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     if (!user?.id) return;
 
     // Conectar al servidor de WebSocket
-    const socketInstance = io(BASE_URL, {
+    const socketUrl = BASE_URL?.replace(/\/api\/?$/, '');
+
+    const socketInstance = io(socketUrl, {
       auth: {
         user_id: user.id,
       },

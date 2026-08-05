@@ -1,9 +1,5 @@
 import { useAuth } from "@/context/auth/AuthContext";
-import {
-  Entypo,
-  FontAwesome6,
-  MaterialCommunityIcons,
-} from "@expo/vector-icons";
+import { FontAwesome6 } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import {
   Text,
@@ -40,9 +36,12 @@ import { useHeaderHeight } from "@react-navigation/elements";
 import { pickMedia } from "@/utils/media";
 import { globalToast as toast } from "@/utils/toast";
 import { useMutation } from "@tanstack/react-query";
+import { Plus, X } from "lucide-react-native";
+import RecipeSideModal from "@/components/features/recipe/RecipeSideModal";
 
 const CUSTOM_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
 
   p {
     font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -52,9 +51,10 @@ const CUSTOM_CSS = `
     margin-top: 0;
   }
 
+
   .ProseMirror p.is-empty:first-child::before {
     content: attr(data-placeholder);
-    color: #707070; 
+    color: #707070;
     font-size: 14px;
     font-family: 'Outfit', sans-serif;
     pointer-events: none;
@@ -62,10 +62,12 @@ const CUSTOM_CSS = `
     float: left;
   }
 
+
   a {
-    color: #3578e4; 
+    color: #3578e4;
     text-decoration: underline;
   }
+
 
   ul, ol {
     padding-left: 20px;
@@ -114,33 +116,6 @@ export default function CreateScreen() {
 
   const [community, setCommunity] = useState<Community | null>(null);
 
-  useEffect(() => {
-    setTitle(post?.title || "");
-    setContent(post?.content || "");
-    setCommunity(post?.community || null);
-    setImageUrls(
-      Array.isArray(post?.image_urls)
-        ? (post.image_urls as UploadableFile[])
-        : [],
-    );
-
-    if (post?.content && editor.getEditorState().isReady) {
-      editor.setContent(post.content);
-    }
-  }, [post.id]);
-
-  useFocusEffect(
-    useCallback(() => {
-      return () => {
-        clearPost();
-      };
-    }, [clearPost])
-  );
-
-  const [withRecipe, setWithRecipe] = useState(false);
-
-  const ref = useRef<BottomSheetModal>(null);
-
   const editor = useEditorBridge({
     autofocus: true,
     avoidIosKeyboard: true,
@@ -153,6 +128,39 @@ export default function CreateScreen() {
   });
 
   useEffect(() => {
+    if (post?.content && editor?.getEditorState().isReady) {
+      editor.setContent(post.content);
+    }
+  }, [editor, post.content]);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        setPost({
+          id: "",
+          title: "",
+          content: "",
+          image_urls: [],
+          community: null,
+          recipe: null,
+        });
+      };
+    }, [setPost]),
+  );
+
+  const ref = useRef<BottomSheetModal>(null);
+  const recipeRef = useRef<BottomSheetModal>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        ref.current?.forceClose();
+        recipeRef.current?.forceClose();
+      };
+    }, []),
+  );
+
+  useEffect(() => {
     if (editor.getEditorState().isReady) {
       editor.injectCSS(CUSTOM_CSS);
     }
@@ -162,25 +170,39 @@ export default function CreateScreen() {
     mutationFn: async () => {
       let urls: string[] = [];
 
-      if (image_urls.length > 0) {
+      // Solo subimos imágenes si no estamos en modo edición
+      if (!isEditing && image_urls.length > 0) {
         const uploadPayload = { post_images: image_urls };
 
-        const response = await upload(uploadPayload);
+        try {
+          const response = await upload(uploadPayload);
 
-        if (response?.success && response?.data) {
-          urls = response.data.post_images || [];
+          if (response.success && response.data?.post_images) {
+            urls = response.data.post_images;
+          } else {
+            throw new Error(response.message || "No se pudieron subir las imágenes");
+          }
+        } catch (err: any) {
+          // Lanzar el error para interrumpir la mutación y que NO se cree el post
+          throw new Error(err.message || "Error al subir las imágenes");
         }
       }
 
-      const post: PostDTO = {
+      const postDTO: PostDTO = {
         id: isEditing ? usePostCreateStore.getState().post.id : undefined,
         title: title.trim(),
         content: content.trim(),
         image_urls: urls,
         community: community,
+        recipe: post.recipe || null,
       };
 
-      const res = await createPost(post);
+      /*const res = isEditing
+            ? await updatePost(postDTO.id!, postDTO)
+            : await createPost(postDTO);*/
+
+      const res = await createPost(postDTO);
+
       if (!res.success) {
         throw new Error(res.message || "Error al crear el post");
       }
@@ -196,6 +218,13 @@ export default function CreateScreen() {
           post_slug: res.data?.slug as string,
         },
       });
+    },
+
+    onError: (err: any) => {
+      toast.error(
+        "Error",
+        err.message || "Ocurrió un error al procesar la publicación",
+      );
     },
   });
 
@@ -225,20 +254,7 @@ export default function CreateScreen() {
       return;
     }
 
-    if (withRecipe) {
-      const post: PostDTO = {
-        title: title,
-        content: content,
-        image_urls: image_urls,
-        community: community,
-      };
-
-      setPost(post);
-
-      router.push(ROUTES.USER.CREATE_RECIPE);
-    } else {
-      mutatePost();
-    }
+    mutatePost();
   };
 
   const handleFiles = async (type: "image" | "video") => {
@@ -276,7 +292,9 @@ export default function CreateScreen() {
 
   const video =
     image_urls.find((item) => {
-      return (item.type ? item.type.includes("video") : item.uri?.endsWith(".mp4") || item.uri?.endsWith(".mov"));
+      return item.type
+        ? item.type.includes("video")
+        : item.uri?.endsWith(".mp4") || item.uri?.endsWith(".mov");
     }) || null;
 
   const onlyImages = image_urls.filter((item) => {
@@ -287,8 +305,6 @@ export default function CreateScreen() {
     );
   });
 
-  console.log(onlyImages, video)
-
   return (
     <SafeAreaView
       edges={["top", "left", "right"]}
@@ -296,15 +312,8 @@ export default function CreateScreen() {
       className="flex-1 bg-bg-semi-white"
     >
       {/* HEADER */}
-      <View className="flex-row items-center justify-between p-4">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="h-10 w-10 flex items-center justify-center"
-        >
-          <Entypo name="chevron-small-left" size={32} color="#2F2F2F" />
-        </TouchableOpacity>
-
-        <Text className="font-outfit-bold text-center text-base text-text-3 flex-1">
+      <View className="relative flex-row items-center justify-center p-4">
+        <Text className="font-outfit-bold text-base text-text-3">
           {isEditing ? "Editar post" : "Crear post"}
         </Text>
 
@@ -312,11 +321,15 @@ export default function CreateScreen() {
           onPress={() => {
             handleSubmit();
           }}
-          disabled={isPending || cleanTextLength > postLimit}
-          className="rounded-full bg-bg-semi-black py-1 px-4 items-center disabled:opacity-50"
+          disabled={isPending || !content || !title}
+          className="absolute right-4 rounded-full bg-bg-semi-black py-1 px-4 items-center disabled:opacity-50"
         >
           <Text className="font-outfit-bold text-sm text-text-1">
-            {withRecipe ? "Continuar" : "Publicar"}
+            {isPending
+              ? isEditing
+                ? "Guardando..."
+                : "Publicando..."
+              : "Publicar"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -378,12 +391,11 @@ export default function CreateScreen() {
         </View>
       </ScrollView>
 
-      <View className="flex-row items-center w-full border border-gray-200">
+      <View className="flex-col items-center w-full border border-gray-300">
         <TouchableOpacity
           disabled={isEditing}
           onPress={() => ref.current?.present()}
-          style={{ flex: 1 }}
-          className="border-r border-gray-200 h-14 flex-row items-center justify-between px-4"
+          className="w-full flex-row items-center justify-between p-4"
         >
           {community ? (
             <View className="flex-row items-center gap-x-3">
@@ -396,7 +408,7 @@ export default function CreateScreen() {
               <Text
                 numberOfLines={1}
                 ellipsizeMode="tail"
-                className="text-text-3 font-outfit-light text-[13px] truncate"
+                className="text-text-3 font-outfit-light text-sm truncate"
               >
                 {community.name}
               </Text>
@@ -416,28 +428,42 @@ export default function CreateScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => setWithRecipe(!withRecipe)}
-          disabled={isEditing}
-          style={{ flex: 1 }}
-          className={`h-14 flex-row items-center justify-between px-4 ${
-            isEditing && "hidden"
-          }`}
+          onPress={() => {
+            recipeRef.current?.present();
+          }}
+          className={`w-full flex-row items-center gap-x-3 p-4`}
         >
-          <View className="flex-row items-center gap-x-3">
-            <Entypo name="book" size={16} color="#e5a657" />
-            <Text
-              className="text-text-3 font-outfit-light text-sm"
-              numberOfLines={1}
-            >
-              ¿Tiene receta?
-            </Text>
-          </View>
-
-          <MaterialCommunityIcons
-            name={withRecipe ? "checkbox-marked" : "checkbox-blank-outline"}
-            size={18}
-            color="#e5a657"
-          />
+          {!post.recipe ? (
+            <>
+              <Plus size={18} color="#e5a657" />
+              <Text className="text-text-3 font-outfit-light text-sm">
+                ¿Vincular una receta?
+              </Text>
+            </>
+          ) : (
+            <>
+              <Image
+                src={
+                  (post.recipe && post.recipe.main_image) ||
+                  "https://placehold.co/50x50.png"
+                }
+                alt="Imagen de la comunidad"
+                className="w-5 h-5 rounded-full object-cover"
+              />
+              <Text className="text-text-3 font-outfit-light text-sm">
+                {post.recipe.name}
+              </Text>
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  setPost({ ...post, recipe: null });
+                }}
+                className="cursor-pointer group hover:bg-[#B53325] p-0.5 rounded-full transition-all duration-200"
+              >
+                <X size={14} className="group-hover:text-[#fff]" />
+              </TouchableOpacity>
+            </>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -450,6 +476,14 @@ export default function CreateScreen() {
       />
 
       <CommunityModal ref={ref} setCommunity={setCommunity} />
+
+      <RecipeSideModal
+        ref={recipeRef}
+        recipe={post.recipe || undefined}
+        onSelectRecipe={(rec) => {
+          setPost({ ...post, recipe: rec });
+        }}
+      />
     </SafeAreaView>
   );
 }

@@ -13,7 +13,6 @@ import {
 import { Entypo, EvilIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import {
-  PostDTO,
   RecipeDTO,
   RecipeIngredientDTO,
   RecipeStepDTO,
@@ -21,7 +20,7 @@ import {
   UploadableFile,
 } from "@/interface/global.dto";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Ingredient, Unit, UnitList, UnitNames } from "@/interface/global";
 import {
   BottomSheetBackdrop,
@@ -35,21 +34,17 @@ import StepsInput from "@/components/features/create/recipe/StepsInput";
 import { pickMedia } from "@/utils/media";
 import { useIngredients } from "@/hooks/api/recipe/useIngredients";
 import IngredientsModal from "@/components/features/chat/IngredientsModal";
-import { usePostCreateStore } from "@/context/store/usePostCreate";
-import { createPost, upload } from "@/services/post.api";
+import { upload } from "@/services/post.api";
 import { useMutation } from "@tanstack/react-query";
 import { globalToast as toast } from "@/utils/toast";
 import { ROUTES } from "@/constants/constants";
-import { useAuth } from "@/context/auth/AuthContext";
+import { createRecipe } from "@/services/recipe.api";
 
 type RecipePartial = Omit<RecipeDTO, "ingredients" | "steps">;
 
 export default function CreateRecipeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-
-  const { user } = useAuth();
-  const { post, clearPost } = usePostCreateStore();
 
   const unitModalRef = useRef<BottomSheetModal>(null);
   const ingredientModalRef = useRef<BottomSheetModal>(null);
@@ -84,37 +79,15 @@ export default function CreateRecipeScreen() {
     main_image: "",
   });
 
-  useEffect(() => {
-    setRecipe((prev) => ({ ...prev, total_time: total }));
-  }, [total]);
+  const handleAddImage = async () => {
+    const image = await pickMedia({
+      mediaType: "Images",
+      allowsEditing: true,
+      allowsMultipleSelection: false,
+      selectionLimit: 1,
+    });
 
-  const handleAddImage = async (isSteps: boolean, index: number) => {
-    let newImage: UploadableFile[] = [];
-    if (!isSteps) {
-      newImage = await pickMedia({
-        mediaType: "Images",
-        allowsEditing: true,
-        allowsMultipleSelection: false,
-        selectionLimit: 1,
-      });
-
-      setRecipe((prev) => ({ ...prev, main_image: newImage[0] }));
-    } else {
-      newImage = await pickMedia({
-        mediaType: "All",
-        allowsEditing: false,
-        allowsMultipleSelection: false,
-        selectionLimit: 1,
-      });
-
-      if (newImage.length > 0) {
-        setSteps((prev) =>
-          prev.map((step, i) =>
-            i === index ? { ...step, image_url: newImage[0] } : step,
-          ),
-        );
-      }
-    }
+    setRecipe((prev) => ({ ...prev, main_image: image[0] }));
   };
 
   const indexIngredient = useRef<number | null>(null);
@@ -157,8 +130,8 @@ export default function CreateRecipeScreen() {
   useFocusEffect(
     useCallback(() => {
       return () => {
-        unitModalRef.current?.dismiss();
-        ingredientModalRef.current?.dismiss();
+        unitModalRef.current?.forceClose();
+        ingredientModalRef.current?.forceClose();
       };
     }, []),
   );
@@ -166,7 +139,6 @@ export default function CreateRecipeScreen() {
   const { mutate: submitRecipe, isPending: isSubmitting } = useMutation({
     mutationFn: async () => {
       const uploadPayload: UploadPayload = {
-        post_images: post.image_urls as UploadableFile[],
         main_image: recipe.main_image as UploadableFile,
       };
 
@@ -178,13 +150,6 @@ export default function CreateRecipeScreen() {
       }
 
       const urls = response.data;
-
-      const postDTO: PostDTO = {
-        title: post.title.trim(),
-        content: post.content.trim(),
-        image_urls: urls?.post_images || [],
-        community: post.community,
-      };
 
       const recipeDTO: RecipeDTO = {
         name: recipe.name.trim(),
@@ -206,41 +171,33 @@ export default function CreateRecipeScreen() {
         }),
       };
 
-      const createResponse = await createPost(postDTO, recipeDTO);
+      const create = await createRecipe(recipeDTO);
 
-      return createResponse;
+      return create;
     },
     onSuccess: (res) => {
-      clearPost();
-      toast.success("Exito", res?.message || "Publicación con receta publicada exitosamente");
+      const data = res?.data;
+
+      toast.success(
+        "Exito",
+        res?.message || "Publicación con receta publicada exitosamente",
+      );
       router.replace({
-        pathname: ROUTES.USER.POST,
+        pathname: ROUTES.USER.RECIPE,
         params: {
-          post_id: res?.data?.id as string,
-          post_slug: res?.data?.slug as string,
+          recipe_id: data?.id as string,
+          recipe_slug: data?.slug as string,
         },
       });
-      
     },
     onError: (err: any) => {
       toast.error("Error", err.message || "Error al publicar la receta");
     },
   });
 
-  const hasActiveSubscription = useMemo(() => {
-    return user?.subscription_status === "ACTIVE" || user?.subscription_status === "TRIAL";
-  }, [user?.subscription_status]);
-
-  const descriptionLimit = useMemo(() => (hasActiveSubscription ? 600 : 300), [hasActiveSubscription]);
-
   const handleSubmit = async () => {
     if (!recipe.name || !recipe.description || !recipe.main_image) {
       toast.error("Error", "Faltan datos por completar");
-      return;
-    }
-
-    if (recipe.description.length > descriptionLimit) {
-      toast.error("Error", `La descripción no puede superar los ${descriptionLimit} caracteres`);
       return;
     }
 
@@ -250,17 +207,15 @@ export default function CreateRecipeScreen() {
           !ingredient.ingredient || !ingredient.quantity || !ingredient.unit,
       )
     ) {
-      toast.error("Error", "Los ingredientes deben tener una cantidad y unidad");
+      toast.error(
+        "Error",
+        "Los ingredientes deben tener una cantidad y unidad",
+      );
       return;
     }
 
     if (steps.some((step) => !step.description)) {
       toast.error("Error", "Todos los pasos deben tener una descripción");
-      return;
-    }
-
-    if (!post) {
-      toast.error("Error", "Debes seleccionar una comunidad");
       return;
     }
 
@@ -275,13 +230,10 @@ export default function CreateRecipeScreen() {
     const invalidStep = steps.some((step) => !step.description.trim());
 
     const invalidRecipe =
-      !recipe.name.trim() ||
-      !recipe.description.trim() ||
-      recipe.description.length > descriptionLimit ||
-      !recipe.main_image;
+      !recipe.name.trim() || !recipe.description.trim() || !recipe.main_image;
 
     return invalidIngredient || invalidStep || invalidRecipe;
-  }, [ingredients, steps, recipe, descriptionLimit]);
+  }, [ingredients, steps, recipe]);
 
   return (
     <SafeAreaView
@@ -308,9 +260,7 @@ export default function CreateRecipeScreen() {
           }}
           className={`rounded-full py-1 px-4 items-center bg-bg-semi-black disabled:opacity-50`}
         >
-          <Text
-            className={`font-outfit-bold text-sm text-text-1`}
-          >
+          <Text className={`font-outfit-bold text-sm text-text-1`}>
             Publicar
           </Text>
         </TouchableOpacity>
@@ -336,7 +286,6 @@ export default function CreateRecipeScreen() {
             <RecipeInfo
               recipe={recipe}
               setRecipe={setRecipe}
-              limit={descriptionLimit}
               handleAddImage={handleAddImage}
             >
               {/** Tiempo y ingredientes */}
@@ -390,7 +339,6 @@ export default function CreateRecipeScreen() {
       {/** MODALS  (unit modal)*/}
       <BottomSheetModal
         ref={unitModalRef}
-       
         enablePanDownToClose={true}
         enableOverDrag={false}
         enableDynamicSizing={true}

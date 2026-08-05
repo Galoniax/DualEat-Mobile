@@ -1,3 +1,4 @@
+import { useAuth } from "@/context/auth/AuthContext";
 import { RecipeDTO, UploadableFile } from "@/interface/global.dto";
 import { AntDesign, Entypo } from "@expo/vector-icons";
 import {
@@ -14,9 +15,8 @@ type RecipePartial = Omit<RecipeDTO, "ingredients" | "steps">;
 interface Props {
   recipe: RecipePartial;
   setRecipe: React.Dispatch<React.SetStateAction<RecipePartial>>;
-  handleAddImage: (isSteps: boolean, index: number) => void;
+  handleAddImage: () => void;
   children: React.ReactNode;
-  limit: number;
 }
 
 export default function RecipeInfo({
@@ -24,8 +24,13 @@ export default function RecipeInfo({
   setRecipe,
   handleAddImage,
   children,
-  limit,
 }: Props) {
+
+  const  { user } = useAuth();
+
+    const isPremium =
+    user?.subscription_status === "ACTIVE" ||
+    user?.subscription_status === "TRIAL";
   return (
     <>
       {/** Imagen */}
@@ -49,7 +54,7 @@ export default function RecipeInfo({
         </View>
       ) : (
         <Pressable
-          onPress={() => handleAddImage(false, 0)}
+          onPress={() => handleAddImage()}
           className="w-full h-64 rounded-lg border border-gray-300 flex items-center justify-center"
         >
           <AntDesign name="camera" size={24} color="#4A4947" />
@@ -70,7 +75,7 @@ export default function RecipeInfo({
       <View className="flex-col w-full gap-y-1">
         <TextInput
           value={recipe.description}
-          maxLength={limit}
+          maxLength={isPremium ? 3000 : 1000}
           onChangeText={(text) => setRecipe({ ...recipe, description: text })}
           placeholder="Descripción"
           placeholderTextColor="#999"
@@ -81,12 +86,12 @@ export default function RecipeInfo({
         <View className="flex-row justify-end items-center px-1">
           <Text
             className={`font-outfit-light text-xs ${
-              (recipe.description || "").length >= limit
+              (recipe.description || "").length >= (isPremium ? 3000 : 1000)
                 ? "text-red-500"
                 : "text-text-4"
             }`}
           >
-            {(recipe.description || "").length} / {limit} caracteres
+            {(recipe.description || "").length} / {isPremium ? 3000 : 1000} caracteres
           </Text>
         </View>
       </View>

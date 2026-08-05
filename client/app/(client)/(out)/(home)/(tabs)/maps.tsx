@@ -19,7 +19,10 @@ import {
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { useLocation } from "@/context/extension/LocationContext";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Feather from "@expo/vector-icons/Feather";
@@ -49,6 +52,8 @@ export default function MapScreen() {
   const { location, address } = useLocation();
   const router = useRouter();
 
+  const insets = useSafeAreaInsets();
+
   const isFocused = useIsFocused();
   const { width } = useWindowDimensions();
 
@@ -66,17 +71,16 @@ export default function MapScreen() {
   } | null>(null);
 
   const [query, setQuery] = useState("");
-  const [localQuery, setLocalQuery] = useState("");
 
   const [pinImages, setPinImages] = useState<Record<string, string>>({});
 
   // --- REF ---
   const filterModalRef = useRef<FilterModalRef>(null);
-  const bottomSheet = useRef<BottomSheet>(null);
+
   const mapRef = useRef<MapView>(null);
   const isScrolling = useRef(false);
 
-  const flatListRef = useRef<FlatList>(null);
+  const ref = useRef<FlatList>(null);
 
   const translateX = useRef(new Animated.Value(-300)).current;
 
@@ -170,9 +174,9 @@ export default function MapScreen() {
               800,
             );
             const index = sortedLocales.findIndex((item) => item.id === loc.id);
-            if (index !== -1 && flatListRef.current) {
+            if (index !== -1 && ref.current) {
               const offset = index * (CARD_WIDTH + 16);
-              flatListRef.current.scrollToOffset({
+              ref.current.scrollToOffset({
                 offset: offset,
                 animated: true,
               });
@@ -196,7 +200,7 @@ export default function MapScreen() {
     });
   }, [sortedLocales, pinImages]);
 
-  const renderLocalItem = useCallback(
+  const renderItem = useCallback(
     ({ item }: { item: Local }) => {
       const distance = location?.coords
         ? calculateDistance(
@@ -264,7 +268,6 @@ export default function MapScreen() {
   );
 
   const onSubmit = () => {
-    setQuery(localQuery);
     Keyboard.dismiss();
 
     mapRef.current?.animateToRegion(
@@ -319,14 +322,17 @@ export default function MapScreen() {
 
   if (!location) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View
+        className="flex-1"
+        style={{ justifyContent: "center", alignItems: "center" }}
+      >
         <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View className="flex-1">
       <MapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
@@ -367,28 +373,31 @@ export default function MapScreen() {
 
       {/* CAPA DE UI */}
       <SafeAreaView
+        edges={["left", "right", "bottom"]}
+        style={{
+          paddingTop: insets.top + 10,
+          paddingBottom: insets.bottom,
+        }}
         pointerEvents="box-none"
-        className="flex-col justify-between relative h-full"
+        className="flex-col justify-between relative h-full px-6"
       >
         {/* Barra de busqueda */}
-        <View className="flex gap-3 items-center flex-row justify-evenly pt-4 px-6 mx-auto w-full">
+        <View className="flex gap-3 items-center flex-row justify-evenly w-full">
           <View
-            className="flex-[1] border overflow-hidden relative border-gray-400 justify-start w-full bg-bg-gray rounded-full flex-row items-center gap-2"
+            className="flex-1 border overflow-hidden px-3 relative border-gray-300 bg-bg-gray rounded-full flex-row items-center gap-2"
             pointerEvents="box-none"
           >
-            <View className="absolute left-4 z-10" pointerEvents="none">
-              <Feather name="search" size={20} color="#707070" />
-            </View>
+            <Feather name="search" size={18} color="#707070" />
 
             <TextInput
-              className="flex-[1] ps-14 h-full rounded-[40px] font-outfit-regular placeholder:text-text-5"
+              className="flex-1 font-outfit-light text-text-3 placeholder:text-text-5"
               placeholder={`Buscá en ${
                 address?.region?.split("Provincia de ")[1] || "tu zona"
               }`}
-              placeholderTextColor="#6B7280"
-              value={localQuery}
-              onChangeText={setLocalQuery}
-              onSubmitEditing={onSubmit}
+              onSubmitEditing={(e) => {
+                setQuery(e.nativeEvent.text);
+                onSubmit();
+              }}
               returnKeyType="search"
             />
             {isLoading && (
@@ -407,19 +416,14 @@ export default function MapScreen() {
           {/* Botón de filtro */}
           <TouchableOpacity
             onPress={() => filterModalRef.current?.open()}
-            className="border border-gray-400"
-            style={{
-              backgroundColor: "#f5f5f5",
-              padding: 11,
-              borderRadius: 999,
-            }}
+            className="border border-gray-300 rounded-full p-3 bg-bg-gray"
           >
             <Ionicons name="options-sharp" size={20} color="black" />
           </TouchableOpacity>
         </View>
 
         {/* Botón de ubicación */}
-        <View className="px-4 items-end mb-[18%]">
+        <View className="items-end mb-[18%]">
           <TouchableOpacity
             onPress={() => {
               mapRef.current?.animateToRegion(
@@ -432,14 +436,14 @@ export default function MapScreen() {
                 1000,
               );
             }}
-            className="bg-white w-[56px] h-[56px] rounded-full justify-center items-center shadow-md border border-gray-200"
+            className="bg-white p-4 rounded-full justify-center items-center shadow-md border border-dashed border-gray-300"
           >
-            <MaterialIcons name="my-location" size={24} color="#444" />
+            <MaterialIcons name="my-location" size={20} color="#4A4947" />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
 
-      {/* --- BOTTOM MODAL DE FILTROS --- */}
+      {/* Filtros */}
       <FilterComponent
         ref={filterModalRef}
         filters={filters}
@@ -450,64 +454,54 @@ export default function MapScreen() {
         onCancel={() => filterModalRef.current?.close()}
       />
 
-      {/* --- BOTTOM SHEET DE LOCALES CERCANOS --- */}
-      {isFocused && (
-        <BottomSheet
-          ref={bottomSheet}
-          index={0}
-          snapPoints={["13%", "25%"]}
-          enablePanDownToClose={false}
-          enableDynamicSizing={false}
-          enableOverDrag={false}
-          enableContentPanningGesture={true}
-          enableHandlePanningGesture={true}
-          handleIndicatorStyle={{
-            backgroundColor: "#B53325",
-            width: 35,
-            height: 5,
-            borderRadius: 9999,
-            marginBottom: 6,
-            marginTop: 5,
-          }}
-          backgroundStyle={{
-            borderRadius: 20,
-            borderColor: "#B53325",
-            borderWidth: 0.5,
-          }}
-        >
-          <BottomSheetView
-            style={{ flex: 1, paddingBottom: 30, width: "100%" }}
-          >
-            {!isLoading && locales.length === 0 ? (
-              <View className="flex-row justify-center items-center py-2 gap-2 border-y border-dashed border-gray-300">
-                <Ionicons name="restaurant" size={16} color="#B53325" />
-                <Text className="text-text-3 text-[14px] font-outfit-light">
-                  No hay locales cerca
-                </Text>
-              </View>
-            ) : (
-              <FlatList
-                ref={flatListRef}
-                data={sortedLocales}
-                horizontal={true}
-                showsHorizontalScrollIndicator={false}
-                snapToInterval={CARD_WIDTH + 10}
-                decelerationRate="fast"
-                snapToAlignment="center"
-                onViewableItemsChanged={onViewableItemsChanged}
-                viewabilityConfig={viewabilityConfig}
-                renderItem={renderLocalItem}
-                onScrollBeginDrag={() => {
-                  isScrolling.current = true;
-                }}
-                onMomentumScrollEnd={() => {
-                  isScrolling.current = false;
-                }}
-              />
-            )}
-          </BottomSheetView>
-        </BottomSheet>
-      )}
+      {/* Locales cercanos */}
+      <BottomSheet
+        enablePanDownToClose={false}
+        enableDynamicSizing={true}
+        enableOverDrag={false}
+        enableContentPanningGesture={true}
+        enableHandlePanningGesture={true}
+        handleIndicatorStyle={{
+          backgroundColor: "#2F2F2F",
+          borderRadius: 9999,
+        }}
+        backgroundStyle={{
+          borderRadius: 20,
+        }}
+      >
+        <BottomSheetView style={{ flex: 1, paddingBottom: 30, width: "100%" }}>
+          {!isLoading && locales.length === 0 ? (
+            <View className="flex-col justify-center items-center py-2 gap-2">
+              <Text className="font-outfit-bold text-base text-text-3">
+                No hay locales cerca
+              </Text>
+              <Text className="text-center text-text-4 text-sm font-outfit-light">
+                Aumentá el zoom para descubrir opciones o desplazate para
+                intentar ver locales en otras zonas
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              ref={ref}
+              data={sortedLocales}
+              horizontal={true}
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={CARD_WIDTH + 10}
+              decelerationRate="fast"
+              snapToAlignment="center"
+              onViewableItemsChanged={onViewableItemsChanged}
+              viewabilityConfig={viewabilityConfig}
+              renderItem={renderItem}
+              onScrollBeginDrag={() => {
+                isScrolling.current = true;
+              }}
+              onMomentumScrollEnd={() => {
+                isScrolling.current = false;
+              }}
+            />
+          )}
+        </BottomSheetView>
+      </BottomSheet>
     </View>
   );
 }

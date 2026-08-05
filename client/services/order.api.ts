@@ -174,13 +174,13 @@ export const prePurchase = async (
     const response = await axiosInterceptor.post("/order/draft", {
       local_id,
       items,
-      platform: "mobile",
+      redirect_url: "dualeat://payment-result",
     });
     return {
       success: response.data.success ?? true,
       message: response.data.message,
       status: response.status,
-      data: response.data.result as { order: any; checkoutUrl: string },
+      data: response.data.data,
     };
   } catch (err: any) {
     throw handleApiError(err);

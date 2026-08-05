@@ -17,7 +17,7 @@ export default function OrderingModal({ type, items, handleCart }: Props) {
     switch (type) {
       case "empty":
         return (
-           <BottomSheetView
+          <BottomSheetView
             style={{
               paddingBottom: insets.bottom + 36,
               paddingHorizontal: insets.left + insets.right + 16,
@@ -38,8 +38,6 @@ export default function OrderingModal({ type, items, handleCart }: Props) {
               tu pedido.
             </Text>
           </BottomSheetView>
-          
-         
         );
       case "conflict":
         return (
@@ -85,7 +83,6 @@ export default function OrderingModal({ type, items, handleCart }: Props) {
               </Text>
             </TouchableOpacity>
           </BottomSheetView>
-          
         );
     }
   };

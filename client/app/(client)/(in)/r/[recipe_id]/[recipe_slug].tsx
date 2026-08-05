@@ -1,6 +1,7 @@
 import {
   ActivityIndicator,
   Image,
+  Pressable,
   RefreshControl,
   ScrollView,
   Text,
@@ -28,6 +29,7 @@ import NutritionPie from "@/components/features/recipe/NutritionPie";
 
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import StepsModal from "@/components/features/recipe/StepsModal";
+import { ROUTES } from "@/constants/constants";
 
 export default function RecipeDetailScreen() {
   const { recipe_id } = useLocalSearchParams();
@@ -152,10 +154,11 @@ export default function RecipeDetailScreen() {
     }
   }, [recipe, router]);
 
-  // Calcular rating
-  if (recipe && recipe.votes_up && recipe.votes_down) {
-    const total_votes = recipe.votes_down + recipe.votes_up;
-    rating = total_votes > 0 ? (recipe.votes_up / total_votes) * 5 : 0;
+  if (recipe) {
+    const votes_up = recipe.votes_up ?? 0;
+    const votes_down = recipe.votes_down ?? 0;
+    const total_votes = votes_up + votes_down;
+    rating = total_votes > 0 ? (votes_up / total_votes) * 5 : 0;
   }
 
   return (
@@ -163,15 +166,26 @@ export default function RecipeDetailScreen() {
       edges={["top", "left", "right", "bottom"]}
       className="flex-1 bg-bg-semi-white relative px-3"
     >
-      <View className="flex-row items-center justify-between w-full py-4">
+      <View className="relative flex-row items-center justify-center w-full py-4">
         <TouchableOpacity
-          onPress={() => router.back()}
-          className="h-10 w-10 flex items-center justify-center"
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.push(ROUTES.USER.DASHBOARD("in"));
+            }
+          }}
+          hitSlop={{
+            top: 10,
+            bottom: 10,
+            left: 10,
+            right: 10,
+          }}
+          className="absolute left-0 h-10 w-10 flex items-center justify-center"
         >
           <Entypo name="chevron-small-left" size={32} color="#2F2F2F" />
         </TouchableOpacity>
         <Text className="font-outfit-bold text-base text-text-3">Receta</Text>
-        <Entypo name="share" size={18} color="#2F2F2F" />
       </View>
 
       {isLoading ? (
@@ -249,8 +263,13 @@ export default function RecipeDetailScreen() {
                 </View>
               </View>
 
-              {/** Usuario */}
-              <View className="flex-row gap-x-2.5 items-center mt-2">
+              {/* Usuario */}
+              <Pressable
+                onPress={() => {
+                  router.push(ROUTES.USER.PROFILE(recipe.user.id));
+                }}
+                className="flex-row gap-x-2.5 items-center mt-2"
+              >
                 <Image
                   source={{ uri: recipe.user.avatar_url }}
                   className="w-8 h-8 rounded-full"
@@ -264,7 +283,7 @@ export default function RecipeDetailScreen() {
                     {recipe.user.name}
                   </Text>
                 </View>
-              </View>
+              </Pressable>
             </View>
 
             <View className="flex-col gap-y-6">

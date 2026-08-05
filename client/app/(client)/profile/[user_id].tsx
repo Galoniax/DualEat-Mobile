@@ -17,7 +17,7 @@ import {
 
 import { useAuth } from "@/context/auth/AuthContext";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Entypo, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Entypo, Feather } from "@expo/vector-icons";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { getUserById, getUserSearch } from "@/services/auth.api";
 
@@ -248,7 +248,13 @@ export default function ProfileScreen() {
     );
   };
 
-  const renderItem = ({ item, index }: { item: GlobalSearch; index: number }) => {
+  const renderItem = ({
+    item,
+    index,
+  }: {
+    item: GlobalSearch;
+    index: number;
+  }) => {
     if (tab === "posts") {
       return (
         <View className="mb-4 bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -307,7 +313,7 @@ export default function ProfileScreen() {
           </View>
 
           {/* Right section for stats or action buttons */}
-          <View className="flex-row items-center gap-x-2">
+          {/*<View className="flex-row items-center gap-x-2">
             {isOwner ? (
               <View className="flex-row items-center gap-x-1.5">
                 <TouchableOpacity
@@ -358,7 +364,7 @@ export default function ProfileScreen() {
                 </View>
               </View>
             )}
-          </View>
+          </View>*/}
         </TouchableOpacity>
       );
     }

@@ -277,7 +277,7 @@ export interface Community {
 
   isMember?: boolean;
   is_moderator?: boolean;
-  recieves_notifications?: NotificationFrequency;
+  receives_notifications?: NotificationFrequency;
 }
 
 export interface CommunityMember {
@@ -563,7 +563,7 @@ export type QROrderPayload = {
 
 export type QRUserPayload = {
   t: "user";
-  id: string; // slug
+  id: string; 
 };
 
 export type QROrderPurchase = {
@@ -593,3 +593,64 @@ export interface ChatSessionData {
   text: string;
   role: "USER" | "IA";
 }
+
+interface Prices {
+  price: number;
+  currency: string;
+}
+
+export interface SubscriptionPlan {
+  title: string;
+  description: string;
+  prices: {
+    monthly: Prices;
+    annual: Prices;
+  };
+  benefits: string[];
+}
+
+
+export const subscriptionPlans: SubscriptionPlan[] = [
+  {
+    title: "Básico",
+    description: "Acceso esencial para explorar",
+    prices: {
+      monthly: { price: 0, currency: "ARS" },
+      annual: { price: 0, currency: "ARS" },
+    },
+    benefits: [
+      "Crear posts y recetas",
+      "Límite estandar de contenido (300 caracteres)",
+    ],
+  },
+  {
+    title: "Premium",
+    description: "Desbloquea todo el potencial de DualEat",
+    prices: {
+      monthly: { price: 13199, currency: "ARS" },
+      annual: { price: 89999, currency: "ARS" },
+    },
+    benefits: [
+      "Usuario verificado en la aplicación",
+      "Capacidad de editar tus posts",
+      "Posibilidad de crear más de 10 comunidades",
+      "Contenido y descripciones más largos (1000 caracteres)",
+      "Acceso a chats con inteligencia artificial",
+    ],
+  },
+  {
+    title: "Negocio PRO",
+    description:
+      "Potencia tu local gastronómico, gestiona empleados y publica tu menú.",
+    prices: {
+      monthly: { price: 57999, currency: "ARS" },
+      annual: { price: 579999, currency: "ARS" },
+    },
+    benefits: [
+      "Dashboard de estadísticas avanzado",
+      "Calendario organizativo y empleados",
+      "Carga automatizada de menú por IA (OCR)",
+      "Soporte prioritario para locales gastronómicos",
+    ],
+  },
+];

@@ -342,35 +342,33 @@ export default function CartScreen() {
           className="bg-bg-semi-white flex-col gap-y-2"
         >
           <View className="flex-row justify-between items-center">
-            <Text className="text-text-3 text-[18px] font-outfit-bold">
+            <Text className="text-text-3 text-base font-outfit-bold">
               Subtotal
             </Text>
             <View style={{ alignItems: "flex-end" }} className="flex-col gap-1">
               {finalTotal < originalTotal && (
-                <Text className="line-through text-[12px] text-text-4 tracking-[-0.5px]">
+                <Text className="line-through text-xs text-text-4 tracking-[-0.5px]">
                   {formatPrice(originalTotal)}
                 </Text>
               )}
-              <Text className="text-text-3 text-[16px] font-outfit-bold">
+              <Text className="text-text-3 text-base font-outfit-bold">
                 {formatPrice(finalTotal)}
               </Text>
             </View>
           </View>
 
-          {/* ** TOCHANGE !isOpen disabled 
-          style={{ backgroundColor: !isOpen ? "#BEBEBE" : undefined }}
-          */}
+
           <View className="w-full flex-row items-center justify-center mt-2 gap-2">
             <TouchableOpacity
               onPress={() => handleCheckout()}
-              disabled={isPending}
-              style={{ flex: 3 }}
-              className={`bg-bg-red py-2.5 rounded-[8px] items-center`}
+              disabled={isPending || !isOpen}
+              style={{ flex: 3, backgroundColor: !isOpen ? "#BEBEBE" : undefined }}
+              className={`bg-bg-red py-2.5 rounded-[8px] items-center `}
             >
               {isPending ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text className="text-white font-outfit-bold text-[14px]">
+                <Text className="text-white font-outfit-bold text-base">
                   ¿Pagar ahora?
                 </Text>
               )}

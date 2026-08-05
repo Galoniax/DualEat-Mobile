@@ -1,4 +1,4 @@
-import { View, ActivityIndicator, RefreshControl, FlatList } from "react-native";
+import { View, ActivityIndicator, RefreshControl, FlatList, Text } from "react-native";
 
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { getAll } from "@/services/post.api";
@@ -72,7 +72,7 @@ export default function HomeScreen() {
       className="flex-1 bg-bg-semi-white"
     >
       {isLoading ? (
-        <ActivityIndicator size={24} color="#e5a657" className="mt-10" />
+        <ActivityIndicator size={20} color="#e5a657" className="mt-10" />
       ) : (
         <FlatList
           data={posts}
@@ -103,7 +103,9 @@ export default function HomeScreen() {
                 color="#e5a657"
                 className="my-4"
               />
-            ) : null
+            ) : (
+              <Text className="w-full text-sm font-outfit-light text-text-4/70 py-4 flex-1 justify-center text-center">No hay más posts para mostrar</Text>
+            )
           }
         />
       )}

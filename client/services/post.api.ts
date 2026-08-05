@@ -8,7 +8,6 @@ import {
 import {
   PostCommentDTO,
   PostDTO,
-  RecipeDTO,
   UploadPayload,
 } from "@/interface/global.dto";
 import { handleApiError } from "@/utils/apiErrorHandler";
@@ -186,12 +185,9 @@ export const getCommunityPosts = async (
   }
 };
 
-// --- 9. CREAR POST (Opcional con Receta) ---
+// --- 9. CREAR POST ---
 // ===================================
-export const createPost = async (
-  post: PostDTO,
-  recipe?: RecipeDTO,
-): Promise<Response<Post>> => {
+export const createPost = async (post: PostDTO): Promise<Response<Post>> => {
   try {
     const response = await axiosInterceptor.post("/post/create", {
       post: {
@@ -199,21 +195,46 @@ export const createPost = async (
         content: post.content,
         image_urls: post.image_urls,
         community_id: post.community?.id,
+        recipe_id: post.recipe?.id ?? null,
       },
-      recipe,
     });
 
     return {
       success: response.data.success ?? true,
       status: response.status,
       message: response.data.message,
-      data: response.data,
+      data: response.data.data,
     };
   } catch (err: any) {
-    return handleApiError(err);
+    throw handleApiError(err);
   }
 };
 
+// --- 9.5. ACTUALIZAR POST ---
+// ===================================
+export const updatePost = async (
+  post_id: string,
+  post: PostDTO,
+): Promise<Response<Post>> => {
+  try {
+    const response = await axiosInterceptor.patch(`/post/update`, {
+      post: {
+        id: post_id,
+        title: post.title,
+        content: post.content,
+      },
+    });
+
+    return {
+      success: response.data.success ?? true,
+      status: response.status,
+      message: response.data.message,
+      data: response.data.data,
+    };
+  } catch (err: any) {
+    throw handleApiError(err);
+  }
+};
 
 // --- 10. ELIMINAR POST ---
 // ===================================
@@ -228,10 +249,9 @@ export const deletePost = async (post_id: string): Promise<Response> => {
       data: response.data.data,
     };
   } catch (err: any) {
-    return handleApiError(err);
+    throw handleApiError(err);
   }
 };
-
 
 // --- 11. SUBIR IMÁGENES ---
 // ===================================
@@ -277,6 +297,6 @@ export const upload = async (
       data: response.data.urls,
     };
   } catch (err: any) {
-    return handleApiError(err);
+    throw handleApiError(err);
   }
 };

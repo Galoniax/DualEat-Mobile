@@ -14,9 +14,6 @@ export const getGlobal = async (
   community_id?: string,
 ): Promise<ResponseWithPagination<GlobalSearch[]> | null> => {
   try {
-
-    console.log(tab)
-
     const response = await axiosInterceptor.get("/search/global", {
       params: {
         query,

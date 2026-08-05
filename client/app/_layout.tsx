@@ -3,7 +3,7 @@ import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import { useEffect } from "react";
-import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
+import { StyleSheet, View, Text, TextInput, TouchableOpacity } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as Updates from "expo-updates";
 import { Ionicons } from "@expo/vector-icons";
@@ -28,6 +28,14 @@ import { configureNotifications } from "@/utils/notifications";
 import { registerBackgroundWeatherTask } from "@/services/weatherNotifications";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RotateCcw } from "lucide-react-native";
+
+// 1. Configuración para componentes Text
+if ((Text as any).defaultProps == null) (Text as any).defaultProps = {};
+(Text as any).defaultProps.maxFontSizeMultiplier = 1.3;
+
+// 2. Configuración para componentes TextInput
+if ((TextInput as any).defaultProps == null) (TextInput as any).defaultProps = {};
+(TextInput as any).defaultProps.maxFontSizeMultiplier = 1.3;
 
 export { ErrorBoundary } from "expo-router";
 
@@ -68,9 +76,9 @@ function RootNavigation() {
 
       {isUpdatePending && (
         <SafeAreaView
-          edges={["bottom", "left", "right"]}
+          edges={["bottom", "left", "right", "top"]}
           style={{ zIndex: 9999 }}
-          className="w-full absolute left-0 right-0 top-[85px] flex-row items-center"
+          className="w-full flex-row items-center"
         >
           <TouchableOpacity
             onPress={() => Updates.reloadAsync()}

@@ -1,4 +1,4 @@
-import { Community, Ingredient, Unit } from "./global";
+import { Community, Ingredient, Recipe, Unit } from "./global";
 export interface preferencesDTO {
   filter: "distancia" | "descuento";
   categorias: string[];
@@ -52,6 +52,7 @@ export interface PostDTO {
   content: string;
   image_urls: string[] | UploadableFile[];
   community: Community | null;
+  recipe: Recipe | null;
 }
 
 export interface RecipeDTO {

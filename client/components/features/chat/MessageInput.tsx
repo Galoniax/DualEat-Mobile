@@ -1,3 +1,4 @@
+import { Ingredient } from "@/interface/global";
 import { Feather } from "@expo/vector-icons";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useEffect, useState } from "react";
@@ -13,6 +14,7 @@ import { Path, Svg } from "react-native-svg";
 interface MessageInputProps {
   chat_id: string | undefined;
   message: string;
+  ingredients: Ingredient[];
   setMessage: (message: string) => void;
   handleSubmit: () => void;
   setOpenIngredients: (openIngredients: boolean) => void;
@@ -24,6 +26,7 @@ export default function MessageInput({
   chat_id,
   message,
   setMessage,
+  ingredients,
   handleSubmit,
   setOpenIngredients,
   ingredientsRef,
@@ -45,6 +48,8 @@ export default function MessageInput({
     };
   }, []);
 
+  const hasIngredients = ingredients.length > 0;
+
   return (
     <View
       style={{
@@ -60,16 +65,18 @@ export default function MessageInput({
       }}
       className={`flex-col py-2 px-4 mb-4 items-center border justify-between gap-y-3 bg-bg-semi-white ${isFocused ? "border-gray-400" : "border-gray-200"}`}
     >
+
       <TextInput
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         multiline={true}
         maxLength={500}
         numberOfLines={8}
+        editable={!hasIngredients}
         style={{ minHeight: 50 }}
-        className="text-text-5 font-outfit-regular text-base w-full"
-        placeholder="¿Qué quieres cocinar hoy?"
-        placeholderTextColor="#2F2F2F"
+        className="text-text-4 font-outfit-light text-base w-full"
+        placeholder={hasIngredients ? `Busco recetas con ${ingredients.map((ing) => ing.name).join(", ").slice(0, 50)}...` : "¿Qué quieres cocinar hoy?"}
+        placeholderTextColor="#707070"
         textAlignVertical="top"
         value={message}
         onChangeText={setMessage}
@@ -83,7 +90,7 @@ export default function MessageInput({
               setOpenIngredients(true);
               ingredientsRef.current?.present();
             }}
-            className="border border-gray-200 rounded-full p-2"
+            className="relative border border-gray-200 rounded-full p-2"
           >
             <Svg viewBox="0 0 640 640" width={20} height={20}>
               <Path
@@ -91,6 +98,13 @@ export default function MessageInput({
                 d="M352 128C352 110.3 337.7 96 320 96C302.3 96 288 110.3 288 128L288 288L128 288C110.3 288 96 302.3 96 320C96 337.7 110.3 352 128 352L288 352L288 512C288 529.7 302.3 544 320 544C337.7 544 352 529.7 352 512L352 352L512 352C529.7 352 544 337.7 544 320C544 302.3 529.7 288 512 288L352 288L352 128z"
               />
             </Svg>
+            {ingredients.length > 0 && (
+              <View className="absolute -top-2 -right-2 bg-bg-yellow rounded-full w-5 h-5 flex items-center justify-center">
+                <Text className="text-white text-xs font-outfit-bold">
+                  {ingredients.length}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
 
           {chat_id && (
@@ -116,7 +130,6 @@ export default function MessageInput({
         </View>
         <TouchableOpacity
           onPress={handleSubmit}
-          disabled={!message.trim()}
           className={`rounded-full h-10 w-10 flex items-center justify-center bg-bg-semi-black`}
         >
           <Feather name="send" size={16} color="#fff" />

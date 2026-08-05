@@ -1,13 +1,19 @@
 import axiosInterceptor from "@/api/client";
+import { Response } from "@/interface/global";
 import { handleApiError } from "@/utils/apiErrorHandler";
 
+// --- 1. CREAR CHECKOUT DE USUARIO ---
+// ===================================
 export const createUserCheckout = async (
   plan: "COMMUNITY_USER_MONTHLY" | "COMMUNITY_USER_ANNUAL",
-): Promise<{ success: boolean; checkoutUrl?: string; message?: string }> => {
+): Promise<Response<{ url: string }>> => {
   try {
-    const response = await axiosInterceptor.post("/subscription/user-checkout", { plan });
+    const response = await axiosInterceptor.post(
+      "/subscription/user-checkout",
+      { plan, redirect_url: "dualeat://payment-result" },
+    );
     return response.data;
   } catch (err: any) {
-    return handleApiError(err);
+    throw handleApiError(err);
   }
 };

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ask, getById } from "@/services/chat.api";
 import { ChatSession, ChatSessionData, Ingredient } from "@/interface/global";
 
-//==============================================
+
 // useChat (GET)
 //==============================================
 export const useChat = (chat_id: string | undefined) => {
@@ -11,7 +11,7 @@ export const useChat = (chat_id: string | undefined) => {
     queryKey: ["chat", chat_id],
     queryFn: async () => {
       if (!chat_id) {
-        return {} as ChatSession;
+        return null;
       }
 
       try {
@@ -26,7 +26,7 @@ export const useChat = (chat_id: string | undefined) => {
         return response.data as ChatSession;
       } catch (e: any) {
         if (e.response.status === 404) {
-          return {} as ChatSession;
+          return null;
         }
         throw e;
       }
@@ -83,7 +83,7 @@ export const useCreateMessage = () => {
         text: message,
         createdAt: new Date().toISOString(),
       };
-
+      
       queryClient.setQueryData(
         ["chat", chat_id],
         (old: ChatSession | undefined) => {
@@ -118,6 +118,7 @@ export const useCreateMessage = () => {
           };
         },
       );
+      console.log("CHAT ACTUALIZADO", queryClient.getQueryData(["chat", targetId]))
     },
     onError: (err, { chat_id }, context) => {
       if (context?.previous) {

@@ -25,6 +25,7 @@ export default function StepTwo({ community, setCommunity }: StepProps) {
     }
   };
 
+  console.log((community.banner_url as UploadableFile).uri);
   return (
     <View className="flex-col flex-1 px-5 py-4 gap-y-6">
       <Text className="font-outfit-bold text-[22px] text-text-3">
@@ -37,7 +38,9 @@ export default function StepTwo({ community, setCommunity }: StepProps) {
 
       <View className="flex-col gap-y-6">
         <View className="p-2 border border-gray-200 rounded-lg">
-          {community.banner_url ? (
+          {community.banner_url ? 
+          
+          (
             <Image
               source={{ uri: (community.banner_url as UploadableFile).uri }}
               className="w-full h-16 rounded-t-[20px]"

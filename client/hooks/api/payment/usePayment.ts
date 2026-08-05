@@ -1,11 +1,14 @@
 import { prePurchase, purchase } from "@/services/order.api";
+import { createUserCheckout } from "@/services/subscription.api";
 import { useMutation } from "@tanstack/react-query";
 import * as WebBrowser from "expo-web-browser";
 import { Linking, Platform } from "react-native";
 
+import { globalToast as toast } from "@/utils/toast";
+
 export const handleCheckoutUrl = async (data: any) => {
-  if (data.success && data.data?.checkoutUrl) {
-    const url = data.data.checkoutUrl;
+  if (data.success && data.data?.url) {
+    const url = data.data.url;
 
     // Extraer el pref_id de la url (ej: pref_id=3468655592-5596e5bd-...)
     const match = url.match(/pref_id=([^&]+)/);
@@ -28,11 +31,8 @@ export const handleCheckoutUrl = async (data: any) => {
       try {
         await Linking.openURL(deeplinkMP);
         openedNatively = true;
-      } catch (error) {
-        console.log(
-          "App de Mercado Pago no instalada o falló al abrir nativamente:",
-          error,
-        );
+      } catch (e: any) {
+        throw new Error("App de Mercado Pago no instalada o falló al abrir nativamente");
       }
     }
 
@@ -45,6 +45,7 @@ export const handleCheckoutUrl = async (data: any) => {
       } catch (e: any) {
         console.log("Error abriendo el navegador integrado:", e);
         await WebBrowser.openBrowserAsync(url);
+        throw new Error("Error al abrir el navegador integrado");
       }
     }
   }
@@ -76,6 +77,29 @@ export const usePurchase = () => {
     },
     onSuccess: (data) => {
       handleCheckoutUrl(data);
+    },
+  });
+};
+
+// 3. Hook para suscripción
+//==============================================
+export const useSubscriptionCheckout = () => {
+  return useMutation({
+    mutationFn: async ({
+      plan,
+    }: {
+      plan: "COMMUNITY_USER_MONTHLY" | "COMMUNITY_USER_ANNUAL";
+    }) => {
+      return await createUserCheckout(plan);
+    },
+    onSuccess: (data) => {
+      handleCheckoutUrl(data);
+    },
+    onError: (e: any) => {
+      toast.error(
+        "Error desconocido",
+        e?.message || "Error al iniciar el checkout",
+      );
     },
   });
 };

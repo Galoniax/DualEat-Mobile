@@ -90,6 +90,10 @@ export default function CreateCommunityScreen() {
         },
       });
     },
+
+    onError: (e: any) => {
+      toast.error("Error", e.message);
+    },
   });
 
   const handleNext = async () => {
@@ -111,7 +115,7 @@ export default function CreateCommunityScreen() {
 
         mutate(payload);
       } catch (e: any) {
-        toast.error("Error", e.message);
+        console.log(e);
       }
     }
   };
@@ -148,8 +152,8 @@ export default function CreateCommunityScreen() {
         <TouchableOpacity
           disabled={
             community.tags.length < 3 ||
-            (step === 2 &&
-              (community.name.length < 1 ||
+            (step === 3 &&
+              (community.name.length < 3 ||
                 community.description.length < 10)) ||
             isPending
           }

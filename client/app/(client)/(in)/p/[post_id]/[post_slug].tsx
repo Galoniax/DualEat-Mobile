@@ -39,6 +39,7 @@ import CommentItem from "@/components/features/post/CommentItem";
 import { useAuth } from "@/context/auth/AuthContext";
 import { PostCommentDTO } from "@/interface/global.dto";
 import { globalToast as toast } from "@/utils/toast";
+import { ROUTES } from "@/constants/constants";
 
 const PostHeader = React.memo(({ post }: { post: Post }) => (
   <View style={{ flex: 1, flexGrow: 1, marginBottom: 24 }}>
@@ -246,22 +247,27 @@ export default function PostDetailScreen() {
           paddingHorizontal: insets.left + insets.right + 10,
           paddingVertical: insets.top / 2,
         }}
-        className="flex-row items-center justify-between gap-x-4 w-full"
+        className="relative flex-row items-center justify-center gap-x-4 w-full"
       >
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.push(ROUTES.USER.DASHBOARD("in"));
+            }
+          }}
           hitSlop={{
             top: 10,
             bottom: 10,
             left: 10,
             right: 10,
           }}
-          className="h-10 w-10 flex items-center justify-center"
+          className="absolute left-0 h-10 w-10 flex items-center justify-center"
         >
           <Entypo name="chevron-small-left" size={32} color="#2F2F2F" />
         </TouchableOpacity>
         <Text className="font-outfit-bold text-base text-text-3">Post</Text>
-        <Entypo name="share" size={18} color="#2F2F2F" />
       </View>
 
       {isLoading ? (

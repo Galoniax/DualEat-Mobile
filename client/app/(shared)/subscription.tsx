@@ -6,19 +6,27 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import LinearGradient from "react-native-linear-gradient";
-import * as WebBrowser from "expo-web-browser";
 
 import { useAuth } from "@/context/auth/AuthContext";
-import { createUserCheckout } from "@/services/subscription.api";
-import { globalToast as toast } from "@/utils/toast";
+import { subscriptionPlans } from "@/interface/global";
+import { Check } from "lucide-react-native";
+import { formatPrice } from "@/utils/distance";
+import { StatusBar } from "expo-status-bar";
+import { useSubscriptionCheckout } from "@/hooks/api/payment/usePayment";
 
 export default function SubscriptionView() {
   const router = useRouter();
   const { user } = useAuth();
+
+  const insets = useSafeAreaInsets();
+
+  const { mutate: subscribe, isPending } = useSubscriptionCheckout();
 
   const [billingCycle, setBillingCycle] = useState<"MENSUAL" | "ANUAL">(
     "MENSUAL",
@@ -27,67 +35,62 @@ export default function SubscriptionView() {
     "PREMIUM",
   );
 
-  const [loading, setLoading] = useState(false);
-
-  const prices = {
-    BASIC: {
-      monthly: "$0.00",
-      annual: "$0.00",
-      period: "/ mes",
-    },
-    PREMIUM: {
-      monthly: {
-        original: "$4.00 ARS",
-        period: "/ mes",
-      },
-      annual: {
-        original: "$24.00 ARS",
-        period: "/ año",
-      },
-    },
-  };
-
   const handleSubscribe = async () => {
     if (selectedPlan === "BASIC") return;
 
-    setLoading(true);
-    try {
-      const planKey =
-        billingCycle === "MENSUAL"
-          ? "COMMUNITY_USER_MONTHLY"
-          : "COMMUNITY_USER_ANNUAL";
+    const planKey =
+      billingCycle === "MENSUAL"
+        ? "COMMUNITY_USER_MONTHLY"
+        : "COMMUNITY_USER_ANNUAL";
 
-      const response = await createUserCheckout(planKey);
-
-      if (response && response.success && response.checkoutUrl) {
-        await WebBrowser.openBrowserAsync(response.checkoutUrl);
-      } else {
-        toast.error("Error desconocido", response?.message || "No se pudo iniciar el checkout");
-      }
-    } catch (e: any) {
-      toast.error("Error desconocido", e?.message || "Error al iniciar el checkout");
-    } finally {
-      setLoading(false);
-    }
+    subscribe(
+      { plan: planKey },
+      
+    );
   };
 
   const isUserPremium =
     user?.subscription_status === "ACTIVE" ||
     user?.subscription_status === "TRIAL";
 
-  return (
-    <SafeAreaView className="flex-1" edges={["bottom", "top", "left", "right"]}>
-      <LinearGradient
-        colors={["#B53325", "#46130eff", "#000000"]}
-        locations={[0, 0.3, 1]}
-        className="absolute inset-0"
-      />
+  let slicedPlans = subscriptionPlans.slice(0, 2);
 
-      <View className="flex-row justify-start items-center px-4 py-2 z-10">
+  if (!user?.is_business) {
+    slicedPlans = subscriptionPlans.slice(0, 2);
+  } else {
+    slicedPlans = subscriptionPlans.slice(0, 3);
+  }
+
+  const getFooterPrice = () => {
+    const selectedPlanObj = subscriptionPlans.find(
+      (p) =>
+        p.title.toLowerCase() ===
+        (selectedPlan === "PREMIUM" ? "premium" : "básico"),
+    );
+    if (!selectedPlanObj) return { priceString: "$ 0", periodString: "/ mes" };
+    const cycleKey = billingCycle === "MENSUAL" ? "monthly" : "annual";
+    const pData = selectedPlanObj.prices[cycleKey];
+    return {
+      priceString: `${formatPrice(pData.price)} ${pData.currency}`,
+      periodString: billingCycle === "MENSUAL" ? "/ mes" : "/ año",
+    };
+  };
+
+  const footerPrice = getFooterPrice();
+
+  return (
+    <SafeAreaView
+      className="flex-1 bg-black px-6"
+      edges={["bottom", "top", "left", "right"]}
+    >
+      <StatusBar style="light" />
+
+      {/* Header */}
+      <View className="flex-row justify-start items-center py-2 z-10">
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => router.back()}
-          className="w-10 h-10 rounded-full bg-white/5 border border-white/10 items-center justify-center"
+          className="w-10 h-10 rounded-full bg-white/5 items-center justify-center"
         >
           <Ionicons name="close" size={24} color="#ffffff" />
         </TouchableOpacity>
@@ -95,272 +98,191 @@ export default function SubscriptionView() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={{ paddingBottom: 220 }}
         className="flex-1"
       >
-        {/* Icono de Verificación e Hito */}
-        <View className="items-center flex-col gap-y-3 px-6">
-          <View className="w-20 h-20 rounded-full bg-[#161616] border-2 border-[#e5a657] items-center justify-center">
-            <MaterialCommunityIcons name="decagram" size={54} color="#e5a657" />
+        {/* Badge + Title */}
+        <View className="items-center flex-col gap-y-3">
+          <View className="w-20 h-20 rounded-full border-2 border-bg-red items-center justify-center">
+            <MaterialCommunityIcons name="decagram" size={44} color="#B53325" />
             <Ionicons
               name="checkmark"
-              size={28}
+              size={20}
               color="#ffffff"
               style={{ position: "absolute" }}
             />
           </View>
 
-          <Text className="text-[24px] font-outfit-bold text-white text-center leading-8 px-4">
-            Obtén Premium
+          <Text className="text-2xl font-outfit-bold text-white text-center">
+            DualEat premium
           </Text>
-          <Text className="text-base font-outfit-light text-text-2 text-center px-6">
+          <Text className="text-sm font-outfit-light text-text-2 text-center">
             Elige el plan ideal para ti y comienza a disfrutar de los beneficios
             de DualEat Premium
           </Text>
         </View>
 
-        {/* Switcher de Anual / Mensual */}
-        <View className="flex-row justify-center mt-8 px-6">
+        {/* Switcher */}
+        <View className="flex-row justify-center mt-8">
           <View className="flex-row bg-[#161616] p-1.5 rounded-full border border-white/5 w-64 justify-between">
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => setBillingCycle("ANUAL")}
-              className={`flex-1 py-2.5 rounded-full items-center ${
-                billingCycle === "ANUAL" ? "bg-white" : "bg-transparent"
-              }`}
-            >
-              <Text
-                className={`text-[14px] font-outfit-bold ${
-                  billingCycle === "ANUAL" ? "text-black" : "text-text-2"
-                }`}
-              >
-                Anual
-              </Text>
-            </TouchableOpacity>
+            {(["Anual", "Mensual"] as const).map((item, idx) => {
+              const cycleValue = idx === 0 ? "ANUAL" : "MENSUAL";
+              const isActive = billingCycle === cycleValue;
 
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => setBillingCycle("MENSUAL")}
-              className={`flex-1 py-2.5 rounded-full items-center ${
-                billingCycle === "MENSUAL" ? "bg-white" : "bg-transparent"
-              }`}
-            >
-              <Text
-                className={`text-[14px] font-outfit-bold ${
-                  billingCycle === "MENSUAL" ? "text-black" : "text-text-2"
-                }`}
-              >
-                Mensual
-              </Text>
-            </TouchableOpacity>
+              return (
+                <TouchableOpacity
+                  key={idx}
+                  activeOpacity={0.9}
+                  onPress={() => setBillingCycle(cycleValue)}
+                  className={`flex-1 py-2.5 rounded-full items-center ${
+                    isActive ? "bg-white" : "bg-transparent"
+                  }`}
+                >
+                  <Text
+                    className={`text-sm font-outfit-bold ${
+                      isActive ? "text-black" : "text-text-2"
+                    }`}
+                  >
+                    {item}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
         {/* Tarjetas de Planes */}
-        <View className="px-6 mt-8 flex-col gap-y-6">
-          {/* PLAN BÁSICO */}
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => setSelectedPlan("BASIC")}
-            className={`rounded-2xl p-5 border ${
-              selectedPlan === "BASIC"
-                ? "bg-[#161616] border-white/30"
-                : "bg-white/5 border-white/5"
-            }`}
-          >
-            <View className="flex-row justify-between items-start">
-              <View>
-                <Text className="text-[18px] font-outfit-bold text-white mb-1">
-                  Básico
-                </Text>
-                <View className="flex-row items-baseline">
-                  <Text className="text-base font-outfit-bold text-white">
-                    {prices.BASIC.monthly}
-                  </Text>
-                  <Text className="text-sm font-outfit-regular text-text-2 ml-1">
-                    {prices.BASIC.period}
-                  </Text>
-                </View>
-              </View>
-              {/* Selector */}
-              <View
-                className={`w-6 h-6 rounded-full border-2 justify-center items-center ${
-                  selectedPlan === "BASIC"
-                    ? "border-white bg-white"
-                    : "border-white/20 bg-transparent"
+        <View className="flex-col gap-y-5 w-full mt-10">
+          {slicedPlans.map((item, idx) => {
+            const isPremium = item.title.toLowerCase() === "premium";
+            const planKey = isPremium ? "PREMIUM" : "BASIC";
+            const isSelected = selectedPlan === planKey;
+
+            const cycleKey = billingCycle === "MENSUAL" ? "monthly" : "annual";
+            const priceData = item.prices[cycleKey];
+            const priceString = `${formatPrice(priceData.price)} ${priceData.currency}`;
+            const periodString = billingCycle === "MENSUAL" ? "/ mes" : "/ año";
+
+            return (
+              <TouchableOpacity
+                key={idx}
+                activeOpacity={0.85}
+                onPress={() => setSelectedPlan(planKey)}
+                className={`relative flex-col rounded-2xl p-5 border ${
+                  isSelected
+                    ? isPremium
+                      ? "bg-bg-red/20 border-bg-red"
+                      : "border-text-2 bg-white/5"
+                    : "border-white/10 bg-white/[0.02]"
                 }`}
               >
-                {selectedPlan === "BASIC" && (
-                  <Ionicons name="checkmark" size={14} color="#000000" />
-                )}
-              </View>
-            </View>
+                {/* Plan Header */}
+                <View className="flex-row justify-between items-start">
+                  <View className="flex-1 mr-4">
+                    <Text className="text-lg font-outfit-bold text-white mb-1">
+                      {item.title}
+                    </Text>
+                    <Text className="text-text-6 text-sm font-outfit-regular">
+                      {item.description}
+                    </Text>
+                  </View>
 
-            <View className="border-t border-white/10 my-4" />
-
-            {/* Características */}
-            <View className="flex-col gap-y-3">
-              {[
-                "Crear posts y recetas básicas",
-                "Límite estándar de contenido (300 caracteres)",
-                "Lectura de chats y comentarios",
-              ].map((item, idx) => (
-                <View key={idx} className="flex-row items-center">
-                  <Ionicons
-                    name={
-                      idx === 0
-                        ? "create-outline"
-                        : idx === 1
-                          ? "text-outline"
-                          : "chatbox-outline"
-                    }
-                    size={16}
-                    color="#dbdbdb"
-                    className="mr-3"
-                  />
-                  <Text className="text-sm font-outfit-regular text-text-2">
-                    {item}
-                  </Text>
+                  {/* Selector */}
+                  <View
+                    className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
+                      isSelected
+                        ? isPremium
+                          ? "bg-bg-red border-bg-red"
+                          : "border-white bg-white"
+                        : "border-white/20 bg-transparent"
+                    }`}
+                  >
+                    {isSelected && (
+                      <Check
+                        size={14}
+                        strokeWidth={3}
+                        color={isPremium ? "#ffffff" : "#000000"}
+                      />
+                    )}
+                  </View>
                 </View>
-              ))}
-            </View>
-          </TouchableOpacity>
 
-          {/* PLAN PREMIUM */}
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => setSelectedPlan("PREMIUM")}
-            style={{
-              shadowColor:
-                selectedPlan === "PREMIUM" ? "#e5a657" : "transparent",
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.15,
-              shadowRadius: 16,
-            }}
-            className={`rounded-2xl p-5 border relative overflow-hidden ${
-              selectedPlan === "PREMIUM"
-                ? "bg-[#161616] border-[#e5a657]"
-                : "bg-white/5 border-white/5"
-            }`}
-          >
-            <View className="flex-row justify-between items-start">
-              <View>
-                <Text className="text-[18px] font-outfit-bold text-white">
-                  Premium
-                </Text>
-
-                <View className="flex-row items-baseline gap-x-2">
-                  <Text className="text-base font-outfit-bold text-white">
-                    {billingCycle === "MENSUAL"
-                      ? prices.PREMIUM.monthly.original
-                      : prices.PREMIUM.annual.original}
-                  </Text>
-
-                  <Text className="text-sm font-outfit-regular text-text-2">
-                    {billingCycle === "MENSUAL"
-                      ? prices.PREMIUM.monthly.period
-                      : prices.PREMIUM.annual.period}
-                  </Text>
+                {/* Precio */}
+                <View className="mt-5 mb-4">
+                  <View className="flex-row items-baseline">
+                    <Text className="text-2xl font-outfit-extrabold text-white">
+                      {priceString}
+                    </Text>
+                    <Text className="text-text-6 text-sm font-outfit-regular ml-2">
+                      {periodString}
+                    </Text>
+                  </View>
                 </View>
-              </View>
 
-              {/* Selector */}
-              <View
-                className={`w-6 h-6 rounded-full border-2 justify-center items-center ${
-                  selectedPlan === "PREMIUM"
-                    ? "border-[#e5a657] bg-[#e5a657]"
-                    : "border-white/20 bg-transparent"
-                }`}
-              >
-                {selectedPlan === "PREMIUM" && (
-                  <Ionicons name="checkmark" size={14} color="#ffffff" />
-                )}
-              </View>
-            </View>
-
-            <View className="border-t border-white/10 my-4" />
-
-            {/* Características */}
-            <View className="flex-col gap-y-3.5">
-              <View className="flex-row items-center">
-                <Text className="text-sm font-outfit-bold text-white">
-                  Marca de cuenta verificada
-                </Text>
-              </View>
-
-              {[
-                "Capacidad de editar tus posts",
-                "Posibilidad de hacer posts o recetas más largas"
-              ].map((item, idx) => (
-                <View key={idx} className="flex-row items-center">
-                  <Ionicons
-                    name={
-                      idx === 0
-                        ? "checkmark"
-                        : idx === 1
-                          ? "add-circle"
-                          : "shield-checkmark"
-                    }
-                    size={18}
-                    color="#e5a657"
-                    className="mr-3"
-                  />
-                  <Text className="text-sm font-outfit-medium text-white">
-                    {item}
-                  </Text>
+                {/* Benefits */}
+                <View className="gap-y-3">
+                  {item.benefits.map((benefit, bIdx) => (
+                    <View key={bIdx} className="flex-row items-start">
+                      <Check
+                        size={16}
+                        strokeWidth={2.5}
+                        color={
+                          isSelected
+                            ? isPremium
+                              ? "#B53325"
+                              : "#ffffff"
+                            : "#707070"
+                        }
+                        style={{ marginTop: 1 }}
+                      />
+                      <Text className="text-[13px] font-outfit-regular text-zinc-200 ml-3 flex-1">
+                        {benefit}
+                      </Text>
+                    </View>
+                  ))}
                 </View>
-              ))}
-            </View>
-          </TouchableOpacity>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
 
-      {/* Panel Inferior Flotante Sticky */}
-      <View className="bg-[#0e1117]/95 border-t border-white/10 py-6 px-6 z-20">
+      {/* Sticky Footer */}
+      <View
+        style={{ paddingBottom: insets.bottom + 20 }}
+        className="absolute bottom-0 left-0 right-0 bg-[#0e1117] border-t border-white/10 pt-5 pb-6 px-6 z-20"
+      >
         <View className="flex-row justify-between items-center mb-4">
           <View className="flex-1 mr-4">
-            <Text className="text-[16px] font-outfit-bold text-white">
-              {selectedPlan === "PREMIUM" ? "Premium" : "Básico"}
+            <Text className="text-base font-outfit-bold text-white">
+              Plan {selectedPlan === "PREMIUM" ? "Premium" : "Básico"}
             </Text>
-
-            <Text className="text-[12px] font-outfit-regular text-text-2">
-              {selectedPlan === "PREMIUM"
-                ? billingCycle === "MENSUAL"
-                  ? `${prices.PREMIUM.monthly.original} ARS facturado anualmente de manera única.`
-                  : `${prices.PREMIUM.annual.original} ARS facturado anualmente de manera única.`
-                : "Uso gratuito y limitado para siempre."}
+            <Text className="text-sm font-outfit-regular text-text-4">
+              {billingCycle === "MENSUAL" ? "Mensual" : "Anual"}
             </Text>
           </View>
 
-          <View className="items-end">
-            <Text className="text-[20px] font-outfit-bold text-white">
-              {selectedPlan === "PREMIUM"
-                ? billingCycle === "MENSUAL"
-                  ? prices.PREMIUM.monthly.original
-                  : prices.PREMIUM.annual.original
-                : prices.BASIC.monthly}
+          <View className="items-end mr-4">
+            <Text className="text-xl font-outfit-bold text-white">
+              {footerPrice.priceString}
             </Text>
-            <Text className="text-[11px] font-outfit-regular text-text-4">
-              {selectedPlan === "PREMIUM"
-                ? billingCycle === "MENSUAL"
-                  ? prices.PREMIUM.monthly.period
-                  : prices.PREMIUM.annual.period
-                : prices.BASIC.period}
+            <Text className="text-xs font-outfit-regular text-text-4">
+              {footerPrice.periodString}
             </Text>
           </View>
         </View>
 
-        {/* Botón de Acción */}
+        {/* CTA Button */}
         {isUserPremium && selectedPlan === "PREMIUM" ? (
           <View className="w-full bg-[#1b2a1e] border border-[#2e7d32]/40 py-3.5 rounded-xl items-center justify-center flex-row gap-x-2">
             <Ionicons name="checkmark-circle" size={20} color="#2e7d32" />
-            <Text className="text-[#2e7d32] font-outfit-bold text-[16px]">
+            <Text className="text-[#2e7d32] font-outfit-bold text-[15px]">
               Ya eres miembro Premium
             </Text>
           </View>
         ) : selectedPlan === "BASIC" ? (
           <View className="w-full bg-white/5 border border-white/10 py-3.5 rounded-xl items-center justify-center">
-            <Text className="text-text-2 font-outfit-bold text-[16px]">
+            <Text className="text-text-2 font-outfit-bold text-[15px]">
               Plan actual habilitado
             </Text>
           </View>
@@ -368,13 +290,20 @@ export default function SubscriptionView() {
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={handleSubscribe}
-            disabled={loading}
-            className="w-full bg-white py-3.5 rounded-xl items-center justify-center shadow-lg shadow-white/5"
+            disabled={isPending}
+            className={`w-full bg-white py-3.5 rounded-xl items-center justify-center flex-row gap-x-2 ${
+              isPending ? "opacity-50" : ""
+            }`}
           >
-            {loading ? (
-              <ActivityIndicator size="small" color="#000000" />
+            {isPending ? (
+              <>
+                <ActivityIndicator size="small" color="#000000" />
+                <Text className="text-black font-outfit-bold text-[15px]">
+                  Conectando...
+                </Text>
+              </>
             ) : (
-              <Text className="text-black font-outfit-bold text-[16px]">
+              <Text className="text-black font-outfit-bold text-[15px]">
                 Suscribirse y pagar
               </Text>
             )}

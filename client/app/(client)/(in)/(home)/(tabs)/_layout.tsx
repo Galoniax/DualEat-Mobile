@@ -99,6 +99,12 @@ export default function TabLayout() {
       {/* ---------------- PESTAÑA: CREATE ---------------- */}
       <Tabs.Screen
         name="create"
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.navigate("create", { screen: "index" });
+          },
+        })}
         options={{
           title: "Crear",
           headerShown: false,

@@ -3,18 +3,22 @@ import { PostDTO } from '@/interface/global.dto';
 
 interface PostCreateState {
   post: PostDTO;
+
   setPost: (post: PostDTO) => void;
   clearPost: () => void;
 }
 
+const initialPost: PostDTO = {
+  id: "",
+  title: "",
+  content: "",
+  image_urls: [],
+  community: null,
+  recipe: null,
+};
+
 export const usePostCreateStore = create<PostCreateState>((set) => ({
-  post: {
-    id: "",
-    title: "",
-    content: "",
-    image_urls: [],
-    community: null,
-  },
-  setPost: (post) => set({ post }),
-  clearPost: () => set({ post: { id: "", title: "", content: "", image_urls: [], community: null } }),
+  post: initialPost,
+  setPost: (post: PostDTO) => set({ post }),
+  clearPost: () => set({ post: initialPost }),
 }));

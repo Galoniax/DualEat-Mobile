@@ -1,5 +1,6 @@
 import axiosInterceptor from "@/api/client";
 import { Recipe, Response, ResponseWithPagination } from "@/interface/global";
+import { RecipeDTO } from "@/interface/global.dto";
 import { handleApiError } from "@/utils/apiErrorHandler";
 
 // --- 1. OBTENER TODOS LOS INGREDIENTES ---
@@ -14,11 +15,32 @@ export const getAllIngredients = async (): Promise<Response> => {
       data: response.data.data,
     };
   } catch (err: any) {
-    return handleApiError(err);
+    throw handleApiError(err);
   }
 };
 
-// --- 2. OBTENER RECETA POR ID ---
+// --- 2. CREAR RECETA ---
+// ===================================
+export const createRecipe = async (
+  recipe: RecipeDTO,
+): Promise<Response<Recipe>> => {
+  try {
+    const response = await axiosInterceptor.post("/recipe/create", {
+      recipe,
+    });
+
+    return {
+      success: response.data.success ?? true,
+      status: response.status,
+      message: response.data.message,
+      data: response.data.data,
+    };
+  } catch (err: any) {
+    throw handleApiError(err);
+  }
+};
+
+// --- 3. OBTENER RECETA POR ID ---
 // ===================================
 export const getRecipeById = async (recipe_id: string): Promise<Response> => {
   try {
@@ -35,7 +57,7 @@ export const getRecipeById = async (recipe_id: string): Promise<Response> => {
   }
 };
 
-// --- 3. BUSCAR RECETAS ---
+// --- 4. BUSCAR RECETAS ---
 // ===================================
 export const searchRecipes = async (
   query: string,
@@ -61,7 +83,7 @@ export const searchRecipes = async (
   }
 };
 
-// --- 4. OBTENER RECETAS DEL USUARIO ---
+// --- 5. OBTENER RECETAS DEL USUARIO ---
 // ===================================
 export const getUserRecipes = async (): Promise<Response<Recipe[]>> => {
   try {

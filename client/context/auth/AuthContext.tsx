@@ -9,7 +9,7 @@ import React, {
 import * as SecureStore from "expo-secure-store";
 import { useRouter } from "expo-router";
 
-import axiosInterceptor from "@/api/client";
+import axiosInterceptor, { setOnUnauthorizedCallback } from "@/api/client";
 
 import {
   getMe,
@@ -20,7 +20,12 @@ import {
   logoutAll as authLogoutAll,
 } from "@/services/auth.api";
 
-import type { NotificationFrequency, Role, SuscriptionStatus, Workplace } from "@/interface/global";
+import type {
+  NotificationFrequency,
+  Role,
+  SuscriptionStatus,
+  Workplace,
+} from "@/interface/global";
 
 import { useLoader } from "../app/LoadingContext";
 import { ROUTES } from "@/constants/constants";
@@ -47,13 +52,12 @@ export interface UserSessionData {
   created_at: Date;
   updated_at: Date;
 
-  workplaces: Workplace[]; 
+  workplaces: Workplace[];
 
   loginAt?: Date;
-  lastActivity?: Date
+  lastActivity?: Date;
   deviceId?: string;
 }
-
 
 // INTERFAZ
 interface AuthContextType {
@@ -105,35 +109,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         setUser(userData);
       }
-    } catch (error: any) {
-      console.log("Error en init auth:");
-      let status: number | undefined;
-      if (error && error.response) {
-        status = error.response.status;
-      }
-      let errMsg: string = error.message;
-      let logValue: number | string = errMsg;
-      if (status !== undefined) {
-        logValue = status;
-      }
-      console.log("Error en init auth:", logValue);
+    } catch (e: any) {
+      console.log("Error en init auth:", e.message);
       await handleLogoutCleanup();
-      if (status === 401) {
-        await handleLogoutCleanup();
-      } else {
-        console.log("Error de red o servidor");
-      }
+    } finally {
+      setAuthReady(true);
+      setType(null);
     }
-    setAuthReady(true);
-    setType(null);
   };
-
-  // TODO: TOAST
 
   // --- 1. CARGA DE SESIÓN ---
   // ===========================================
   useEffect(() => {
+    setOnUnauthorizedCallback(() => {
+      setUser(null);
+    });
     init();
+    return () => {
+      setOnUnauthorizedCallback(null);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -162,7 +156,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           `Bearer ${token}`;
 
         const userData = await getMe();
-        
         setUser(userData);
       } catch (e: any) {
         console.log(e);
@@ -180,8 +173,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setType("minimal");
         const response = await authLogin(e, p, r, t, d);
 
-        if (response && response.token) {
-          await setToken(response.token);
+        if (response && response.success) {
+          const user = await getMe();
+          setUser(user);
         }
       } catch (e: any) {
         throw e;
@@ -189,7 +183,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setType(null);
       }
     },
-    [setType, setToken],
+    [setType],
   );
 
   // --- 4. REGISTER (Email, Password, DeviceId) ---
@@ -222,8 +216,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         setType("minimal");
         const response = await authCompleteProfile(n, f, c, t);
-        if (response && response.token) {
-          await setToken(response.token);
+
+        if (response && response.success) {
+          const userData = await getMe();
+
+          setUser(userData);
         }
       } catch (e: any) {
         throw e;
@@ -231,7 +228,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setType(null);
       }
     },
-    [setType, setToken],
+    [setType],
   );
 
   // --- 6. LOGOUT ---
@@ -257,14 +254,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await handleLogoutCleanup();
       router.replace(ROUTES.PUBLIC.HOME);
     } catch (e: any) {
-      toast.error("Error al cerrar todas las sesiones", e.message || "Error de red");
+      toast.error(
+        "Error al cerrar todas las sesiones",
+        e.message || "Error de red",
+      );
       throw e;
     } finally {
       setType(null);
     }
   }, [setType, handleLogoutCleanup, router]);
 
-  
   const contextValue = useMemo(
     () => ({
       user,
@@ -276,7 +275,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       logout,
       logoutAll,
     }),
-    [user, authReady, setToken, login, register, completeProfile, logout, logoutAll],
+    [
+      user,
+      authReady,
+      setToken,
+      login,
+      register,
+      completeProfile,
+      logout,
+      logoutAll,
+    ],
   );
 
   return (
